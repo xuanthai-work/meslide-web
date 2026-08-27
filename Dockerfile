@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.7
+
+FROM node:20-bookworm-slim AS nextjs-builder
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+COPY . /app
+RUN npm run build \
+    && rm -rf .next-build/cache
+
+
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
+
+COPY --from=nextjs-builder /app/.next-build/standalone/ /app/
+COPY --from=nextjs-builder /app/public /app/public
+COPY --from=nextjs-builder /app/.next-build/static /app/.next-build/static
+
+EXPOSE 3000
+CMD ["node", "server.js"]
