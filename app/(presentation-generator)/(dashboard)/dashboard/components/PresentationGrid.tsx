@@ -85,7 +85,7 @@ export const PresentationGrid = ({
         <PresentationCard
           key={presentation.id}
           id={presentation.id}
-          title={presentation.title}
+          title={presentation.title ?? "Untitled presentation"}
           presentation={presentation}
           viewMode={viewMode}
           onDeleted={onPresentationDeleted}
