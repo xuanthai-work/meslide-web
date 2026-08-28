@@ -1613,7 +1613,7 @@ function TemplateV2KonvaSlideComponent({
     const payload = createClipboardPayload();
     if (!payload) return;
     pasteClipboardPayload(payload, 16);
-  }, [createClipboardPayload, pasteClipboardPayload, selection]);
+  }, [createClipboardPayload, pasteClipboardPayload]);
 
   useTemplateV2Clipboard({
     enabled: isEditMode,

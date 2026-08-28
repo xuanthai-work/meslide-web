@@ -28,8 +28,7 @@ export const ProgressBar = ({ duration, onComplete }: ProgressBarProps) => {
 
             // Slow down progress after 90%
             if (calculatedProgress > 90) {
-                const remainingProgress = Math.min(99 - progress, 0.1);
-                setProgress(prev => prev + remainingProgress);
+                setProgress(prev => prev + Math.min(99 - prev, 0.1));
             } else {
                 setProgress(Math.min(calculatedProgress, 90));
             }
@@ -77,4 +76,4 @@ export const ProgressBar = ({ duration, onComplete }: ProgressBarProps) => {
             `}</style>
         </div>
     );
-}; 
+};

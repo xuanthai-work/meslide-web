@@ -29,7 +29,6 @@ import NewSlide from "./NewSlide";
 import { SlideThumbnailCard } from "./SlideThumbnailCard";
 import {
   BLANK_SLIDE_LAYOUT_GROUP,
-  BLANK_SLIDE_LAYOUT_ID,
   createBlankPresentationSlide,
   isTemplateFreePresentation,
 } from "../../_shared/blank-slide";

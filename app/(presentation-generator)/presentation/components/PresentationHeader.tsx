@@ -49,7 +49,6 @@ import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
-import { v4 as uuidv4 } from "uuid";
 
 const MAX_EXPORT_TITLE_LENGTH = 40;
 

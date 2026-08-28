@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
@@ -90,15 +90,15 @@ const DocumentsPreviewPage: React.FC = () => {
     }
   };
 
-  const readFile = async (filePath: string) => {
+  const readFile = useCallback(async (filePath: string) => {
     const res = await fetch(`/api/read-file`, {
       method: "POST",
       body: JSON.stringify({ filePath }),
     });
     return res.json();
-  };
+  }, []);
 
-  const maintainDocumentTexts = async () => {
+  const maintainDocumentTexts = useCallback(async () => {
     const newDocuments: string[] = [];
     const promises: Promise<{ content: string }>[] = [];
 
@@ -130,7 +130,7 @@ const DocumentsPreviewPage: React.FC = () => {
       }
       setDownloadingDocuments([]);
     }
-  };
+  }, [documentKeys, fileItems, readFile, textContents]);
 
   const handleCreatePresentation = async () => {
     try {
@@ -188,7 +188,7 @@ const DocumentsPreviewPage: React.FC = () => {
       setSelectedDocument(documentKeys[0]);
       maintainDocumentTexts();
     }
-  }, [documentKeys]);
+  }, [documentKeys, maintainDocumentTexts]);
 
   // Render helpers
   const renderDocumentContent = () => {

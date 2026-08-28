@@ -75,9 +75,6 @@ test("persisted runtime identifiers are GSlide without Presenton leftovers", asy
   assert.match(tailwind, /data-gslide-tailwind-browser/);
   assert.doesNotMatch(tailwind, /data-presenton-tailwind-browser/);
 
-  const exportTemp = await readNext("lib/run-bundled-presentation-export.ts");
-  assert.match(exportTemp, /os\.tmpdir\(\), "gslide"/);
-  assert.doesNotMatch(exportTemp, /os\.tmpdir\(\), "presenton"/);
 });
 
 test("remaining editor and preview identifiers are GSlide", async () => {

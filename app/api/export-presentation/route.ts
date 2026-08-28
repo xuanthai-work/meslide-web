@@ -45,7 +45,7 @@ function toAppDataUrl(fastapiPath: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await authStatusForRequest(req);
+  const auth = await authStatusForRequest();
   if (!auth.authenticated) {
     return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
   }

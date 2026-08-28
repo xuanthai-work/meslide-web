@@ -336,7 +336,7 @@ export const usePresentationStreaming = (
       streamIsTemplateV2 = true;
     };
 
-    const trackSmartModeGenerationCompleted = (_presentation: unknown) => {
+    const trackSmartModeGenerationCompleted = () => {
       if (!isSmartMode || smartGenerationOutcomeTracked) return;
       smartGenerationOutcomeTracked = true;
     };
@@ -610,7 +610,7 @@ export const usePresentationStreaming = (
               }
 
               trackTemplateV2StreamCompleted(completedPresentation);
-              trackSmartModeGenerationCompleted(completedPresentation);
+              trackSmartModeGenerationCompleted();
               dispatch(setStreaming(false));
               setLoading(false);
               isClosedRef.current = true;
@@ -642,7 +642,7 @@ export const usePresentationStreaming = (
               )
             );
             trackTemplateV2StreamCompleted(data.presentation);
-            trackSmartModeGenerationCompleted(data.presentation);
+            trackSmartModeGenerationCompleted();
             setLoading(false);
             dispatch(setStreaming(false));
             isClosedRef.current = true;
@@ -742,6 +742,7 @@ export const usePresentationStreaming = (
     isSmartMode,
     options.generationMode,
     defaultStatusMessage,
+    startStallWatcher,
   ]);
 
   // isStreaming is derived from lifecycle so it always agrees.

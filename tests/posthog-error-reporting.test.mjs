@@ -42,33 +42,24 @@ test("ClientRoot wires PostHogInitializer and MixpanelInitializer is gone", asyn
   );
 });
 
-test("privacy and onboarding persist user-config before enabling telemetry", async () => {
+test("privacy persists user-config before enabling telemetry", async () => {
   const privacy = await readNext(
     "app/(presentation-generator)/(dashboard)/settings/PrivacySettings.tsx",
   );
-  const finalStep = await readNext("components/OnBoarding/FinalStep.tsx");
-  for (const [name, source] of [
-    ["PrivacySettings", privacy],
-    ["FinalStep", finalStep],
-  ]) {
-    assert.doesNotMatch(
-      source,
-      /setTelemetryEnabled\(enabled\);[\s\S]{0,120}fetch\(['"]\/api\/user-config['"]/,
-      `${name} must not enable telemetry before POST /api/user-config`,
-    );
-    assert.match(
-      source,
-      /if \(!response\.ok\) throw[\s\S]*setTelemetryEnabled\(enabled\)/,
-      `${name} must enable telemetry only after user-config POST succeeds`,
-    );
-  }
+  assert.doesNotMatch(
+    privacy,
+    /setTelemetryEnabled\(enabled\);[\s\S]{0,120}fetch\(['"]\/api\/user-config['"]/,
+  );
+  assert.match(
+    privacy,
+    /if \(!response\.ok\) throw[\s\S]*setTelemetryEnabled\(enabled\)/,
+  );
 });
 
 test("privacy copy is error reports and fail-closed", async () => {
   const privacy = await readNext(
     "app/(presentation-generator)/(dashboard)/settings/PrivacySettings.tsx",
   );
-  const finalStep = await readNext("components/OnBoarding/FinalStep.tsx");
   assert.match(privacy, /Error reports/);
   assert.match(
     privacy,
@@ -81,9 +72,6 @@ test("privacy copy is error reports and fail-closed", async () => {
   assert.match(privacy, /from "@\/utils\/posthog"/);
   assert.doesNotMatch(privacy, /Usage_Analytics_Disabled/);
   assert.match(privacy, /setTrackingEnabled\(false\)/);
-  assert.match(finalStep, /Error reports/);
-  assert.match(finalStep, /from "@\/utils\/posthog"/);
-  assert.doesNotMatch(finalStep, /setTrackingEnabled\(true\)/);
 });
 
 const CAPTURE_SITES = [

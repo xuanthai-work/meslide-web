@@ -68,7 +68,6 @@ export const usePresentationUndoRedo = () => {
         onUndo();
       }
     },
-    [canUndo, onUndo]
   );
 
   // Handle redo (Ctrl + Shift + Z)
@@ -80,7 +79,6 @@ export const usePresentationUndoRedo = () => {
         onRedo();
       }
     },
-    [canRedo, onRedo]
   );
 
   // Handle redo (Ctrl + Y)
@@ -92,7 +90,6 @@ export const usePresentationUndoRedo = () => {
         onRedo();
       }
     },
-    [canRedo, onRedo]
   );
 
   return { onUndo, onRedo, canUndo, canRedo };

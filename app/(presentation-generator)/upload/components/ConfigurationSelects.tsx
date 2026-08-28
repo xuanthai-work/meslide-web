@@ -2,8 +2,6 @@ import { LanguageType, PresentationConfig } from "../type";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
-  ChevronDown,
-  ChevronRight,
   ChevronUp,
   Languages,
   Monitor,

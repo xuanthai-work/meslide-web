@@ -55,7 +55,6 @@ import {
   readOptionalSize,
   readPadding,
   readPoint,
-  readSize,
   readString,
   ROOT_ELEMENTS_COMPONENT_INDEX,
   STAGE_HEIGHT,

@@ -409,7 +409,7 @@ export const useOutlineStreaming = (
       clearRetryTimerLocal();
       clearStallIntervalLocal();
     };
-  }, [presentationId, dispatch, enabled]);
+  }, [presentationId, dispatch, enabled, startStallWatcher]);
 
   // isStreaming is derived from lifecycle so it always agrees.
   const isStreaming = STREAMING_STATES.has(lifecycle);

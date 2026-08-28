@@ -290,7 +290,7 @@ export const useTemplateCreation = () => {
             notify.error("Document preparation failed", errorMessage);
             return null;
         }
-    }, [getUnsupportedFonts, uploadedFonts, updateState]);
+    }, [uploadedFonts, updateState]);
 
     const saveTemplateV2Layouts = useCallback(async (
         templateId: string,
@@ -609,7 +609,6 @@ export const useTemplateCreation = () => {
     }, [
         createAndSaveTemplateV2Layouts,
         generateTemplateV2Blocks,
-        state.templateId,
         updateState,
     ]);
 

@@ -367,7 +367,6 @@ const GroupLayoutPreview = ({
     setDensity(nextDensity);
   }, [
     activeLayout,
-    activeLayoutIndex,
     canEditTemplate,
     schemaFields,
   ]);

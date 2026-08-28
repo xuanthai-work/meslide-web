@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Columns3,
-  MoreVertical,
   Plus,
   Rows3,
   Settings,

@@ -166,6 +166,9 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
   }, [presentationData]);
   useEffect(() => {
     fetchUserSlides();
+    // The export scene is immutable for its lifetime; re-fetching when helper
+    // identities change can race Chromium's readiness signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUserSlides = async () => {

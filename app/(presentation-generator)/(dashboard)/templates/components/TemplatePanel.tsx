@@ -35,7 +35,7 @@ const LayoutPreview = () => {
   }, []);
 
   const handleOpenTemplate = useCallback(
-    (templateId: string, templateName: string, isDefault: boolean) => {
+    (templateId: string) => {
       router.push(`/template-preview?templateV2Id=${templateId}`);
     },
     [router]
@@ -87,7 +87,7 @@ const LayoutPreview = () => {
                   key={template.id}
                   template={template}
                   showArrow
-                  onClick={() => handleOpenTemplate(template.id, template.name, false)}
+                  onClick={() => handleOpenTemplate(template.id)}
                 />
               ))}
             </div>
@@ -100,7 +100,7 @@ const LayoutPreview = () => {
                   key={template.id}
                   template={template}
                   showArrow
-                  onClick={() => handleOpenTemplate(template.id, template.name, true)}
+                  onClick={() => handleOpenTemplate(template.id)}
                 />
               ))}
             </div>

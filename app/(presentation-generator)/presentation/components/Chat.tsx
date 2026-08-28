@@ -53,7 +53,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { LLM_PROVIDERS } from "@/utils/providerConstants";
 import type { AppDispatch, RootState } from "@/store/store";
 import {
   clearChatHtmlSelection,
@@ -64,7 +63,6 @@ import {
 
 import {
   editorQuickPrompts,
-  getSelectedTextModel,
   outlineEditorQuickPrompts,
   outlineQuickPromptGroups,
   outlineQuickPrompts,
@@ -149,14 +147,6 @@ const Chat = ({
   onFollowModeChange,
 }: ChatProps) => {
   const dispatch = useDispatch<AppDispatch>();
-  const llmConfig = useSelector(
-    (state: RootState) => state.userConfig.llm_config,
-  );
-  const selectedTextModel =
-    getSelectedTextModel(llmConfig)?.trim() ||
-    LLM_PROVIDERS[llmConfig.LLM || "openai"]?.label ||
-    llmConfig.LLM ||
-    "AI model";
   const chatHtmlSelection = useSelector(
     (state: RootState) => state.presentationGeneration.chatHtmlSelection,
   );

@@ -5,7 +5,6 @@ import { Check, X } from "lucide-react";
 import {
   type KeyboardEvent,
   type MouseEvent,
-  type ReactNode,
 } from "react";
 
 export type GenerationMode = "standard" | "smart";

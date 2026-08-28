@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 type KeyboardEvent = {
   key: string;
@@ -10,10 +10,17 @@ type KeyboardEvent = {
 export const useKeyboardShortcut = (
   keys: string[],
   callback: (e: KeyboardEvent) => void,
-  deps: any[] = []
 ) => {
-  const handleKeyPress = useCallback(
-    (event: KeyboardEvent) => {
+  const keysRef = useRef(keys);
+  const callbackRef = useRef(callback);
+
+  useEffect(() => {
+    keysRef.current = keys;
+    callbackRef.current = callback;
+  });
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
       if ((event as unknown as globalThis.KeyboardEvent).defaultPrevented) {
         return;
       }
@@ -29,18 +36,15 @@ export const useKeyboardShortcut = (
 
       const isCtrlPressed = event.ctrlKey;
       
-      if (keys.includes(key) && isCtrlPressed) {
+      if (keysRef.current.includes(key) && isCtrlPressed) {
         event.preventDefault();
-        callback(event);
+        callbackRef.current(event);
       }
-    },
-    [callback, ...deps]
-  );
+    };
 
-  useEffect(() => {
     document.addEventListener('keydown', handleKeyPress as any);
     return () => {
       document.removeEventListener('keydown', handleKeyPress as any);
     };
-  }, [handleKeyPress]);
-}; 
+  }, []);
+};

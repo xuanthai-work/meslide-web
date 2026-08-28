@@ -7,7 +7,7 @@ import { authStatusForRequest } from '@/lib/server-auth-role';
 
 export async function POST(request: Request) {
   try {
-    const auth = await authStatusForRequest(request);
+    const auth = await authStatusForRequest();
     if (!auth.authenticated) {
       return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
     }

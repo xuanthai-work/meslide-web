@@ -55,7 +55,7 @@ function contentDisposition(filename: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await authStatusForRequest(request);
+  const auth = await authStatusForRequest();
   if (!auth.authenticated) {
     return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
   }

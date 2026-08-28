@@ -59,7 +59,6 @@ type AuthStatus = {
 };
 
 const SESSION_COOKIE_NAME = "gslide_session";
-const LEGACY_SESSION_COOKIE_NAME = "presenton_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {

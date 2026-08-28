@@ -89,29 +89,6 @@ const ThemePanel: React.FC = () => {
 
   const previewContainerRef = useRef<HTMLDivElement>(null)
   const slideContainerRef = useRef<HTMLDivElement>(null)
-  const [slideContainerWidth, setSlideContainerWidth] = useState<number>(0)
-
-  // Calculate scale dynamically based on container width
-  const slideScale = () => {
-    const BASE_WIDTH = 1280
-    const SCROLLBAR_WIDTH = 8 // account for scrollbar
-    if (!slideContainerWidth) return 0.68 // fallback
-    const availableWidth = slideContainerWidth - SCROLLBAR_WIDTH
-    return availableWidth / BASE_WIDTH
-  }
-
-  useEffect(() => {
-    const el = slideContainerRef.current
-    if (!el) return
-
-    const ro = new ResizeObserver(() => {
-      setSlideContainerWidth(el.clientWidth)
-    })
-    ro.observe(el)
-    setSlideContainerWidth(el.clientWidth)
-
-    return () => ro.disconnect()
-  }, [isSheetOpen, slideContainerRef])
 
 
 
@@ -121,11 +98,6 @@ const ThemePanel: React.FC = () => {
       window.history.pushState({}, '', '/theme')
     }
   }
-
-  // Initialize theme on component mount
-  useEffect(() => {
-    applyTheme(selectedTheme)
-  }, [])
 
   // Load custom themes from API and built-in themes from local constants
   useEffect(() => {
@@ -173,7 +145,7 @@ const ThemePanel: React.FC = () => {
       setDefaultThemes(localDefaults)
 
       // If selected theme is still fallback, set first default
-      if (localDefaults.length > 0 && selectedTheme.id === FALLBACK_THEME.id) {
+      if (localDefaults.length > 0) {
         const first = localDefaults[0]
         setSelectedTheme(first)
         setCustomColors(first.data.colors)
@@ -200,7 +172,7 @@ const ThemePanel: React.FC = () => {
       },
     }
     applyTheme(updatedTheme)
-  }, [customColors, customFonts, customBrandLogo, selectedTheme])
+  }, [customColors, customFonts, customBrandLogo, selectedTheme, themeCompanyName])
 
   // Reset custom values only when the selected theme ID changes
   useEffect(() => {
@@ -211,7 +183,7 @@ const ThemePanel: React.FC = () => {
       setCustomBrandLogoId((selectedTheme as any).logo || '')
 
     }
-  }, [selectedTheme.id])
+  }, [selectedTheme])
 
 
 
@@ -875,6 +847,9 @@ const ThemePanel: React.FC = () => {
       createNewCustomTheme()
 
     }
+    // createNewCustomTheme intentionally initializes only when the URL tab
+    // changes; depending on its render-local identity would repeat the reset.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
 
@@ -1041,7 +1016,6 @@ const ThemePanel: React.FC = () => {
                     },
                   }
                   applyTheme(updatedTheme)
-                  setSlideContainerWidth(slideContainerRef.current?.clientWidth || 0)
                 }
               }}
               // ref={previewContainerRef}

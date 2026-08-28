@@ -224,13 +224,6 @@ test("Presenton Cloud onboarding UI file is removed", async () => {
   );
 });
 
-test("onboarding wizard chrome is GSlide blue", async () => {
-  const mode = await readNext("components/OnBoarding/OnboardingMode.tsx");
-  assert.doesNotMatch(mode, />PRESENTON</);
-  assert.doesNotMatch(mode, /bg-\[#7C51F8\]/);
-  assert.match(mode, /GSlide|GSLIDE|--gslide-accent|#1D6FE8/);
-});
-
 test("outline header does not use Presenton PNG", async () => {
   const outline = await readNext(
     "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
@@ -274,10 +267,6 @@ const CHROME_FILES = [
   "app/layout.tsx",
   "app/not-found.tsx",
   "app/ConfigurationInitializer.tsx",
-  "components/Home.tsx",
-  "components/Header.tsx",
-  "components/OnBoarding/OnboardingMode.tsx",
-  "components/OnBoarding/OnBoardingSlidebar.tsx",
   "components/ui/overlay-loader.tsx",
   "app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx",
   "app/(presentation-generator)/(dashboard)/layout.tsx",
@@ -291,7 +280,6 @@ const CHROME_FILES = [
   "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
   "app/(presentation-generator)/upload/components/GenerationModeDialog.tsx",
   "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
-  "components/OnBoarding/FinalStep.tsx",
   "app/(presentation-generator)/upload/page.tsx",
 ];
 
@@ -378,31 +366,21 @@ test("Konva surface nodes are not restyled as product chrome", async () => {
   assert.doesNotMatch(nodes, /--gslide-bg/);
 });
 
-test("onboarding sidebar and shared Header use GSlide wordmark", async () => {
-  const sidebar = await readNext("components/OnBoarding/OnBoardingSlidebar.tsx");
-  assert.match(sidebar, /GSlideWordmark/);
-  const header = await readNext("components/Header.tsx");
-  assert.match(header, /GSlideWordmark/);
-});
-
 test("app metadata titles use GSlide", async () => {
   const notFound = await readNext("app/not-found.tsx");
   assert.match(notFound, /GSlide/);
   assert.doesNotMatch(notFound, /Presenton/);
 });
 
-test("session cookie and API key identity are GSlide with Presenton fallback", async () => {
+test("session cookie is GSlide and API keys retain Presenton fallback", async () => {
   const proxy = await readNext("proxy.ts");
   assert.match(proxy, /gslide_session/);
-  assert.match(proxy, /presenton_session/);
+  assert.doesNotMatch(proxy, /presenton_session/);
   assert.match(proxy, /sk-gslide-/);
   assert.match(proxy, /sk-presenton-/);
   assert.match(proxy, /GSlide API/);
   assert.doesNotMatch(proxy, /Presenton API/);
 
-  const exporter = await readNext("lib/run-bundled-presentation-export.ts");
-  assert.match(exporter, /gslide_session/);
-  assert.match(exporter, /presenton_session/);
 });
 
 test("app metadata does not use presenton.ai", async () => {
@@ -424,11 +402,7 @@ test("app metadata does not use presenton.ai", async () => {
   assert.doesNotMatch(outline, /presenton\.ai/);
 });
 
-test("onboarding and community copy are GSlide not Presenton product", async () => {
-  const mode = await readNext("components/OnBoarding/OnboardingMode.tsx");
-  assert.doesNotMatch(mode, /Presenton account/);
-  assert.doesNotMatch(mode, /how Presenton creates/);
-
+test("community copy is GSlide not Presenton product", async () => {
   const picker = await readNext(
     "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
   );
@@ -445,9 +419,14 @@ test("PresentonMode filename is gone", async () => {
     () => readNext("components/OnBoarding/PresentonMode.tsx"),
     (error) => error && error.code === "ENOENT",
   );
-  const home = await readNext("components/Home.tsx");
-  assert.match(home, /OnboardingMode/);
-  assert.doesNotMatch(home, /PresentonMode/);
+  await assert.rejects(
+    () => readNext("components/OnBoarding/OnboardingMode.tsx"),
+    (error) => error && error.code === "ENOENT",
+  );
+  await assert.rejects(
+    () => readNext("components/Home.tsx"),
+    (error) => error && error.code === "ENOENT",
+  );
 });
 
 test("chart preview size helper lives in chart-data", async () => {

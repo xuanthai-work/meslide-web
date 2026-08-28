@@ -31,7 +31,6 @@ import {
 import { addToHistory } from "@/store/slices/undoRedoSlice";
 import { RootState } from "@/store/store";
 import {
-  BLANK_SLIDE_LAYOUT_ID,
   createBlankPresentationSlide,
   getSlideTemplateId,
   isTemplateFreePresentation,
@@ -91,7 +90,6 @@ const SlideActionBar = ({
     : typeof slide?.index === "number"
       ? slide.index
       : 0;
-  const slideLayout = typeof slide?.layout === "string" ? slide.layout : "";
   const templateId = useMemo(() => getSlideTemplateId(slide), [slide]);
   const isTemplateV2Slide = isTemplateV2PresentationSlide(slide);
   const isSmartSlide =

@@ -1,15 +1,13 @@
 "use client";
 
-import DOMPurify, { type Config as DOMPurifyConfig } from "dompurify";
+import createDOMPurify, { type Config as DOMPurifyConfig } from "dompurify";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useTailwindRuntimeReady } from "@/components/runtime/TailwindBrowserRuntime";
 import {
   CHART_BROWSER_SCRIPT_URL,
   CHART_DATALABELS_SCRIPT_URL,
 } from "@/lib/chart-browser";
 import { TAILWIND_BROWSER_SCRIPT_URL } from "@/lib/tailwind-browser";
-import { useSmartChartInjection } from "./useSmartChartInjection";
 
 const SLIDE_WIDTH = 1280;
 const SLIDE_HEIGHT = 720;
@@ -74,36 +72,6 @@ function previewDocument(html: string, fonts: unknown) {
     </head>
     <body>${html}</body>
   </html>`;
-}
-
-function useSlideFontAssets(fonts: unknown, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled || !fonts || typeof fonts !== "object" || Array.isArray(fonts)) {
-      return;
-    }
-
-    const assets: HTMLElement[] = [];
-    Object.entries(fonts as Record<string, unknown>).forEach(([family, source]) => {
-      if (typeof source !== "string" || !source.trim()) return;
-      if (source.includes("fonts.googleapis.com") || source.endsWith(".css")) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = source;
-        document.head.appendChild(link);
-        assets.push(link);
-        return;
-      }
-
-      const style = document.createElement("style");
-      const safeFamily = family.replaceAll("'", "\\'");
-      const safeSource = source.replaceAll("'", "\\'");
-      style.textContent = `@font-face{font-family:'${safeFamily}';src:url('${safeSource}');font-display:swap}`;
-      document.head.appendChild(style);
-      assets.push(style);
-    });
-
-    return () => assets.forEach((asset) => asset.remove());
-  }, [enabled, fonts]);
 }
 
 function IframeSmartHtmlSlide({
@@ -178,11 +146,42 @@ export default function SmartHtmlSlide({
   title?: string;
   executeScripts?: boolean;
 }) {
+  const [sanitizedHtml, setSanitizedHtml] = useState<string | null>(() =>
+    executeScripts ? html : null,
+  );
+
+  useEffect(() => {
+    if (executeScripts) {
+      setSanitizedHtml(html);
+      return;
+    }
+
+    const purifier = createDOMPurify(window);
+    setSanitizedHtml(purifier.sanitize(html, SANITIZE_CONFIG));
+  }, [executeScripts, html]);
+
+  // Community HTML must be sanitized in the browser before an iframe is
+  // created. Rendering the raw value during SSR would leave a window where
+  // embedded scripts could run before hydration replaces the document.
+  if (sanitizedHtml === null) {
+    return (
+      <div
+        aria-label={title}
+        className="w-full bg-white"
+        style={{
+          width: fixedSize ? SLIDE_WIDTH : undefined,
+          height: fixedSize ? SLIDE_HEIGHT : undefined,
+          aspectRatio: fixedSize ? undefined : `${SLIDE_WIDTH} / ${SLIDE_HEIGHT}`,
+        }}
+      />
+    );
+  }
+
   return (
     <IframeSmartHtmlSlide
       fixedSize={fixedSize}
       fonts={fonts}
-      html={html}
+      html={sanitizedHtml}
       title={title}
     />
   );

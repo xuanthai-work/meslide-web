@@ -15,8 +15,6 @@ import {
   Bookmark,
   ChartNoAxesGantt,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronsRight,
   Circle,
   Cloud,

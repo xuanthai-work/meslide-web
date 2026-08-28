@@ -100,7 +100,7 @@ const ImageEditor = ({
     if (isOpen && !previousGeneratedImages.length) {
       getPreviousGeneratedImage();
     }
-  }, [isOpen]);
+  }, [isOpen, previousGeneratedImages.length]);
 
   // Handle close with animation
   const handleClose = () => {

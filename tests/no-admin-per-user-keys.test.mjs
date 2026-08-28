@@ -39,11 +39,8 @@ test("user-config forwards to /api/v1/settings/provider", async () => {
   assert.match(route, /!canChangeKeys && !isTrackingOnlyBody/);
 });
 
-test("server-auth helpers no longer expose role or requireAdmin*", async () => {
-  const serverAuth = await readNext("utils/serverAuth.ts");
+test("server-auth role helper no longer exposes admin roles", async () => {
   const roleHelper = await readNext("lib/server-auth-role.ts");
-  assert.doesNotMatch(serverAuth, /requireAdminSession/);
-  assert.doesNotMatch(serverAuth, /\brole\b/);
   assert.doesNotMatch(roleHelper, /requireAdminApi/);
   assert.doesNotMatch(roleHelper, /\brole\b/);
 });

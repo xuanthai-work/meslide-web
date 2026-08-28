@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    const auth = await authStatusForRequest(request);
+    const auth = await authStatusForRequest();
     if (!auth.authenticated) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
     }

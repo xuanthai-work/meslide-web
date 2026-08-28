@@ -289,8 +289,6 @@ const OutlinePage: React.FC = () => {
     hasSelectedTemplate,
     isOutlineReady,
     outlineControlsBusy,
-    presentation_id,
-    selectedTemplateId,
   ]);
 
   const handleUpdateOutline = (index: number, newContent: string) => {
