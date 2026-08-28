@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthDisabled } from "@/utils/auth";
 
 /**
- * API-only: session required for all /api/* except auth, telemetry, public
+ * API-only: session required for all /api/* except auth, public
  * image transforms, and the authenticated export-runtime bridge.
  * Page routes are protected in server layouts (unknown URLs still 404; login uses relative redirects).
+ *
+ * This middleware is the single browser-routing layer now that the bundled
+ * nginx proxy has been removed. The browser stays same-origin against the web
+ * service; FastAPI paths (`/api/v1`, `/api/v2`, `/app_data`, `/static`) and the
+ * `/pdf-maker` export bridge are rewritten/proxied here to the FastAPI service.
  */
 function getFastApiBaseUrl(): string {
   const internal = process.env.FAST_API_INTERNAL_URL?.trim();
@@ -86,19 +91,19 @@ async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {
 function isApiAuthExempt(pathname: string): boolean {
   return (
     pathname.startsWith("/api/v1/auth/") ||
-    pathname === "/api/telemetry-status" ||
     /** Public image transform used as a browser/Konva image source. */
     pathname === "/api/update-svg" ||
     pathname.startsWith("/api/export-presentation-data/")
   );
 }
 
-export async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // nginx handles these paths when present (Docker); in standalone dev mode
-  // we proxy them at request time instead of baking a build-time destination
-  // into Next.js' routes manifest.
+  // These asset paths are served by FastAPI; rewrite them at request time
+  // rather than baking a build-time destination into the Next.js routes
+  // manifest. FastAPI's SessionAuthMiddleware still enforces auth on
+  // /app_data/*, so removing the former nginx auth_request gate is safe.
   if (isFastApiAssetPath(pathname)) {
     return rewriteToFastApi(request);
   }

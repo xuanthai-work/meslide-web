@@ -21,7 +21,6 @@ import {
   parseLimitedSlideCount,
   trimTextToWordLimit,
 } from "@/utils/presentationLimits";
-import { captureError } from "@/utils/posthog";
 
 import Chat from "../../presentation/components/Chat";
 import {
@@ -271,7 +270,6 @@ const OutlinePage: React.FC = () => {
       setIsTemplateStage(false);
     } catch (error: unknown) {
       console.error("Error regenerating outline", error);
-      captureError(error, { operation: "generate" });
       toast.error("Outline Error", {
         description:
           error instanceof Error

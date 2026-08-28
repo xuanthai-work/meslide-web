@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BarChart3,
   Image as ImageIcon,
   Search as SearchIcon,
   Type as TypeIcon,
@@ -11,8 +10,7 @@ import { cn } from "@/lib/utils";
 export type SettingsSection =
   | "text-provider"
   | "image-provider"
-  | "web-search-provider"
-  | "privacy";
+  | "web-search-provider";
 
 const SECTIONS: {
   id: SettingsSection;
@@ -23,12 +21,6 @@ const SECTIONS: {
   { id: "text-provider", label: "Text", Icon: TypeIcon },
   { id: "image-provider", label: "Image", Icon: ImageIcon },
   { id: "web-search-provider", label: "Search", Icon: SearchIcon },
-  {
-    id: "privacy",
-    label: "Analytics",
-    Icon: BarChart3,
-    hint: "Privacy controls",
-  },
 ];
 
 const SettingSideBar = ({

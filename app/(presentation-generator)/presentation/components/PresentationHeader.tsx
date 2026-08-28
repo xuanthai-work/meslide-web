@@ -26,7 +26,6 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { RootState } from "@/store/store";
 import { notify } from "@/components/ui/sonner";
-import { captureError } from "@/utils/posthog";
 import { usePresentationUndoRedo } from "../hooks/PresentationUndoRedo";
 import ToolTip from "@/components/ToolTip";
 import {
@@ -223,7 +222,6 @@ const PresentationHeader = ({
       );
     } catch (error) {
       console.error("Export failed:", error);
-      captureError(error, { operation: "export" });
       notify.error(
         "Export failed",
         "We are having trouble exporting your presentation. Please try again.",
@@ -274,7 +272,6 @@ const PresentationHeader = ({
       );
     } catch (error) {
       console.error(error);
-      captureError(error, { operation: "export" });
       notify.error(
         "Export failed",
         "We are having trouble exporting your presentation. Please try again.",

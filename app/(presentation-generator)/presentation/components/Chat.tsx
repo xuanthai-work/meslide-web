@@ -46,7 +46,6 @@ import {
   MAX_NUMBER_OF_SLIDES,
   MAX_OUTLINE_CONTENT_WORDS,
 } from "@/utils/presentationLimits";
-import { captureError } from "@/utils/posthog";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import {
   Popover,
@@ -1311,7 +1310,6 @@ const Chat = ({
 
       const message =
         error instanceof Error ? error.message : "Failed to send chat message";
-      captureError(message, { operation: "stream" });
 
       setMessages((previous) =>
         previous.map((entry) =>

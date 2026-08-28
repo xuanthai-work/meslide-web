@@ -1,6 +1,5 @@
 "use client";
 
-import PostHogInitializer from "./PostHogInitializer";
 import { Providers } from "./providers";
 import TailwindBrowserRuntime from "@/components/runtime/TailwindBrowserRuntime";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,7 +11,7 @@ export default function ClientRoot({
 }) {
   return (
     <Providers>
-      <PostHogInitializer>{children}</PostHogInitializer>
+      {children}
       <TailwindBrowserRuntime />
       <Toaster position="top-center" />
     </Providers>

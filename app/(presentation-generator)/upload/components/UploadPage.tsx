@@ -22,7 +22,6 @@ import { PresentationGenerationApi } from "../../services/api/presentation-gener
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { setPptGenUploadState } from "@/store/slices/presentationGenUpload";
-import { captureError } from "@/utils/posthog";
 import { ConfigurationSelects } from "./ConfigurationSelects";
 import { RootState } from "@/store/store";
 import CurrentConfig from "./CurrentConfig";
@@ -333,7 +332,6 @@ const UploadPage = () => {
    */
   const handleGenerationError = (error: any) => {
     console.error("Error in upload page", error);
-    captureError(error, { operation: "generate" });
     setLoadingState({
       isLoading: false,
       message: "",

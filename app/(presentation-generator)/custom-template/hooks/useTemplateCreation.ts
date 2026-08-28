@@ -12,7 +12,6 @@ import {
     TemplateCreationMetadata,
 } from "../types";
 import { getApiUrl } from "@/utils/api";
-import { captureError } from "@/utils/posthog";
 
 const TEMPLATE_V2_LAYOUT_BATCH_SIZE = 1;
 const MAX_PROCESSING_PROGRESS_PERCENT = 95;
@@ -286,7 +285,6 @@ export const useTemplateCreation = () => {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Document preparation failed";
             updateState({ error: errorMessage, isLoading: false });
-            captureError(error, { operation: "generate" });
             notify.error("Document preparation failed", errorMessage);
             return null;
         }
@@ -313,7 +311,6 @@ export const useTemplateCreation = () => {
                 "Failed to save generated template layouts"
             );
         } catch (error) {
-            captureError(error, { operation: "save" });
             throw error;
         }
     }, []);
@@ -515,10 +512,6 @@ export const useTemplateCreation = () => {
                 const failureByIndex = new Map(
                     failures.map((item) => [item.index, item.error])
                 );
-                failures.forEach((failure) => {
-                    if (failure.alreadyReported) return;
-                    captureError(failure.error, { operation: "generate" });
-                });
                 updateGeneratedSlides((currentSlides) =>
                     currentSlides.map((slide, index) => {
                         if (!indices.includes(index)) return slide;
@@ -563,7 +556,6 @@ export const useTemplateCreation = () => {
                         error,
                         "Failed to generate template blocks"
                     );
-                    captureError(error, { operation: "generate" });
                     updateState({ error: blocksError });
                 }
             }
@@ -594,7 +586,6 @@ export const useTemplateCreation = () => {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Template generation failed";
             updateState({ error: errorMessage, isLoading: false });
-            captureError(error, { operation: "generate" });
             setSlides((current) =>
                 (current.length ? current : initialSlides).map((slide) => ({
                     ...slide,
@@ -703,7 +694,6 @@ export const useTemplateCreation = () => {
                 const errorMessage = error instanceof Error
                     ? error.message
                     : "Template layout generation failed";
-                captureError(error, { operation: "generate" });
                 setSlides((current) =>
                     current.map((slide, index) =>
                         index === slideIndex
