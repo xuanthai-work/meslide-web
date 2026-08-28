@@ -101,10 +101,10 @@ test("settings sidebar no longer offers a telemetry/privacy section", async () =
   assert.doesNotMatch(sidebar, /Analytics|Privacy controls/);
 });
 
-test("middleware no longer exempts a telemetry-status BFF route", async () => {
-  const middleware = await readNext("middleware.ts");
-  assert.doesNotMatch(middleware, /telemetry-status/);
-  assert.doesNotMatch(middleware, /captureError/);
+test("proxy no longer exempts a telemetry-status BFF route", async () => {
+  const proxy = await readNext("proxy.ts");
+  assert.doesNotMatch(proxy, /telemetry-status/);
+  assert.doesNotMatch(proxy, /captureError/);
 });
 
 test("application source contains no PostHog integration", async () => {

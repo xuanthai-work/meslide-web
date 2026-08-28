@@ -32,7 +32,7 @@ test("SettingPage no longer imports LogoutButton", async () => {
 });
 
 test("proxy still exempts /api/v1/auth/* paths", async () => {
-  const source = await readNext("middleware.ts");
+  const source = await readNext("proxy.ts");
   assert.match(source, /\/api\/v1\/auth\//);
 });
 

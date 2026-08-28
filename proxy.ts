@@ -6,7 +6,7 @@ import { isAuthDisabled } from "@/utils/auth";
  * image transforms, and the authenticated export-runtime bridge.
  * Page routes are protected in server layouts (unknown URLs still 404; login uses relative redirects).
  *
- * This middleware is the single browser-routing layer now that the bundled
+ * This proxy is the single browser-routing layer now that the bundled
  * nginx proxy has been removed. The browser stays same-origin against the web
  * service; FastAPI paths (`/api/v1`, `/api/v2`, `/app_data`, `/static`) and the
  * `/pdf-maker` export bridge are rewritten/proxied here to the FastAPI service.
@@ -97,7 +97,7 @@ function isApiAuthExempt(pathname: string): boolean {
   );
 }
 
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // These asset paths are served by FastAPI; rewrite them at request time
