@@ -8,7 +8,6 @@ import {
 } from "@/store/slices/presentationGeneration";
 import { jsonrepair } from "jsonrepair";
 import { notify } from "@/components/ui/sonner";
-import { captureError } from "@/utils/posthog";
 import { getApiUrl, normalizeBackendAssetUrls } from "@/utils/api";
 import { store, type RootState } from "@/store/store";
 import {
@@ -237,7 +236,9 @@ export const usePresentationStreaming = (
       description: string,
       opts: { showToast?: boolean } = {}
     ) => {
-      captureError(description, { operation: "generate" });
+      // Local logging only; GSlide no longer ships analytics. Keep this so a
+      // failure with showToast === false is never silently swallowed.
+      console.error("Presentation streaming failed", description);
       closeEventSource();
       clearRetryTimer();
       clearStallInterval();

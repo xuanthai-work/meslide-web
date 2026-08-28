@@ -373,7 +373,7 @@ test("app metadata titles use GSlide", async () => {
 });
 
 test("session cookie is GSlide and API keys retain Presenton fallback", async () => {
-  const proxy = await readNext("proxy.ts");
+  const proxy = await readNext("middleware.ts");
   assert.match(proxy, /gslide_session/);
   assert.doesNotMatch(proxy, /presenton_session/);
   assert.match(proxy, /sk-gslide-/);

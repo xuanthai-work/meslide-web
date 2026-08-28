@@ -11,12 +11,10 @@ import {
 } from "@/utils/storeHelpers";
 import { usePathname } from "next/navigation";
 import { LLMConfig } from "@/types/llm_config";
-import { captureError } from "@/utils/posthog";
 import SettingSideBar, { SettingsSection } from "./SettingSideBar";
 import TextProvider from "./TextProvider";
 import ImageProvider from "./ImageProvider";
 import WebSearchProvider from "./WebSearchProvider";
-import PrivacySettings from "./PrivacySettings";
 import {
   IMAGE_PROVIDERS,
   LLM_PROVIDERS,
@@ -102,7 +100,6 @@ const SettingsPage = () => {
         error instanceof Error
           ? error.message
           : "Something went wrong while saving.";
-      captureError(error, { operation: "save" });
       notify.error("Could not save settings", message);
       setButtonState((prev) => ({
         ...prev,
@@ -247,7 +244,6 @@ const SettingsPage = () => {
               setLlmConfig={setLlmConfig}
             />
           )}
-          {selectedProvider === "privacy" && <PrivacySettings />}
         </div>
       </div>
     </div>

@@ -15,7 +15,6 @@ import {
   type GenerationLifecycleState,
   type StallCause,
 } from "@/lib/generation-lifecycle";
-import { captureError } from "@/utils/posthog";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
 const DEFAULT_STATUS_MESSAGE = "Preparing your presentation outline";
@@ -226,7 +225,6 @@ export const useOutlineStreaming = (
           if (!scheduleRetry("invalid SSE payload")) {
             resetStreamingState();
             setLifecycle("failed");
-            captureError("Failed to parse outline stream response.", { operation: "generate" });
             notify.error(
               "Stream parse failed",
               "Failed to parse outline stream response."
@@ -321,7 +319,6 @@ export const useOutlineStreaming = (
               if (!scheduleRetry("failed to parse complete payload")) {
                 resetStreamingState();
                 setLifecycle("failed");
-                captureError("Failed to parse presentation data.", { operation: "generate" });
                 notify.error("Parse failed", "Failed to parse presentation data.");
               }
             }
@@ -346,7 +343,6 @@ export const useOutlineStreaming = (
             clearStallIntervalLocal();
             resetStreamingState();
             setLifecycle("failed");
-            captureError(data.detail ?? "Outline streaming failed", { operation: "generate" });
             notify.error(
               "Outline streaming failed",
               data.detail ||

@@ -43,5 +43,5 @@ test("next dev does not reuse the production distDir or standalone output", asyn
   assert.match(config, /["']\.next-build["']/);
   assert.match(config, /output:\s*["']standalone["']/);
   assert.match(config, /allowedDevOrigins/);
-  assert.match(config, /["']proxy["']/);
+  assert.match(config, /["']web["']/);
 });

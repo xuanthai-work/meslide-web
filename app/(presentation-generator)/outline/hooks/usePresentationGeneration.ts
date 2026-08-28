@@ -6,7 +6,6 @@ import { clearPresentationData } from "@/store/slices/presentationGeneration";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import { LoadingState } from "../types/index";
 
-import { captureError } from "@/utils/posthog";
 import {
   limitOutlines,
   MAX_NUMBER_OF_SLIDES,
@@ -110,7 +109,6 @@ export const usePresentationGeneration = (
       }
     } catch (error: any) {
       console.error("Error In Presentation Generation(prepare).", error);
-      captureError(error, { operation: "generate" });
       notify.error(
         "Generation error",
         error.message || "Error in presentation generation."

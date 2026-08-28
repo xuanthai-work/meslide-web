@@ -16,8 +16,8 @@ const nextConfig = {
         allowedDevOrigins: [
           "127.0.0.1",
           "localhost",
-          // Chromium in the api container opens http://proxy/pdf-maker.
-          "proxy",
+          // Chromium in the api container opens http://web:3000/pdf-maker.
+          "web",
         ],
       }
     : {}),
