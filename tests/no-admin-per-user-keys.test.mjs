@@ -18,7 +18,7 @@ async function readNext(...parts) {
 }
 
 test("proxy drops setup_required flag", async () => {
-  const proxy = await readNext("middleware.ts");
+  const proxy = await readNext("proxy.ts");
   assert.doesNotMatch(proxy, /setup_required/);
 });
 

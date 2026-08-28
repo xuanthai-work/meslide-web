@@ -373,7 +373,7 @@ test("app metadata titles use GSlide", async () => {
 });
 
 test("session cookie is GSlide and API keys retain Presenton fallback", async () => {
-  const proxy = await readNext("middleware.ts");
+  const proxy = await readNext("proxy.ts");
   assert.match(proxy, /gslide_session/);
   assert.doesNotMatch(proxy, /presenton_session/);
   assert.match(proxy, /sk-gslide-/);
@@ -386,7 +386,8 @@ test("session cookie is GSlide and API keys retain Presenton fallback", async ()
 test("app metadata does not use presenton.ai", async () => {
   const layout = await readNext("app/layout.tsx");
   assert.doesNotMatch(layout, /presenton\.ai/);
-  assert.match(layout, /NEXT_PUBLIC_SITE_URL/);
+  assert.match(layout, /process\.env\.SITE_URL/);
+  assert.doesNotMatch(layout, /NEXT_PUBLIC_SITE_URL/);
   assert.match(layout, /\/apple-icon\.png/);
 
   const upload = await readNext(
