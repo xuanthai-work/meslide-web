@@ -1,5 +1,9 @@
 import { resolveBackendAssetUrl } from "@/utils/api";
-import { normalizeRawTextMarkdownElement } from "@/components/slide-editor/text/template-v2-text";
+import {
+  fitRenderTextListToBox as fitTextListToBox,
+  fitRenderTextToBox as fitTextToBox,
+  normalizeRawTextMarkdownElement,
+} from "@/components/slide-editor/text/template-v2-text";
 import { isLatexTextRun } from "@/components/slide-editor/text/text-runs";
 import { normalizeMathLatex, renderMathHtml } from "@/lib/math";
 import {
@@ -463,18 +467,46 @@ function renderImage(item: JsonRecord, mode: RenderMode): string {
   )}display:block;max-width:none;max-height:none;object-fit:${fit};${focusStyle}${clipPath}">`;
 }
 
+function htmlPreparedRuns(runs: JsonRecord[], font: JsonRecord): JsonRecord[] {
+  return runs.map((run) => ({
+    ...run,
+    text:
+      readString(run.type) === "latex"
+        ? normalizeMathLatex(run.latex)
+        : readStringValue(run.text),
+    font: { ...font, ...readRecord(run.font) },
+    displayMode: readBoolean(run.display_mode ?? run.displayMode) ?? false,
+  }));
+}
+
+function htmlTextFitBox(item: JsonRecord): { width: number; height: number } | null {
+  const fallback = Array.isArray(item.children)
+    ? childrenBounds(readArray(item.children).map(readRecord))
+    : undefined;
+  const box = readBox(item, fallback);
+  if (box.width != null && box.width > 0 && box.height != null && box.height > 0) {
+    return { width: box.width, height: box.height };
+  }
+  return null;
+}
+
+function renderUnfittedRunsHtml(runs: JsonRecord[]): string {
+  return runs
+    .map((run) => renderTextRunHtml(run, readRecord(run.font)))
+    .join("");
+}
+
 function renderText(item: JsonRecord, mode: RenderMode): string {
   const font = readRecord(item.font);
   const alignment = readRecord(item.alignment);
   const horizontal = readString(alignment.horizontal);
   const vertical = readString(alignment.vertical);
-  const runs = normalizedRunsForHtml(item, font);
-  const runHtml = runs
-    .map((run) => {
-      const runFont = { ...font, ...readRecord(run.font) };
-      return renderTextRunHtml(run, runFont);
-    })
-    .join("");
+  const runs = htmlPreparedRuns(normalizedRunsForHtml(item, font), font);
+  const fitBox = htmlTextFitBox(item);
+  const fitted = fitBox ? fitTextToBox(runs, fitBox) : null;
+  const lineHtml = fitted
+    ? renderFittedLinesHtml(fitted.lines)
+    : renderUnfittedRunsHtml(runs);
 
   return `<div style="${frameStyle(item, mode)}${transformStyle(item)}${fontStyle(font, {
     includeLineHeight: false,
@@ -484,31 +516,74 @@ function renderText(item: JsonRecord, mode: RenderMode): string {
   )};justify-content:${horizontalAlign(horizontal)};${lineHeightStyle(
     font,
     1.1
-  )}${textOverflowStyle()}text-align:${textAlign(horizontal)};"><span style="display:block;width:100%">${runHtml}</span></div>`;
+  )}${textOverflowStyle()}text-align:${textAlign(horizontal)};"><span style="display:block;width:100%">${lineHtml}</span></div>`;
 }
 
 function renderTextList(item: JsonRecord, mode: RenderMode): string {
   const marker = readString(item.marker);
-  const tag = marker === "number" ? "ol" : "ul";
   const font = readRecord(item.font);
-  const entries = readArray(item.items)
-    .map((entry) => {
-      const runs = normalizedListRunsForHtml(entry, font);
-      const html = runs
-        .map((run) =>
-          renderTextRunHtml(run, { ...font, ...readRecord(run.font) }),
+  const listItems = readArray(item.items).map((entry, index) => {
+    const runs = htmlPreparedRuns(normalizedListRunsForHtml(entry, font), font);
+    return {
+      marker:
+        marker === "none" ? "" : marker === "number" ? `${index + 1}. ` : "• ",
+      markerFont: runs[0] ? readRecord(runs[0].font) : font,
+      runs,
+    };
+  });
+  const fitBox = htmlTextFitBox(item);
+  const fitted = fitBox ? fitTextListToBox(listItems, fitBox) : null;
+  const lineHtml = fitted
+    ? renderFittedLinesHtml(fitted.lines)
+    : listItems
+        .map((entry) =>
+          `${escapeHtml(entry.marker)}${renderUnfittedRunsHtml(entry.runs)}`,
         )
         .join("");
-      return `<li style="${textOverflowStyle()}">${html}</li>`;
-    })
-    .join("");
-  const listStyle = `margin:0;padding-left:${marker === "none" ? 0 : 24}px;${marker === "none" ? "list-style-type:none;" : ""
-    }`;
 
   return `<div style="${frameStyle(item, mode)}${transformStyle(item)}${fontStyle(
     font,
     { includeTextDecoration: false }
-  )}${textOverflowStyle()}"><${tag} style="${listStyle}">${entries}</${tag}></div>`;
+  )}${textOverflowStyle()}">${lineHtml}</div>`;
+}
+
+function renderFittedLinesHtml(lines: unknown): string {
+  return readArray(lines)
+    .map((line) => {
+      const segments = readArray(line).map(readRecord);
+      const sizes = segments
+        .map((segment) => readNumber(readRecord(segment.font).size))
+        .filter((size): size is number => size != null && size > 0);
+      const fontSize = sizes.length ? Math.max(...sizes) : undefined;
+      const lineHeights = segments
+        .map((segment) =>
+          readNumber(
+            readRecord(segment.font).lineHeight ??
+              readRecord(segment.font).line_height,
+          ),
+        )
+        .filter((value): value is number => value != null);
+      const lineHeight = lineHeights.length ? Math.max(...lineHeights) : 1.15;
+      const content = segments
+        .map((segment) => {
+          const text = readStringValue(segment.text);
+          const width = readNumber(segment.width);
+          if (
+            !text &&
+            width != null &&
+            width > 0 &&
+            readString(segment.type) !== "latex"
+          ) {
+            return `<span style="display:inline-block;width:${cssNumber(width)}px;"></span>`;
+          }
+          return renderTextRunHtml(segment, readRecord(segment.font));
+        })
+        .join("");
+      const sizeStyle =
+        fontSize != null ? `font-size:${cssNumber(fontSize)}px;` : "";
+      return `<span style="display:block;width:100%;white-space:pre;${sizeStyle}line-height:${cssNumber(lineHeight)};">${content}</span>`;
+    })
+    .join("");
 }
 
 function renderTable(item: JsonRecord, mode: RenderMode): string {
@@ -988,10 +1063,6 @@ function tableCellStyle(
   return style;
 }
 
-function textOverflowStyle(): string {
-  return "overflow:visible;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;";
-}
-
 function tableCellFont(cellValue: unknown, tableFont: JsonRecord): JsonRecord {
   if (typeof cellValue === "string" || typeof cellValue === "number") {
     return tableFont;
@@ -1282,4 +1353,8 @@ function readListRuns(value: unknown): JsonRecord[] {
     return [{ text: readStringValue(value) }];
   }
   return [];
+}
+
+function textOverflowStyle(): string {
+  return "overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;";
 }
