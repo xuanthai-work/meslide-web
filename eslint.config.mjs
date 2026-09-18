@@ -146,6 +146,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
     ".next-build/**",
+    ".cache/**",
     "out/**",
     "build/**",
     "cypress/**",
