@@ -221,7 +221,7 @@ function graphemes(text) {
 
 function ellipsizeLine(line, maxWidth, measure) {
   const fallbackFont = line[0]?.font ?? { size: 18 };
-  let copy = line.map((segment) => ({ ...segment }));
+  const copy = line.map((segment) => ({ ...segment }));
   const paintedWidth = () => {
     if (!copy.length) {
       return measure(ELLIPSIS, fallbackFont);
@@ -307,7 +307,7 @@ export function fitTextToBox(runs, box, options = {}) {
   }
   const layout = (scale) =>
     layoutFitTextRuns(scaleFitRuns(source, scale), box.width, measure);
-  let lines = layout(1);
+  const lines = layout(1);
   if (layoutFits(lines, box)) {
     return { runs: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
   }
@@ -386,7 +386,7 @@ export function fitTextListToBox(items, box, options = {}) {
   const minScale = floorScale(
     designedSizeOf(dummyRuns.length ? dummyRuns : [{ font: { size: 18 } }]),
   );
-  let lines = asRuns(1);
+  const lines = asRuns(1);
   if (layoutFits(lines, box)) {
     return { items: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
   }

@@ -74,7 +74,9 @@ function withMeasuredLatexRuns<T extends RenderTextRun | UnknownRecord>(
     }
     const latex = normalizeMathLatex(run.latex ?? run.text);
     if (!latex) return run;
-    const displayMode = Boolean(run.displayMode ?? run.display_mode);
+    const displayMode = Boolean(
+      run.displayMode ?? (run as UnknownRecord).display_mode,
+    );
     const fontSize = Number(run.font?.size) > 0 ? run.font.size : 18;
     const measured = measureMathLatex(latex, fontSize, displayMode);
     return {
