@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import SlideErrorBoundary from "../components/SlideErrorBoundary";
 
 import { ArrowUp, PenLine } from "lucide-react";

@@ -1,7 +1,8 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { GSlideButton } from "@/components/gslide";
 import { LoadingState } from "../types/index";
 import { ChevronRight } from "lucide-react";
+import { translate } from "@/i18n/translate";
 
 interface GenerateButtonProps {
   loadingState: LoadingState;
@@ -24,18 +25,18 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
 
   const getButtonText = () => {
     if (loadingState.isLoading) return loadingState.message;
-    if (streamState.isLoading || streamState.isStreaming) return "Loading...";
-    if (!selectedTemplateId) return "Select a Template";
-    return "Continue";
+    if (streamState.isLoading || streamState.isStreaming) return translate("outline.generateButton.loading");
+    if (!selectedTemplateId) return translate("outline.generateButton.selectTemplate");
+    return translate("outline.generateButton.continue");
   };
 
   return (
-    <Button
+    <GSlideButton
       disabled={isDisabled}
       onClick={() => {
         onSubmit();
       }}
-      className="flex h-[46px] w-fit items-center gap-[2px] rounded-[58px] bg-[var(--gslide-accent)] px-6 py-3 font-syne text-lg font-medium tracking-[-0.18px] text-white shadow-none hover:bg-[var(--gslide-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-[46px] w-fit items-center gap-[2px] px-6 py-3 text-lg font-medium tracking-[-0.18px]"
     >
       {getButtonText()}
       <ChevronRight
@@ -43,7 +44,7 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
         strokeWidth={1.7}
         className="h-[18px] w-[18px]"
       />
-    </Button>
+    </GSlideButton>
   );
 };
 

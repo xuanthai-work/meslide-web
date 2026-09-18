@@ -1,7 +1,5 @@
 import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/components/Header";
 import { Skeleton } from "@/components/ui/skeleton";
-import React from "react";
-
 const loading = () => {
   return (
     <div>

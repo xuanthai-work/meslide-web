@@ -103,26 +103,24 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
 
         /* Typography — slight scale-up from original 12px, capped modestly */
         [data-sonner-toast][data-styled="true"] [data-title] {
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
-            BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-            "Noto Sans", sans-serif !important;
+          font-family: var(--gslide-font-ui) !important;
           font-size: clamp(0.8125rem, 0.8rem + 0.12vw, 0.9375rem) !important;
           font-weight: 500 !important;
           line-height: 1.35 !important;
           letter-spacing: 0.03em !important;
           color: rgb(15 23 42) !important; /* slate-900 */
           text-transform: none !important;
+          overflow-wrap: anywhere !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-description] {
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
-            BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-            "Noto Sans", sans-serif !important;
+          font-family: var(--gslide-font-ui) !important;
           font-size: clamp(0.6875rem, 0.67rem + 0.1vw, 0.8125rem) !important;
           font-weight: 400 !important;
           line-height: 1.4 !important;
           letter-spacing: 0.03em !important;
           color: rgb(100 116 139) !important; /* slate-500 */
+          overflow-wrap: anywhere !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-content] {
@@ -175,9 +173,7 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           padding: clamp(4px, 0.3rem + 0.2vw, 7px)
             clamp(7px, 0.5rem + 0.25vw, 10px) !important;
           border-radius: 6px !important;
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
-            BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-            "Noto Sans", sans-serif !important;
+          font-family: var(--gslide-font-ui) !important;
           font-size: clamp(0.625rem, 0.62rem + 0.08vw, 0.75rem) !important;
           font-weight: 400 !important;
           background: rgb(255 255 255) !important;
@@ -207,9 +203,7 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           color: #3f3f3f !important;
           border: 1px solid #edeeef !important;
           box-shadow: none !important;
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
-            BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-            "Noto Sans", sans-serif !important;
+          font-family: var(--gslide-font-ui) !important;
           font-size: clamp(0.625rem, 0.62rem + 0.08vw, 0.75rem) !important;
           font-weight: 400 !important;
           line-height: 1.3 !important;

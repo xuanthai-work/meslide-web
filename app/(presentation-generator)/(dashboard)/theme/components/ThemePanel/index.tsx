@@ -29,8 +29,10 @@ import { Input } from '@/components/ui/input'
 import { useSearchParams } from 'next/navigation'
 import CustomTabEmpty from './CustomTabEmpty'
 import ThemeApi from '@/app/(presentation-generator)/services/api/theme'
-import { useFontLoader } from '@/app/(presentation-generator)/hooks/useFontLoad'
+import { loadPresentationFonts } from '@/app/(presentation-generator)/hooks/useFontLoad'
 import Link from 'next/link'
+import { useT } from '@/i18n/provider'
+import { GSlideHeader } from '@/components/gslide'
 
 // Fallback theme used before defaults are loaded from API (unified Theme type)
 const FALLBACK_THEME: Theme = {
@@ -65,6 +67,7 @@ const FALLBACK_THEME: Theme = {
   },
 }
 const ThemePanel: React.FC = () => {
+  const t = useT()
   const searchParams = useSearchParams()
 
 
@@ -88,104 +91,6 @@ const ThemePanel: React.FC = () => {
 
   const previewContainerRef = useRef<HTMLDivElement>(null)
   const slideContainerRef = useRef<HTMLDivElement>(null)
-
-
-
-  const handleCloseSheet = (open: boolean) => {
-    setIsSheetOpen(false)
-    if (!open) {
-      window.history.pushState({}, '', '/theme')
-    }
-  }
-
-  // Load custom themes from API and built-in themes from local constants
-  useEffect(() => {
-
-    const loadCustomThemes = async () => {
-      try {
-        const apiThemes = await ThemeApi.getThemes()
-        setCustomThemes(apiThemes)
-        const fonts = apiThemes.map(theme => theme.data.fonts.textFont)
-
-        const fontMap = fonts.map(font => ({ name: font.name, url: font.url }))
-        fontMap.forEach(font => {
-          useFontLoader({ [font.name]: font.url })
-        })
-      } catch (error: any) {
-        console.error('Failed to load custom themes', error)
-        notify.error(
-          'Could not load themes',
-          error?.message || 'Your saved themes could not be loaded. Built-in themes are still available.'
-        )
-      }
-    }
-    const loadUserFonts = async () => {
-      try {
-        const userFonts = await ThemeApi.getUserFonts()
-        setUserFonts(userFonts)
-      } catch (error: any) {
-        console.error('Failed to load user fonts', error)
-        notify.error(
-          'Could not load fonts',
-          error?.message || 'Your uploaded fonts could not be loaded right now.'
-        )
-      }
-    }
-    loadUserFonts()
-    const loadDefaultThemes = () => {
-      const localDefaults: Theme[] = DEFAULT_THEMES.map((theme) => ({
-        ...theme,
-        user: 'system',
-        logo: theme.logo ?? '',
-        logo_url: theme.logo_url ?? '',
-        company_name: theme.company_name ?? '',
-      }))
-
-      setDefaultThemes(localDefaults)
-
-      // If selected theme is still fallback, set first default
-      if (localDefaults.length > 0) {
-        const first = localDefaults[0]
-        setSelectedTheme(first)
-        setCustomColors(first.data.colors)
-        setCustomFonts(first.data.fonts)
-        setCustomBrandLogo(first.logo_url || null)
-        setCustomBrandLogoId((first as any).logo || '')
-        applyTheme(first)
-      }
-    }
-    loadCustomThemes()
-    loadDefaultThemes()
-  }, [])
-
-
-  useEffect(() => {
-    const updatedTheme: Theme = {
-      ...selectedTheme,
-      logo_url: customBrandLogo || selectedTheme.logo_url,
-      company_name: themeCompanyName || selectedTheme.company_name,
-      data: {
-        ...selectedTheme.data,
-        colors: customColors,
-        fonts: customFonts,
-      },
-    }
-    applyTheme(updatedTheme)
-  }, [customColors, customFonts, customBrandLogo, selectedTheme, themeCompanyName])
-
-  // Reset custom values only when the selected theme ID changes
-  useEffect(() => {
-    if (selectedTheme) {
-      setCustomColors(selectedTheme.data.colors)
-      setCustomFonts(selectedTheme.data.fonts)
-      setCustomBrandLogo(selectedTheme.logo_url || '')
-      setCustomBrandLogoId((selectedTheme as any).logo || '')
-
-    }
-  }, [selectedTheme])
-
-
-
 
   const applyTheme = (theme: Theme) => {
     const cssVariables = {
@@ -220,9 +125,104 @@ const ThemePanel: React.FC = () => {
       slideContainerRef.current!.style.setProperty('font-family', `"${theme.data.fonts.textFont.name}"`)
       slideContainerRef.current!.style.setProperty('--heading-font-family', `"${theme.data.fonts.textFont.name}"`)
       // Load font
-      useFontLoader({ [theme.data.fonts.textFont.name]: theme.data.fonts.textFont.url })
+      loadPresentationFonts({ [theme.data.fonts.textFont.name]: theme.data.fonts.textFont.url })
     }
   }
+
+
+
+  const handleCloseSheet = (open: boolean) => {
+    setIsSheetOpen(false)
+    if (!open) {
+      window.history.pushState({}, '', '/theme')
+    }
+  }
+
+  // Load custom themes from API and built-in themes from local constants
+  useEffect(() => {
+
+    const loadCustomThemes = async () => {
+      try {
+        const apiThemes = await ThemeApi.getThemes()
+        setCustomThemes(apiThemes)
+        const fonts = apiThemes.map(theme => theme.data.fonts.textFont)
+
+        const fontMap = fonts.map(font => ({ name: font.name, url: font.url }))
+        fontMap.forEach(font => {
+          loadPresentationFonts({ [font.name]: font.url })
+        })
+      } catch (error: any) {
+        console.error('Failed to load custom themes', error)
+        notify.error(
+          t('themes.toast.loadThemesError'),
+          error?.message || t('themes.toast.loadThemesFallback')
+        )
+      }
+    }
+    const loadUserFonts = async () => {
+      try {
+        const userFonts = await ThemeApi.getUserFonts()
+        setUserFonts(userFonts)
+      } catch (error: any) {
+        console.error('Failed to load user fonts', error)
+        notify.error(
+          t('themes.toast.loadFontsError'),
+          error?.message || t('themes.toast.loadFontsFallback')
+        )
+      }
+    }
+    loadUserFonts()
+    const loadDefaultThemes = () => {
+      const localDefaults: Theme[] = DEFAULT_THEMES.map((theme) => ({
+        ...theme,
+        user: 'system',
+        logo: theme.logo ?? '',
+        logo_url: theme.logo_url ?? '',
+        company_name: theme.company_name ?? '',
+      }))
+
+      setDefaultThemes(localDefaults)
+
+      // If selected theme is still fallback, set first default
+      if (localDefaults.length > 0) {
+        const first = localDefaults[0]
+        setSelectedTheme(first)
+        setCustomColors(first.data.colors)
+        setCustomFonts(first.data.fonts)
+        setCustomBrandLogo(first.logo_url || null)
+        setCustomBrandLogoId((first as any).logo || '')
+        applyTheme(first)
+      }
+    }
+    loadCustomThemes()
+    loadDefaultThemes()
+  }, [t])
+
+
+  useEffect(() => {
+    const updatedTheme: Theme = {
+      ...selectedTheme,
+      logo_url: customBrandLogo || selectedTheme.logo_url,
+      company_name: themeCompanyName || selectedTheme.company_name,
+      data: {
+        ...selectedTheme.data,
+        colors: customColors,
+        fonts: customFonts,
+      },
+    }
+    applyTheme(updatedTheme)
+  }, [customColors, customFonts, customBrandLogo, selectedTheme, themeCompanyName])
+
+  // Reset custom values only when the selected theme ID changes
+  useEffect(() => {
+    if (selectedTheme) {
+      setCustomColors(selectedTheme.data.colors)
+      setCustomFonts(selectedTheme.data.fonts)
+      setCustomBrandLogo(selectedTheme.logo_url || '')
+      setCustomBrandLogoId((selectedTheme as any).logo || '')
+
+    }
+  }, [selectedTheme])
 
   const handleThemeSelect = (theme: Theme) => {
     setIsNewTheme(false)
@@ -260,8 +260,8 @@ const ThemePanel: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to upload logo', error)
       notify.error(
-        'Could not upload logo',
-        error?.message || 'Something went wrong while uploading your logo. Please try again.'
+        t('themes.toast.logoUploadError'),
+        error?.message || t('themes.toast.logoUploadFallback')
       )
     } finally {
       setIsLogoUploading(false)
@@ -297,8 +297,8 @@ const ThemePanel: React.FC = () => {
     setIsNewTheme(true)
     const newTheme: Theme = {
       id: `custom-${Date.now()}`,
-      name: 'New Custom Theme',
-      description: 'Start with a blank canvas',
+      name: t('themes.newCustomTheme.name'),
+      description: t('themes.newCustomTheme.description'),
       user: 'local',
       logo: '',
       logo_url: '',
@@ -372,15 +372,15 @@ const ThemePanel: React.FC = () => {
             }
           }
           const updated = await ThemeApi.updateTheme(params)
-          setCustomThemes(customThemes.map(t => t.id === updated.id ? updated : t))
+          setCustomThemes(customThemes.map(item => item.id === updated.id ? updated : item))
           setSelectedTheme(updated)
           setIsSheetOpen(false)
-          notify.success('Theme updated', 'Your theme changes were saved.')
+          notify.success(t('themes.toast.themeUpdated'), t('themes.toast.themeUpdatedDescription'))
         } catch (error: any) {
           console.error('Failed to update theme', error)
           notify.error(
-            'Could not update theme',
-            error?.message || 'Something went wrong while saving your theme changes.'
+            t('themes.toast.themeUpdateError'),
+            error?.message || t('themes.toast.themeUpdateFallback')
           )
         }
       })()
@@ -405,12 +405,12 @@ const ThemePanel: React.FC = () => {
 
 
       window.history.pushState({}, '', '/theme')
-      notify.success('Theme saved', 'Your new theme was created and is ready to use.')
+      notify.success(t('themes.toast.themeSaved'), t('themes.toast.themeSavedDescription'))
     } catch (error: any) {
       console.error('Failed to save theme', error)
       notify.error(
-        'Could not save theme',
-        error?.message || 'Something went wrong while creating your theme.'
+        t('themes.toast.themeSaveError'),
+        error?.message || t('themes.toast.themeSaveFallback')
       )
     }
   }
@@ -422,12 +422,12 @@ const ThemePanel: React.FC = () => {
     try {
       await ThemeApi.deleteTheme(themeId)
       setCustomThemes(customThemes.filter(theme => theme.id !== themeId))
-      notify.success("Theme deleted", "The theme was removed from your library.")
+      notify.success(t('themes.toast.themeDeleted'), t('themes.toast.themeDeletedDescription'))
     } catch (error: any) {
       console.error('Failed to delete theme', error)
       notify.error(
-        'Could not delete theme',
-        error?.message || 'Something went wrong while deleting the theme.'
+        t('themes.toast.themeDeleteError'),
+        error?.message || t('themes.toast.themeDeleteFallback')
       )
     }
   }
@@ -448,14 +448,14 @@ const ThemePanel: React.FC = () => {
         }))
       }
       notify.success(
-        'Font uploaded',
-        `Font "${font_name}" is now available for your themes.`
+        t('themes.toast.fontUploaded'),
+        t('themes.toast.fontUploadedDescription', { name: font_name })
       )
     } catch (error: any) {
       console.error('Failed to upload font', error)
       notify.error(
-        'Could not upload font',
-        error?.message || 'Something went wrong while uploading the font file.'
+        t('themes.toast.fontUploadError'),
+        error?.message || t('themes.toast.fontUploadFallback')
       )
     } finally {
       setIsFontUploading(false)
@@ -469,7 +469,7 @@ const ThemePanel: React.FC = () => {
     >
       <Label className="flex text-xl font-medium text-[#191919] items-center gap-2 pb-5">
 
-        {step === 1 ? 'Brand Colors' : 'Palette'}
+        {step === 1 ? t('themes.colorStep.brandColors') : t('themes.colorStep.palette')}
         <RefreshCcw onClick={() => refeshTheme(step === 1 ? {
 
         } : {
@@ -482,7 +482,7 @@ const ThemePanel: React.FC = () => {
 
         <div>
 
-          {step === 2 && <p className="text-xs text-[#4C4C4C] font-medium rounded-lg text-end pb-1.5">Brand Colors</p>}
+          {step === 2 && <p className="text-xs text-[#4C4C4C] font-medium rounded-lg text-end pb-1.5">{t('themes.colorStep.brandColors')}</p>}
           <div className="space-y-4"
             style={{
               padding: step === 2 ? '10px' : '0px',
@@ -491,7 +491,7 @@ const ThemePanel: React.FC = () => {
           >
             <ColorPickerComponent
               colorKey="primary"
-              label="Primary Color"
+              label={t('themes.colorStep.primaryColor')}
               currentColor={customColors['primary']}
               onColorChange={handleColorChange}
               showColorPicker={showColorPicker}
@@ -499,7 +499,7 @@ const ThemePanel: React.FC = () => {
             />
             <ColorPickerComponent
               colorKey="background"
-              label="Background Color"
+              label={t('themes.colorStep.backgroundColor')}
               currentColor={customColors['background']}
               onColorChange={handleColorChange}
               showColorPicker={showColorPicker}
@@ -508,7 +508,7 @@ const ThemePanel: React.FC = () => {
           </div>
         </div>
         {step === 2 && <div>
-          <p className="text-xs text-[#4C4C4C] font-medium text-end pb-1.5">Text Colors</p>
+          <p className="text-xs text-[#4C4C4C] font-medium text-end pb-1.5">{t('themes.colorStep.textColors')}</p>
           <div className="space-y-4"
             style={{
               padding: step === 2 ? '10px' : '0px',
@@ -517,7 +517,7 @@ const ThemePanel: React.FC = () => {
           >
             <ColorPickerComponent
               colorKey="background_text"
-              label="Background Text"
+              label={t('themes.colorStep.backgroundText')}
               currentColor={customColors['background_text']}
               onColorChange={handleColorChange}
               showColorPicker={showColorPicker}
@@ -525,7 +525,7 @@ const ThemePanel: React.FC = () => {
             />
             <ColorPickerComponent
               colorKey="primary_text"
-              label="Primary Text"
+              label={t('themes.colorStep.primaryText')}
               currentColor={customColors['primary_text']}
               onColorChange={handleColorChange}
               showColorPicker={showColorPicker}
@@ -536,7 +536,7 @@ const ThemePanel: React.FC = () => {
         {step === 2 && <div className='px-2.5'>
           <ColorPickerComponent
             colorKey="card"
-            label="Card Color"
+            label={t('themes.colorStep.cardColor')}
             currentColor={customColors['card']}
             onColorChange={handleColorChange}
             showColorPicker={showColorPicker}
@@ -544,7 +544,7 @@ const ThemePanel: React.FC = () => {
           />
         </div>}
         {step === 2 && <div>
-          <p className="text-xs text-[#4C4C4C] font-medium text-end pb-1.5">Graph/Chart Colors</p>
+          <p className="text-xs text-[#4C4C4C] font-medium text-end pb-1.5">{t('themes.colorStep.graphColors')}</p>
           <div className="space-y-4"
             style={{
               padding: step === 2 ? '10px' : '0px',
@@ -647,7 +647,7 @@ const ThemePanel: React.FC = () => {
       }}
     >
       <Label className="flex text-xl font-medium text-[#191919] items-center gap-2 px-2.5">
-        Typography
+        {t('themes.fontStep.typography')}
       </Label>
 
 
@@ -655,7 +655,7 @@ const ThemePanel: React.FC = () => {
 
       {/* Upload Custom Font */}
       <div className="px-2.5">
-        <p className='text-xs text-[#4C4C4C] font-medium text-end pb-1.5'>Upload Custom Font</p>
+        <p className='text-xs text-[#4C4C4C] font-medium text-end pb-1.5'>{t('themes.fontStep.uploadCustomFont')}</p>
         <div
           className={`p-3 rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer group
             ${isFontUploading
@@ -672,22 +672,22 @@ const ThemePanel: React.FC = () => {
         >
           {isFontUploading ? (
             <div className='flex items-center gap-3'>
-              <div className='w-10 h-10 rounded-lg bg-[#BFDBFE] flex items-center justify-center'>
+              <div className='w-10 h-10 rounded-lg bg-[var(--gslide-accent-soft)] flex items-center justify-center'>
                 <Loader2 className='w-5 h-5 text-[#1D6FE8] animate-spin' />
               </div>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-[#1D6FE8]'>Uploading font...</p>
-                <p className='text-xs text-[#888]'>Please wait</p>
+                <p className='text-sm font-medium text-[#1D6FE8]'>{t('themes.fontStep.uploadingFont')}</p>
+                <p className='text-xs text-[#888]'>{t('themes.fontStep.pleaseWait')}</p>
               </div>
             </div>
           ) : (
             <div className='flex items-center gap-3'>
-              <div className='w-10 h-10 rounded-lg bg-[#BFDBFE] flex items-center justify-center group-hover:bg-[#DDD8FD] transition-colors'>
+              <div className='w-10 h-10 rounded-lg bg-[var(--gslide-accent-soft)] flex items-center justify-center transition-colors'>
                 <Plus className='w-5 h-5 text-[#1D6FE8]' />
               </div>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-[#151515]'>Upload Font File</p>
-                <p className='text-xs text-[#888]'>.ttf, .otf, .woff, .woff2</p>
+                <p className='text-sm font-medium text-[#151515]'>{t('themes.fontStep.uploadFontFile')}</p>
+                <p className='text-xs text-[#888]'>{t('themes.fontStep.fontFormats')}</p>
               </div>
               <ChevronRight className='w-4 h-4 text-[#999] group-hover:text-[#1D6FE8] transition-colors' />
             </div>
@@ -710,7 +710,7 @@ const ThemePanel: React.FC = () => {
       {/* User's Uploaded Fonts */}
       {userFonts.fonts.length > 0 && (
         <div className="px-2.5">
-          <p className='text-xs text-[#4C4C4C] font-medium text-end pb-1.5'>Your Uploaded Fonts</p>
+          <p className='text-xs text-[#4C4C4C] font-medium text-end pb-1.5'>{t('themes.fontStep.yourFonts')}</p>
           <div className='grid grid-cols-2 gap-2'>
             {userFonts.fonts?.map((font) => (
               <FontCard
@@ -729,7 +729,7 @@ const ThemePanel: React.FC = () => {
 
       {/* Preset Fonts */}
       <div className='px-2.5'>
-        <p className='text-xs text-[#4C4C4C] font-medium text-end pb-1.5'>Pre-Sets</p>
+        <p className='text-xs text-[#4C4C4C] font-medium text-end pb-1.5'>{t('themes.fontStep.presets')}</p>
         <div className="grid grid-cols-2 gap-2 overflow-y-auto custom_scrollbar">
           {FONT_OPTIONS.map((font) => (
             <FontCard
@@ -748,23 +748,23 @@ const ThemePanel: React.FC = () => {
     <div className="space-y-4 px-5">
       <Label className="flex text-xl font-medium text-[#191919] items-center gap-2">
 
-        Logo
+        {t('themes.logoStep.logo')}
         {/* <RefreshCcw className='w-5 h-5 text-[#808080] hover:text-[#191919] duration-300 transition-all cursor-pointer' /> */}
       </Label>
       <div className="space-y-2">
         <Label className="flex text-base items-center gap-2">
 
-          Company Name
+          {t('themes.logoStep.companyName')}
         </Label>
         <Input
           defaultValue={themeCompanyName}
-          placeholder="Enter company name"
+          placeholder={t('themes.logoStep.companyNamePlaceholder')}
           onBlur={(e) => setThemeCompanyName(e.target.value)}
         />
       </div>
       <Label className="flex text-base items-center gap-2">
 
-        Brand Logo
+        {t('themes.logoStep.brandLogo')}
       </Label>
 
       <div className="space-y-2 bg-[#F6F6F9] rounded-md p-1 cursor-pointer"
@@ -782,13 +782,13 @@ const ThemePanel: React.FC = () => {
           {isLogoUploading ? (
             <div className="flex flex-col items-center justify-center py-6 text-gray-500">
               <Loader2 className="h-6 w-6 animate-spin mb-2" />
-              <p className="text-sm">Uploading logo...</p>
+              <p className="text-sm">{t('themes.logoStep.uploadingLogo')}</p>
             </div>
           ) : customBrandLogo ? (
             <div className="space-y-2">
               <img
                 src={customBrandLogo}
-                alt="Brand Logo"
+                alt={t('themes.logoStep.brandLogo')}
                 className="mx-auto h-16 w-auto object-contain"
               />
               <Button
@@ -800,20 +800,20 @@ const ThemePanel: React.FC = () => {
                   setCustomBrandLogoId('')
                 }}
               >
-                Remove Logo
+                {t('themes.logoStep.removeLogo')}
               </Button>
             </div>
           ) : (
             <>
-              <div className='w-[42px] h-[42px] mx-auto flex justify-center items-center rounded-full bg-[#BFDBFE]' >
+              <div className='w-[42px] h-[42px] mx-auto flex justify-center items-center rounded-full bg-[var(--gslide-accent-soft)]' >
                 <div className='w-[22px] h-[22px] rounded-full bg-[#1D6FE8] flex items-center justify-center text-white'>
                   <Plus className='w-3 h-3' />
                 </div>
               </div>
               <div className="mt-2">
                 <label htmlFor="logo-upload" className="cursor-pointer">
-                  <span className="text-blue-600 hover:text-blue-500">Click to upload</span>
-                  <span className="text-gray-500"> or drag and drop</span>
+                  <span className="text-blue-600 hover:text-blue-500">{t('themes.logoStep.clickToUpload')}</span>
+                  <span className="text-gray-500">{t('themes.logoStep.orDragAndDrop')}</span>
                 </label>
                 <input
                   id="logo-upload"
@@ -851,23 +851,23 @@ const ThemePanel: React.FC = () => {
 
 
   return (
-    <div className="space-y-6 px-6 font-syne">
-      <div className='py-[28px] flex justify-between'>
+    <div className="min-h-[100dvh] bg-[var(--gslide-bg)]">
+      <GSlideHeader
+        title={t('themes.page.title')}
+        actions={
+          <Link
+            href="/theme?tab=new-theme"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 py-2.5 text-sm font-semibold text-white transition-colors active:scale-[0.98] hover:bg-[var(--gslide-accent-hover)] motion-reduce:active:scale-100"
+            aria-label={t('themes.actions.createNewAria')}
+          >
+            <span className="hidden md:inline">{t('themes.actions.newTheme')}</span>
+            <span className="md:hidden">{t('themes.actions.newThemeShort')}</span>
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        }
+      />
 
-        <h3 className=" text-[28px]  tracking-[-0.84px] font-unbounded font-normal text-[#101828] flex items-center gap-2">
-          Themes
-        </h3>
-        <Link
-          href="/theme?tab=new-theme"
-          className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-white text-sm font-semibold font-syne shadow-sm hover:shadow-md transition-colors bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)]"
-          aria-label="Create new theme"
-        >
-
-          <span className="hidden md:inline">New Theme</span>
-          <span className="md:hidden">New</span>
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
+      <div className="space-y-6 px-6 py-8">
       {/* Tabs */}
       <div className='p-1 rounded-[40px] bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center '>
         <button className={`px-5  py-2 text-xs font-medium rounded-[70px] transition-colors ${tab === 'custom' ? 'text-white' : 'text-[#3A3A3A]'}`}
@@ -877,7 +877,7 @@ const ThemePanel: React.FC = () => {
           style={{
             background: tab === 'custom' ? 'var(--gslide-accent)' : 'transparent'
           }}
-        >Custom</button>
+        >{t('themes.tabs.custom')}</button>
         <svg xmlns="http://www.w3.org/2000/svg" className='mx-1' width="2" height="17" viewBox="0 0 2 17" fill="none">
           <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
         </svg>
@@ -888,7 +888,7 @@ const ThemePanel: React.FC = () => {
           style={{
             background: tab === 'default' ? 'var(--gslide-accent)' : 'transparent'
           }}
-        >Built-in</button>
+        >{t('themes.tabs.builtin')}</button>
       </div>
       {/* Built-in Themes */}
 
@@ -931,7 +931,7 @@ const ThemePanel: React.FC = () => {
       <Sheet open={isSheetOpen} onOpenChange={handleCloseSheet} >
 
 
-        <SheetContent side="bottom" className="h-[90vh] font-syne w-full p-0 [&>button]:hidden focus:outline-none" >
+        <SheetContent side="bottom" className="h-[90vh] w-full p-0 [&>button]:hidden focus:outline-none" >
           <div className="flex h-full">
             {/* Left side - Editor */}
             <div
@@ -960,7 +960,7 @@ const ThemePanel: React.FC = () => {
 
                         className='px-3.5 py-2.5 bg-[#F7F6F9] rounded-[48px] text-xs font-semibold text-[#101323]'
                         onClick={() => setCurrentStep(currentStep - 1)}
-                      >Back</button>}
+                      >{t('themes.editor.back')}</button>}
 
                       <button className='px-7 py-2.5 flex items-center gap-1 rounded-[48px] text-xs font-semibold text-white transition-colors hover:bg-[var(--gslide-accent-hover)] bg-[var(--gslide-accent)]'
 
@@ -983,7 +983,7 @@ const ThemePanel: React.FC = () => {
                           }
                         }}
                       >
-                        {currentStep === 1 ? 'Generate theme palette' : currentStep === 2 ? 'Continue to Fonts' : currentStep === 3 ? 'Continue to Design' : 'Save as Custom Theme'}
+                        {currentStep === 1 ? t('themes.editor.generatePalette') : currentStep === 2 ? t('themes.editor.continueToFonts') : currentStep === 3 ? t('themes.editor.continueToDesign') : t('themes.editor.saveAsCustom')}
                         <ChevronRight className='w-4 h-4' />
                       </button>
                     </div>
@@ -1059,6 +1059,7 @@ const ThemePanel: React.FC = () => {
       </Sheet>
 
 
+      </div>
     </div>
   )
 }

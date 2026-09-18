@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "app/**/{page,layout,route,loading,error,global-error,not-found,template,default}.{ts,tsx}",
+    "proxy.ts",
+    "scripts/**/*.mjs",
+    "tests/**/*.mjs",
+    "cypress/**/*.{ts,tsx}",
+    "**/*.cy.{ts,tsx}",
+    "postcss.config.mjs",
+    "next.config.mjs",
+    "tailwind.config.ts",
+    "cypress.config.ts",
+    "eslint.config.mjs"
+  ],
+  "project": [
+    "**/*.{ts,tsx,js,jsx,mjs,cjs,css}",
+    "!.next/**",
+    "!.next-build/**",
+    "!node_modules/**",
+    "!public/vendor/**"
+  ],
+  "ignoreDependencies": [
+    // Next/PostCSS load these by config filename, not by app imports.
+    // Owner: web platform. Re-check after a Next major before deleting.
+    "postcss",
+    "postcss-load-config",
+    // next/image optimizer; Next requires the package even without a
+    // direct import. Owner: web platform.
+    "sharp"
+  ]
+}

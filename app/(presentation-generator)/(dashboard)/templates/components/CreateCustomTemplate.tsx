@@ -4,6 +4,7 @@
 import { Plus, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/provider";
 
 const CreateCustomTemplate = ({
   selectionPage = false,
@@ -12,6 +13,7 @@ const CreateCustomTemplate = ({
   selectionPage?: boolean;
   onClick?: () => void;
 }) => {
+    const t = useT();
     const router = useRouter();
 
     const handleOpenTemplateBuilder = () => {
@@ -31,15 +33,15 @@ const CreateCustomTemplate = ({
             role="button"
             tabIndex={0}
             className={cn(
-              "w-full cursor-pointer overflow-hidden border border-[#EDEEEF] font-syne",
+              "w-full cursor-pointer overflow-hidden border border-[var(--gslide-border)] bg-white",
               selectionPage
-                ? "rounded-[12px] !border-0 !shadow-[inset_0_0_0_1px_#EDEEEF]"
-                : "rounded-[22px]"
+                ? "rounded-[12px]"
+                : "rounded-[28px]"
             )}
         >
             <div
               className={cn(
-                "relative bg-[#F8FBFB] p-5",
+                "relative bg-white p-5",
                 selectionPage && "h-[249px]"
               )}
             >
@@ -55,9 +57,6 @@ const CreateCustomTemplate = ({
                         "flex items-center justify-center rounded-full bg-[var(--gslide-accent)]",
                         selectionPage ? "h-12 w-12" : "h-[36px] w-[36px]"
                       )}
-                      style={{
-                          background: "linear-gradient(0deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.20) 100%), #FFF"
-                      }}
                     >
                         <div
                           className={cn(
@@ -94,7 +93,7 @@ const CreateCustomTemplate = ({
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
                     <h4 className="text-sm font-semibold tracking-[0.14px] text-[#191919]">
-                      {selectionPage ? "Build Templates" : "Build Template"}
+                      {selectionPage ? t("templates.create.buildTemplates") : t("templates.create.buildTemplate")}
                     </h4>
                     <p
                       className={cn(
@@ -105,8 +104,8 @@ const CreateCustomTemplate = ({
                       )}
                     >
                       {selectionPage
-                        ? "Build Your Template"
-                        : "Build Your Own Template"}
+                        ? t("templates.create.buildYourTemplate")
+                        : t("templates.create.buildYourOwnTemplate")}
                     </p>
                 </div>
             </div>

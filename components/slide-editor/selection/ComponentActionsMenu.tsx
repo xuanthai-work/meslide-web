@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "@/i18n/provider";
 
 export type ComponentActionsMenuActions = {
   canUngroup: boolean;
@@ -27,27 +28,22 @@ export type ComponentActionsMenuActions = {
 
 const COMPONENT_LAYER_ACTIONS: Array<{
   action: ComponentLayerAction;
-  label: string;
   shortcut: string;
 }> = [
   {
     action: "bring-to-front",
-    label: "Bring to Front",
     shortcut: "Shift+Alt+K",
   },
   {
     action: "bring-forward",
-    label: "Bring Forward",
     shortcut: "Alt+K",
   },
   {
     action: "send-backward",
-    label: "Send Backward",
     shortcut: "Alt+J",
   },
   {
     action: "send-to-back",
-    label: "Send Back",
     shortcut: "Shift+Alt+J",
   },
 ];
@@ -61,6 +57,7 @@ export function ComponentActionsMenu({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const t = useT();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const menuOpen = open ?? uncontrolledOpen;
   const setMenuOpen = onOpenChange ?? setUncontrolledOpen;
@@ -70,8 +67,8 @@ export function ComponentActionsMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="More"
-          aria-label="More"
+          title={t("slideEditor.common.more")}
+          aria-label={t("slideEditor.common.more")}
           className={cn(
             "grid h-8 w-8 place-items-center rounded-[4px] border-0 bg-transparent font-manrope text-black hover:bg-[var(--gslide-accent-soft)]",
             menuOpen && "bg-[var(--gslide-accent-soft)]",
@@ -98,10 +95,10 @@ export function ComponentActionsMenu({
         <ComponentActionsMenuItem
           strong
           icon={Copy}
-          label="Duplicate"
+          label={t("slideEditor.common.duplicate")}
           onClick={actions.onDuplicate}
         />
-        {COMPONENT_LAYER_ACTIONS.map(({ action, label, shortcut }) => {
+        {COMPONENT_LAYER_ACTIONS.map(({ action, shortcut }) => {
           const disabled = !canApplyComponentLayerAction(
             actions.componentIndex,
             actions.componentCount,
@@ -111,7 +108,7 @@ export function ComponentActionsMenu({
             <ComponentActionsMenuItem
               key={action}
               disabled={disabled}
-              label={label}
+              label={action === "bring-to-front" ? t("slideEditor.selection.bringToFront") : action === "bring-forward" ? t("slideEditor.selection.bringForward") : action === "send-backward" ? t("slideEditor.selection.sendBackward") : t("slideEditor.selection.sendToBack")}
               shortcut={shortcut}
               onClick={() => actions.onLayerAction(action)}
             />
@@ -121,7 +118,7 @@ export function ComponentActionsMenu({
         <ComponentActionsMenuItem
           strong
           icon={Trash2}
-          label="Delete Component"
+          label={t("slideEditor.selection.deleteComponent")}
           onClick={actions.onDelete}
         />
       </DropdownMenuContent>
@@ -134,15 +131,16 @@ export function ComponentUngroupButton({
 }: {
   actions: ComponentActionsMenuActions;
 }) {
+  const t = useT();
   if (!actions.canUngroup) return null;
   return (
     <button
       type="button"
-      title="Ungroup"
+      title={t("slideEditor.common.ungroup")}
       onClick={actions.onUngroup}
       className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-[6px] px-2 font-manrope text-[14px] font-medium leading-4 text-[#191919] hover:bg-[var(--gslide-accent-soft)]"
     >
-      <span>Ungroup</span>
+      <span>{t("slideEditor.common.ungroup")}</span>
     </button>
   );
 }

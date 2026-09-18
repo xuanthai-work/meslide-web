@@ -1,5 +1,8 @@
 import type { ChatStreamTrace } from "../../../services/api/chat";
 import type { AssistantActivity } from "./chat-types";
+import { translateBackendStatus, type BackendStatusCode } from "@/i18n/backend-messages";
+
+type ActivityTranslate = Parameters<typeof translateBackendStatus>[0];
 
 const TOOL_LABELS: Record<string, string> = {
   addOutline: "Outline adder",
@@ -124,7 +127,16 @@ const humanizeTraceMessage = (message: string, tool?: string) => {
 
 export const inferStatusState = (
   status: string,
+  code?: string,
 ): AssistantActivity["state"] => {
+  const codedState: Partial<Record<BackendStatusCode, AssistantActivity["state"]>> = {
+    "chat.reading_deck_context": "running",
+    "chat.finalizing_response": "running",
+    "chat.saving_chat": "running",
+  };
+  if (code && codedState[code as BackendStatusCode]) {
+    return codedState[code as BackendStatusCode] ?? "info";
+  }
   const normalized = status.trim().toLowerCase();
   if (
     [
@@ -163,15 +175,16 @@ export const stripBackendContextFromUserMessage = (rawMessage: string) => {
 const humanActivityForTool = (
   tool: string | undefined,
   state: "start" | "success",
+  t: ActivityTranslate,
 ) => {
   const isDone = state === "success";
   switch (tool) {
     case "searchSlide":
       return isDone
-        ? "Found the relevant content."
-        : "Looking through the content.";
+        ? t("chat.activity.completed")
+        : t("chat.activity.searching");
     case "getSlideAtIndex":
-      return isDone ? "Checked the slide." : "Checking the slide.";
+      return isDone ? t("chat.activity.completed") : t("chat.activity.checking");
     case "addNewSlide":
     case "addNewSlideLayout":
     case "updateElement":
@@ -181,27 +194,58 @@ const humanActivityForTool = (
     case "createComponent":
     case "updateSlide":
     case "saveSlide":
-      return isDone ? "Applied the change." : "Applying the change.";
+      return isDone ? t("chat.activity.completed") : t("chat.activity.applying");
     case "deleteComponent":
     case "deleteElement":
     case "deleteSlide":
       return isDone
-        ? "Removed the selected item."
-        : "Removing the selected item.";
+        ? t("chat.activity.completed")
+        : t("chat.activity.removing");
     case "generateAssets":
       return isDone
-        ? "Prepared the visual assets."
-        : "Preparing visual assets.";
+        ? t("chat.activity.completed")
+        : t("chat.activity.generating");
     case "setPresentationTheme":
-      return isDone ? "Updated the theme." : "Updating the theme.";
+      return isDone ? t("chat.activity.completed") : t("chat.activity.applying");
     default:
-      return isDone ? "Finished that step." : "Working on it.";
+      return isDone ? t("chat.activity.completed") : t("chat.working");
   }
 };
 
 export const formatTraceActivity = (
   trace: ChatStreamTrace,
+  t: ActivityTranslate,
 ): Omit<AssistantActivity, "id"> | null => {
+  if (trace.code) {
+    const localizedLabel = translateBackendStatus(t, {
+      code: trace.code,
+      params: trace.params,
+      status: trace.message,
+    });
+    const preservesDynamicMessage =
+      trace.code === "chat.trace.model_note" ||
+      trace.code === "chat.trace.tool_result";
+    const label =
+      preservesDynamicMessage && trace.message?.trim()
+        ? `${localizedLabel} ${trace.message.trim()}`
+        : localizedLabel;
+    if (label) {
+      return {
+        label,
+        kind: trace.kind,
+        round: trace.round,
+        tool: trace.tool,
+        state:
+          trace.status === "error"
+            ? "error"
+            : trace.status === "success"
+              ? "success"
+              : trace.status === "ready" || trace.status === "info"
+                ? "info"
+                : "running",
+      };
+    }
+  }
   if (typeof trace.message === "string" && trace.message.trim().length > 0) {
     return {
       label: humanizeTraceMessage(trace.message, trace.tool),
@@ -220,7 +264,7 @@ export const formatTraceActivity = (
   }
   if (trace.tool && trace.status === "start") {
     return {
-      label: humanActivityForTool(trace.tool, "start"),
+      label: humanActivityForTool(trace.tool, "start", t),
       kind: trace.kind,
       round: trace.round,
       tool: trace.tool,
@@ -229,7 +273,7 @@ export const formatTraceActivity = (
   }
   if (trace.tool && trace.status === "success") {
     return {
-      label: humanActivityForTool(trace.tool, "success"),
+      label: humanActivityForTool(trace.tool, "success", t),
       kind: trace.kind,
       round: trace.round,
       tool: trace.tool,
@@ -238,7 +282,7 @@ export const formatTraceActivity = (
   }
   if (trace.tool && trace.status === "error") {
     return {
-      label: "I could not finish that step.",
+      label: t("chat.activity.failed"),
       kind: trace.kind,
       round: trace.round,
       tool: trace.tool,
@@ -247,7 +291,7 @@ export const formatTraceActivity = (
   }
   if (trace.kind === "tool_plan" && Array.isArray(trace.tools) && trace.tools.length) {
     return {
-      label: "Planning the next step.",
+      label: t("chat.activity.planning"),
       kind: trace.kind,
       round: trace.round,
       state: "info",

@@ -153,7 +153,7 @@ const upsertRootAttribute = (
     attrName: string,
     nextValue: string
 ): string => {
-    return input.replace(ROOT_SVG_TAG_PATTERN, (match, attrs: string) => {
+    return input.replace(ROOT_SVG_TAG_PATTERN, (_match, attrs: string) => {
         let updatedAttrs = attrs;
         const escapedAttrName = escapeRegExp(attrName);
         const patterns = [
@@ -170,7 +170,7 @@ const upsertRootAttribute = (
                 updatedAttrs = updatedAttrs.replace(
                     pattern,
                     (
-                        innerMatch,
+                        _innerMatch,
                         prefix: string,
                         _currentValue: string,
                         suffix?: string

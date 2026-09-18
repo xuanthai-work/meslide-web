@@ -16,8 +16,9 @@ import {
   type StallCause,
 } from "@/lib/generation-lifecycle";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
+import { useT } from "@/i18n/provider";
+import { translateBackendError, translateBackendStatus } from "@/i18n/backend-messages";
 
-const DEFAULT_STATUS_MESSAGE = "Preparing your presentation outline";
 const STALL_INTERVAL_MS = 1_000;
 
 const STREAMING_STATES: ReadonlySet<GenerationLifecycleState> = new Set([
@@ -32,13 +33,15 @@ export const useOutlineStreaming = (
   enabled = true
 ) => {
   const dispatch = useDispatch();
+  const t = useT();
+  const defaultStatus = t("outline.status.preparing");
   const { outlines } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
   const [isLoading, setIsLoading] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number | null>(null);
   const [highestActiveIndex, setHighestActiveIndex] = useState<number>(-1);
-  const [statusMessage, setStatusMessage] = useState(DEFAULT_STATUS_MESSAGE);
+  const [statusMessage, setStatusMessage] = useState(defaultStatus);
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
   const [stallCause, setStallCause] = useState<StallCause | null>(null);
@@ -56,7 +59,7 @@ export const useOutlineStreaming = (
   const streamStartedAtRef = useRef<number | null>(null);
   const lifecycleRef = useRef<GenerationLifecycleState>("idle");
   const stallCauseRef = useRef<StallCause | null>(null);
-  const statusMessageRef = useRef<string>(DEFAULT_STATUS_MESSAGE);
+  const statusMessageRef = useRef<string>(defaultStatus);
 
   const accumulatedChunksRef = useRef<string>("");
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,7 +79,7 @@ export const useOutlineStreaming = (
     stallCauseRef.current = stallCause;
   }, [stallCause]);
 
-  // Keep statusMessage ref in sync so stall analytics read the latest value.
+  // Keep statusMessage ref in sync so stall detection reads the latest value.
   useEffect(() => {
     statusMessageRef.current = statusMessage;
   }, [statusMessage]);
@@ -103,10 +106,10 @@ export const useOutlineStreaming = (
         stallCauseRef.current = cause;
         setStallCause(cause);
         setLifecycle("stalled");
-        setStatusMessage("Outline stream stalled — waiting for the server.");
+        setStatusMessage(t("outline.status.stalled"));
       }
     }, STALL_INTERVAL_MS);
-  }, []);
+  }, [t]);
 
   // openStream is defined inside the effect below because it captures
   // accumulatedChunksRef/prevSlidesRef and status setters; the effect re-runs
@@ -114,7 +117,7 @@ export const useOutlineStreaming = (
   const openStreamRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    const resetStreamingState = (message = DEFAULT_STATUS_MESSAGE) => {
+    const resetStreamingState = (message = defaultStatus) => {
       setIsLoading(false);
       setActiveSlideIndex(null);
       setHighestActiveIndex(-1);
@@ -176,7 +179,7 @@ export const useOutlineStreaming = (
       prevSlidesRef.current = [];
       activeIndexRef.current = -1;
       highestIndexRef.current = -1;
-      setStatusMessage("Reconnecting to outline stream");
+      setStatusMessage(t("outline.status.reconnecting"));
       setLifecycle("connecting");
 
       retryTimerRef.current = setTimeout(() => {
@@ -226,8 +229,8 @@ export const useOutlineStreaming = (
             resetStreamingState();
             setLifecycle("failed");
             notify.error(
-              "Stream parse failed",
-              "Failed to parse outline stream response."
+              t("outline.toast.streamParseFailed.title"),
+              t("outline.toast.streamParseFailed.description")
             );
           }
           return;
@@ -243,7 +246,7 @@ export const useOutlineStreaming = (
         switch (data.type) {
           case "status":
             if (data.status) {
-              setStatusMessage(data.status);
+              setStatusMessage(translateBackendStatus(t, data));
             }
             setLifecycle("generating");
             break;
@@ -306,7 +309,7 @@ export const useOutlineStreaming = (
               setIsLoading(false);
               setActiveSlideIndex(null);
               setHighestActiveIndex(-1);
-              setStatusMessage("Outline ready");
+              setStatusMessage(t("outline.status.ready"));
               prevSlidesRef.current = outlinesData;
               activeIndexRef.current = -1;
               highestIndexRef.current = -1;
@@ -319,7 +322,7 @@ export const useOutlineStreaming = (
               if (!scheduleRetry("failed to parse complete payload")) {
                 resetStreamingState();
                 setLifecycle("failed");
-                notify.error("Parse failed", "Failed to parse presentation data.");
+                notify.error(t("outline.toast.parseFailed.title"), t("outline.toast.parseFailed.description"));
               }
             }
             accumulatedChunks = "";
@@ -327,7 +330,7 @@ export const useOutlineStreaming = (
             break;
 
           case "closing":
-            resetStreamingState("Outline ready");
+            resetStreamingState(t("outline.status.ready"));
             isClosedRef.current = true;
             closeEventSourceLocal();
             clearRetryTimerLocal();
@@ -344,9 +347,9 @@ export const useOutlineStreaming = (
             resetStreamingState();
             setLifecycle("failed");
             notify.error(
-              "Outline streaming failed",
-              data.detail ||
-                "Failed to connect to the server. Please try again."
+              t("outline.toast.streamingFailed.title"),
+              translateBackendError(t, data) ||
+                t("outline.toast.connectFailed.description")
             );
             break;
         }
@@ -364,8 +367,8 @@ export const useOutlineStreaming = (
             clearStallIntervalLocal();
             setLifecycle("failed");
             notify.error(
-              "Connection failed",
-              "Failed to connect to the server. Please try again."
+              t("outline.toast.connectionFailed.title"),
+              t("outline.toast.connectFailed.description")
             );
           }
           return;
@@ -376,7 +379,7 @@ export const useOutlineStreaming = (
         stallCauseRef.current = "socket";
         setStallCause("socket");
         setLifecycle("stalled");
-        setStatusMessage("Outline stream stalled — waiting for the server.");
+        setStatusMessage(t("outline.status.stalled"));
       };
 
       // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"
@@ -389,7 +392,7 @@ export const useOutlineStreaming = (
 
     openStreamRef.current = openStream;
 
-    setStatusMessage(DEFAULT_STATUS_MESSAGE);
+    setStatusMessage(defaultStatus);
     setIsLoading(true);
     isClosedRef.current = false;
     hasUsefulEventRef.current = false;
@@ -405,7 +408,7 @@ export const useOutlineStreaming = (
       clearRetryTimerLocal();
       clearStallIntervalLocal();
     };
-  }, [presentationId, dispatch, enabled, startStallWatcher]);
+  }, [presentationId, dispatch, enabled, startStallWatcher, t, defaultStatus]);
 
   // isStreaming is derived from lifecycle so it always agrees.
   const isStreaming = STREAMING_STATES.has(lifecycle);
@@ -435,11 +438,11 @@ export const useOutlineStreaming = (
       try {
         await PresentationGenerationApi.updateOutlines(presentationId, slides);
       } catch {
-        notify.error("Draft not saved", "Refresh may lose the stopped outline.");
+        notify.error(t("outline.toast.draftNotSaved.title"), t("outline.toast.draftNotSaved.description"));
       }
     }
     // Do NOT clear Redux outlines. Do NOT mark the outline as fully ready.
-  }, [presentationId]);
+  }, [presentationId, t]);
 
   const keepWaiting = useCallback(() => {
     if (!eventSourceRef.current) {
@@ -473,9 +476,9 @@ export const useOutlineStreaming = (
     setStallCause(null);
     setLifecycle("connecting");
     setIsLoading(true);
-    setStatusMessage(DEFAULT_STATUS_MESSAGE);
+    setStatusMessage(defaultStatus);
     openStreamRef.current();
-  }, []);
+  }, [defaultStatus]);
 
   return {
     isStreaming,

@@ -1,0 +1,124 @@
+# Next.js web/BFF + Next.js rewrite to api.
+# Browser-facing. ClusterIP only — the shared Ingress exposes it publicly.
+#
+# Apply after gslide-api (PVC `gslide-app-data` is owned by the API repo).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: gslide
+  labels:
+    app.kubernetes.io/part-of: gslide
+    app.kubernetes.io/name: gslide
+    app.kubernetes.io/component: web
+spec:
+  replicas: 1
+  # Do not enable an HPA until persistence is multi-replica capable and
+  # requests/limits are tuned from measured p95 data (see README.md).
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gslide
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gslide
+        app.kubernetes.io/component: web
+    spec:
+      terminationGracePeriodSeconds: 60
+      # Co-locate with the API pod so both can mount the RWO /app_data PVC
+      # (api read-write, web read-only). Remove if you switch /app_data to RWX.
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: api
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: ghcr.io/<org>/gslide-web:latest # replace with your image
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: gslide-web-config
+          # The web/BFF does not need provider credentials; it forwards
+          # config writes to the API. Do not mount gslide-secrets here.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 6 # up to 60s for Next.js standalone startup
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: app-data
+              mountPath: /app_data
+              readOnly: true
+            - name: next-cache
+              mountPath: /app/.next-build/cache
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: gslide-app-data
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: next-cache
+          emptyDir:
+            sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: gslide
+  labels:
+    app.kubernetes.io/part-of: gslide
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: gslide
+    app.kubernetes.io/component: web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

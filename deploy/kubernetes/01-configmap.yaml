@@ -1,0 +1,23 @@
+# Non-sensitive web/BFF settings. Provider credentials live on the API
+# (gslide-secrets) — do not mount them here.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gslide-web-config
+  namespace: gslide
+  labels:
+    app.kubernetes.io/part-of: gslide
+    app.kubernetes.io/component: web
+data:
+  HOSTNAME: "0.0.0.0"
+  PORT: "3000"
+  APP_DATA_DIRECTORY: "/app_data"
+  USER_CONFIG_PATH: "/app_data/userConfig.json"
+  FAST_API_INTERNAL_URL: "http://api:8000"
+  # Public origin used for canonical/OpenGraph metadata. The Ingress team owns
+  # the real public URL; set it to the external https URL in production.
+  SITE_URL: "http://localhost:3000"
+  NEXT_PUBLIC_URL: "http://localhost:3000"
+  GSLIDE_FEATURE_SMART_MODE: "false"
+  GSLIDE_FEATURE_COMMUNITY: "false"
+  GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE: "false"

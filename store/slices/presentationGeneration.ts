@@ -108,6 +108,15 @@ const presentationGenerationSlice = createSlice({
       state.presentationData = action.payload;
       state.chatHtmlSelection = null;
     },
+    setPresentationGenerationMode: (
+      state,
+      action: PayloadAction<"standard" | "smart">
+    ) => {
+      if (state.presentationData) {
+        state.presentationData.generation_mode = action.payload;
+        state.presentationData.type = action.payload;
+      }
+    },
     setEnableHtmlSelector: (state, action: PayloadAction<boolean>) => {
       state.enableHtmlSelector = action.payload;
       if (!action.payload) state.chatHtmlSelection = null;
@@ -560,6 +569,7 @@ export const {
   clearOutlines,
   deleteSlideOutline,
   setPresentationData,
+  setPresentationGenerationMode,
   setEnableHtmlSelector,
   setChatHtmlSelection,
   clearChatHtmlSelection,

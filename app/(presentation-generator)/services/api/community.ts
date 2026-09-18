@@ -1,6 +1,7 @@
 import { ApiResponseHandler } from "./api-error-handler";
 import { getHeader } from "./header";
 import { getApiUrl } from "@/utils/api";
+import { translate } from "@/i18n/translate";
 
 export interface CommunityPresentation {
   id: number;
@@ -101,7 +102,7 @@ export class CommunityPresentationApi {
 export function getCommunityPresentationTitle(
   presentation: CommunityPresentation
 ) {
-  return presentation.title?.trim() || "Untitled presentation";
+  return presentation.title?.trim() || translate("upload.community.untitled");
 }
 
 export function getCommunityPresentationAuthor(

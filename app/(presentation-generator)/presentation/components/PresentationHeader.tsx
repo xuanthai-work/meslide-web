@@ -13,7 +13,6 @@ import {
   Keyboard,
   X,
   AlertTriangle,
-  MousePointer2,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,7 +28,6 @@ import { notify } from "@/components/ui/sonner";
 import { usePresentationUndoRedo } from "../hooks/PresentationUndoRedo";
 import ToolTip from "@/components/ToolTip";
 import {
-  clearChatHtmlSelection,
   clearPresentationData,
   setEnableHtmlSelector,
   updateTitle,
@@ -48,42 +46,49 @@ import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
+import { useT } from "@/i18n/provider";
+import { buildSafeExportFileName } from "@/utils/exportFilename";
 
-const MAX_EXPORT_TITLE_LENGTH = 40;
-
-const buildSafeExportFileName = (
-  rawTitle: string | null | undefined,
-  extension: "pdf" | "pptx"
-) => {
-  const normalizedTitle = (rawTitle || "presentation").trim();
-  const titleWithoutExtension = normalizedTitle.replace(/\.(pdf|pptx)$/i, "");
-
-  let safeBase = titleWithoutExtension
-    // Replace all punctuation/special chars (including dots) with dashes
-    .replace(/[^a-zA-Z0-9\s_-]+/g, "-")
-    // Replace whitespace with single dashes
-    .replace(/\s+/g, "-")
-    // Collapse repeated separators
-    .replace(/[-_]{2,}/g, "-")
-    // Trim separators from both ends
-    .replace(/^[-_]+|[-_]+$/g, "");
-
-  if (!safeBase) {
-    safeBase = "presentation";
-  }
-
-  if (safeBase.length > MAX_EXPORT_TITLE_LENGTH) {
-    safeBase = safeBase
-      .slice(0, MAX_EXPORT_TITLE_LENGTH)
-      .replace(/[-_]+$/g, "");
-  }
-
-  if (!safeBase) {
-    safeBase = "presentation";
-  }
-
-  return `${safeBase}.${extension}`;
-};
+function PresentationExportOptions({
+  mobile,
+  exportAsLabel,
+  onExportPdf,
+  onExportPptx,
+}: {
+  mobile: boolean;
+  exportAsLabel: string;
+  onExportPdf: () => void;
+  onExportPptx: () => void;
+}) {
+  return (
+    <div
+      className={` rounded-[18px] max-md:mt-4 ${mobile ? "" : "bg-white"}  p-5`}
+    >
+      <p className="text-sm font-medium text-[#19001F]">{exportAsLabel}</p>
+      <div className="my-[18px] h-[1px] bg-[#E8E8E8]" />
+      <div className="space-y-3">
+        <Button
+          onClick={onExportPdf}
+          variant="ghost"
+          className={`  rounded-none px-0 w-full text-xs flex justify-start text-black hover:bg-transparent ${mobile ? "bg-white py-6 border-none rounded-lg" : ""
+            }`}
+        >
+          PDF
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Button>
+        <Button
+          onClick={onExportPptx}
+          variant="ghost"
+          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""
+            }`}
+        >
+          PPTX
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 const PresentationHeader = ({
   presentation_id,
@@ -97,6 +102,7 @@ const PresentationHeader = ({
   currentSlide?: number;
   generationMode?: "standard" | "smart";
 }) => {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
   const router = useRouter();
@@ -110,7 +116,7 @@ const PresentationHeader = ({
 
   const dispatch = useDispatch();
 
-  const { presentationData, isStreaming, enableHtmlSelector } = useSelector(
+  const { presentationData, isStreaming } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
   const { onUndo, onRedo, canUndo, canRedo } = usePresentationUndoRedo();
@@ -123,20 +129,8 @@ const PresentationHeader = ({
   }, [isEditingTitle]);
 
   useEffect(() => {
-    if (generationMode !== "smart" || isStreaming) {
-      dispatch(setEnableHtmlSelector(false));
-      return;
-    }
-    const storedMode = window.localStorage.getItem("html-selector-mode");
-    dispatch(setEnableHtmlSelector(storedMode !== "false"));
-  }, [dispatch, generationMode, isStreaming]);
-
-  const toggleHtmlSelector = () => {
-    const nextValue = !enableHtmlSelector;
-    dispatch(setEnableHtmlSelector(nextValue));
-    if (!nextValue) dispatch(clearChatHtmlSelection());
-    window.localStorage.setItem("html-selector-mode", String(nextValue));
-  };
+    dispatch(setEnableHtmlSelector(!isStreaming));
+  }, [dispatch, isStreaming]);
 
   const beginTitleEdit = () => {
     if (isStreaming || !presentationData) return;
@@ -149,8 +143,8 @@ const PresentationHeader = ({
       setIsEditingTitle(false);
       return;
     }
-    const trimmed = draftTitle.trim();
-    const next = trimmed || presentationData.title || "Presentation";
+    const trimmed = draftTitle.normalize("NFC").trim();
+    const next = trimmed || presentationData.title || t("presentation.header.fallbackTitle");
     if (next !== presentationData.title) {
       dispatch(updateTitle(next));
     }
@@ -187,8 +181,8 @@ const PresentationHeader = ({
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
-        "Exporting PPTX",
-        "Your presentation is being exported. This may take a moment."
+        t("presentation.export.exportingPptx"),
+        t("presentation.export.exportingDescription")
       );
       setIsExporting(true);
       const safePptxFileName = buildSafeExportFileName(
@@ -216,15 +210,15 @@ const PresentationHeader = ({
 
       downloadLink(pptxPath, safePptxFileName);
       notify.success(
-        "Export complete",
-        "Your PPTX file has been downloaded.",
+        t("presentation.export.complete"),
+        t("presentation.export.pptxDownloaded"),
         { id: exportToastId }
       );
     } catch (error) {
       console.error("Export failed:", error);
       notify.error(
-        "Export failed",
-        "We are having trouble exporting your presentation. Please try again.",
+        t("presentation.export.failed"),
+        t("presentation.export.failedDescription"),
         exportToastId !== undefined ? { id: exportToastId } : undefined
       );
     } finally {
@@ -238,8 +232,8 @@ const PresentationHeader = ({
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
-        "Exporting PDF",
-        "Your presentation is being exported. This may take a moment."
+        t("presentation.export.exportingPdf"),
+        t("presentation.export.exportingDescription")
       );
       setIsExporting(true);
       const safePdfFileName = buildSafeExportFileName(
@@ -266,15 +260,15 @@ const PresentationHeader = ({
         throw new Error("Failed to export PDF");
       }
       notify.success(
-        "Export complete",
-        "Your PDF file has been downloaded.",
+        t("presentation.export.complete"),
+        t("presentation.export.pdfDownloaded"),
         { id: exportToastId }
       );
     } catch (error) {
       console.error(error);
       notify.error(
-        "Export failed",
-        "We are having trouble exporting your presentation. Please try again.",
+        t("presentation.export.failed"),
+        t("presentation.export.failedDescription"),
         exportToastId !== undefined ? { id: exportToastId } : undefined
       );
     } finally {
@@ -301,50 +295,15 @@ const PresentationHeader = ({
     document.body.removeChild(link);
   };
 
-  const ExportOptions = ({ mobile }: { mobile: boolean }) => (
-    <div
-      className={` rounded-[18px] max-md:mt-4 ${mobile ? "" : "bg-white"}  p-5`}
-    >
-      <p className="text-sm font-medium text-[#19001F]">Export as</p>
-      <div className="my-[18px] h-[1px] bg-[#E8E8E8]" />
-      <div className="space-y-3">
-        <Button
-          onClick={() => {
-            handleExportPdf();
-            setOpen(false);
-          }}
-          variant="ghost"
-          className={`  rounded-none px-0 w-full text-xs flex justify-start text-black hover:bg-transparent ${mobile ? "bg-white py-6 border-none rounded-lg" : ""
-            }`}
-        >
-          PDF
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          onClick={() => {
-            handleExportPptx();
-            setOpen(false);
-          }}
-          variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""
-            }`}
-        >
-          PPTX
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-    </div>
-  );
-
   const titleBlock = (
     <div
       className={cn(
-        "min-w-0 max-w-[min(640px,calc(100vw-12rem))] flex-1 transition-[box-shadow] duration-200",
+        "min-w-0 flex-1 transition-[box-shadow] duration-200",
         isEditingTitle && "relative z-[60]"
       )}
     >
       {isEditingTitle ? (
-        <div className="flex items-stretch w-[450px]  gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white pl-3.5 pr-1 py-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-[var(--gslide-accent)]/15">
+        <div className="flex w-full min-w-0 items-stretch gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white py-1 pl-3.5 pr-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-[var(--gslide-accent)]/15">
           <input
             ref={titleInputRef}
             value={draftTitle}
@@ -361,29 +320,29 @@ const PresentationHeader = ({
                 cancelTitleEdit();
               }
             }}
-            placeholder="Presentation title"
+            placeholder={t("presentation.header.titlePlaceholder")}
             className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-unbounded text-base leading-tight text-[#101323] placeholder:text-[#101323]/35 outline-none border-0 focus:ring-0"
-            aria-label="Presentation title"
+            aria-label={t("presentation.header.titleAria")}
           />
           <div className="flex shrink-0 items-center gap-0.5 border-l border-[#EDECEC] pl-1 ml-0.5">
-            <ToolTip content="Save · Enter">
+            <ToolTip content={t("presentation.header.saveTitle")}>
               <button
                 type="button"
                 onMouseDown={onTitleSaveMouseDown}
                 onClick={commitTitleEdit}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--gslide-accent)] hover:bg-[var(--gslide-accent)]/10 transition-colors"
-                aria-label="Save title"
+                aria-label={t("presentation.header.saveAria")}
               >
                 <Check className="h-4 w-4" strokeWidth={2.25} />
               </button>
             </ToolTip>
-            <ToolTip content="Cancel · Esc">
+            <ToolTip content={t("presentation.header.cancelTitle")}>
               <button
                 type="button"
                 onMouseDown={onTitleCancelMouseDown}
                 onClick={cancelTitleEdit}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#101323]/55 hover:bg-[var(--gslide-bg)] hover:text-[#101323] transition-colors"
-                aria-label="Cancel editing title"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#101323]/55 hover:bg-[var(--gslide-accent-soft)] hover:text-[#101323] transition-colors"
+                aria-label={t("presentation.header.cancelAria")}
               >
                 <X className="h-4 w-4" strokeWidth={2.25} />
               </button>
@@ -397,13 +356,13 @@ const PresentationHeader = ({
           disabled={isStreaming || !presentationData}
           className={cn(
             "group/title flex w-full min-w-0 items-center gap-2.5 rounded-[14px] px-3 py-2 text-left -mx-3 transition-colors",
-            "hover:bg-[var(--gslide-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2",
+            "hover:bg-[var(--gslide-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
-          <h2 className="min-w-0 flex-1 font-unbounded text-lg w-[450px] leading-snug text-[#101323]">
+          <h2 className="min-w-0 flex-1 font-unbounded text-lg leading-snug text-[#101323]">
             <MarkdownRenderer
-              content={presentationData?.title || "Presentation"}
+              content={presentationData?.title || t("presentation.header.fallbackTitle")}
               className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-[#101323] prose-p:my-0 prose-headings:my-0"
             />
           </h2>
@@ -420,76 +379,34 @@ const PresentationHeader = ({
 
   return (
     <>
-      <div className="py-[18px] px-4 sticky top-0 bg-white z-50 shadow-sm font-syne flex justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
+      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between gap-2 border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-3 sm:h-[80px] sm:gap-4 sm:px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => {
               router.push("/dashboard");
             }}
-            aria-label="Go to dashboard"
-            className="shrink-0"
+            aria-label={t("presentation.header.dashboardAria")}
+            className="hidden shrink-0 sm:block"
           >
             <GSlideWordmark className="text-base" />
           </button>
           {presentationData && !isStreaming && !isEditingTitle ? (
-            <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
+            <ToolTip content={t("presentation.header.rename")}>{titleBlock}</ToolTip>
           ) : (
             titleBlock
           )}
          
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           {isPresentationSaving && (
             <div className="flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             </div>
           )}
-          {generationMode === "smart" && !isStreaming && (
-            <ToolTip
-              content={
-                enableHtmlSelector
-                  ? "Element selection is on"
-                  : "Click a slide element to add it to AI chat"
-              }
-            >
-              <button
-                type="button"
-                data-testid="html-selector-btn"
-                onClick={toggleHtmlSelector}
-                aria-pressed={enableHtmlSelector}
-                className={cn(
-                  "hidden h-[38px] items-center gap-2 rounded-xl border px-3 font-syne text-xs font-semibold shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5DFB] focus-visible:ring-offset-2 xl:inline-flex",
-                  enableHtmlSelector
-                    ? "border-[#CEC6FF] bg-[#F3F0FF] text-[#5141E5]"
-                    : "border-[#E4E4E8] bg-white text-[#3D3D48] hover:border-[#D7D2F5] hover:bg-[#FAF9FF] hover:text-[#5141E5]"
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-lg transition-colors",
-                    enableHtmlSelector
-                      ? "bg-[#6D5DFB] text-white"
-                      : "bg-[#F1EFFF] text-[#6553E8]"
-                  )}
-                >
-                  <MousePointer2 className="h-3.5 w-3.5" strokeWidth={2} />
-                </span>
-                <span className="whitespace-nowrap">Select to edit</span>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "ml-0.5 h-1.5 w-1.5 rounded-full transition-colors",
-                    enableHtmlSelector ? "bg-[#6D5DFB]" : "bg-[#B8B8C2]"
-                  )}
-                />
-              </button>
-            </ToolTip>
-          )}
           <div className="flex items-center gap-2 bg-[var(--gslide-bg)] px-3.5 h-[38px] border border-[#EDECEC] rounded-[80px]">
-            <ToolTip content="Regenerate Presentation">
+            <ToolTip content={t("presentation.header.regenerate")}>
               <button
                 type="button"
                 onClick={() => setIsRegenerateConfirmOpen(true)}
@@ -499,7 +416,7 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
-            <ToolTip content="Undo">
+            <ToolTip content={t("presentation.header.undo")}>
               <button
                 disabled={!canUndo}
                 className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
@@ -511,7 +428,7 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
-            <ToolTip content="Redo">
+            <ToolTip content={t("presentation.header.redo")}>
               <button
                 disabled={!canRedo}
                 className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
@@ -523,7 +440,7 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4 w-[2px]" />
-            <ToolTip content="Present">
+            <ToolTip content={t("presentation.header.present")}>
               <button
                 onClick={() => {
                   const to = `?id=${presentation_id}&mode=present&slide=${
@@ -544,15 +461,15 @@ const PresentationHeader = ({
           </div>
 
         {generationMode === "standard" && (
-          <ToolTip content="Keyboard shortcuts (?)">
+          <ToolTip content={t("presentation.header.shortcuts")}>
             <button
               type="button"
-              aria-label="Keyboard shortcuts"
+              aria-label={t("presentation.header.shortcutsAria")}
               aria-haspopup="dialog"
               aria-expanded={shortcutsDialogOpen}
               aria-keyshortcuts="?"
               data-testid="keyboard-shortcuts-btn"
-              className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-full border border-[#EDECEC] bg-[var(--gslide-bg)] text-[#101323] transition-colors hover:border-[var(--gslide-border)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2"
+              className="hidden h-[38px] w-[38px] items-center justify-center rounded-full border border-[#EDECEC] bg-[var(--gslide-bg)] text-[#101323] transition-colors hover:border-[var(--gslide-border)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2 sm:inline-flex"
               onClick={() => setShortcutsDialogOpen(true)}
             >
               <Keyboard
@@ -566,13 +483,13 @@ const PresentationHeader = ({
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <button
-                className="flex items-center gap-[7px] px-[18px] py-[11px] rounded-[53px] text-sm font-semibold text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)]"
+                className="flex items-center gap-[7px] rounded-[53px] bg-[var(--gslide-accent)] px-3 py-[11px] text-sm font-semibold text-white hover:bg-[var(--gslide-accent-hover)] sm:px-[18px]"
                 disabled={isExporting || isStreaming === true}
               >
                 {isExporting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  "Export"
+                  <span className="hidden sm:inline">{t("presentation.header.export")}</span>
                 )}{" "}
                 <ArrowRightFromLine className="w-3.5 h-3.5" />
               </button>
@@ -581,7 +498,18 @@ const PresentationHeader = ({
               align="end"
               className="w-[200px] rounded-[18px] space-y-2 p-0  "
             >
-              <ExportOptions mobile={false} />
+              <PresentationExportOptions
+                mobile={false}
+                exportAsLabel={t("presentation.header.exportAs")}
+                onExportPdf={() => {
+                  handleExportPdf();
+                  setOpen(false);
+                }}
+                onExportPptx={() => {
+                  handleExportPptx();
+                  setOpen(false);
+                }}
+              />
             </PopoverContent>
           </Popover>
         </div>
@@ -590,17 +518,16 @@ const PresentationHeader = ({
         open={isRegenerateConfirmOpen}
         onOpenChange={setIsRegenerateConfirmOpen}
       >
-        <DialogContent className="w-[360px] rounded-2xl border-0 p-0 shadow-2xl sm:max-w-[360px]">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[360px] rounded-2xl border-0 p-0 shadow-2xl">
           <DialogHeader className="items-center px-6 pb-4 pt-6 text-center">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
               <AlertTriangle className="h-6 w-6 text-red-500" />
             </div>
             <DialogTitle className="text-lg font-semibold text-[#191919]">
-              Regenerate Presentation?
+              {t("presentation.header.regenerateDialogTitle")}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed text-gray-500">
-              This will replace the current slides with a newly generated
-              version and clear undo history. Your current edits may be lost.
+              {t("presentation.header.regenerateDialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row border-t border-gray-100 p-0 sm:space-x-0">
@@ -610,7 +537,7 @@ const PresentationHeader = ({
               onClick={() => setIsRegenerateConfirmOpen(false)}
               className="h-auto flex-1 rounded-none rounded-bl-2xl px-4 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-700"
             >
-              Cancel
+              {t("common.actions.cancel")}
             </Button>
             <Button
               type="button"
@@ -618,7 +545,7 @@ const PresentationHeader = ({
               onClick={handleReGenerate}
               className="h-auto flex-1 rounded-none rounded-br-2xl border-l border-gray-100 px-4 py-3.5 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600"
             >
-              Regenerate
+              {t("common.actions.regenerate")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,0 +1,59 @@
+x-web-environment: &web-environment
+  - FAST_API_INTERNAL_URL=${FAST_API_INTERNAL_URL:-http://api:8000}
+  - HOSTNAME=0.0.0.0
+  - PORT=3000
+  - USER_CONFIG_PATH=/app_data/userConfig.json
+  - APP_DATA_DIRECTORY=/app_data
+  - SITE_URL=${SITE_URL:-http://localhost:${GSLIDE_WEB_HOST_PORT:-${GSLIDE_HTTP_HOST_PORT:-${PRESENTON_HTTP_HOST_PORT:-3000}}}}
+  - GSLIDE_FEATURE_SMART_MODE=${GSLIDE_FEATURE_SMART_MODE:-false}
+  - GSLIDE_FEATURE_COMMUNITY=${GSLIDE_FEATURE_COMMUNITY:-false}
+  - GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE=${GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE:-false}
+
+# Browser-facing host port for the Next.js web service. Defaults to 3000.
+x-web-host-port: &web-host-port
+  "${GSLIDE_WEB_HOST_PORT:-${GSLIDE_HTTP_HOST_PORT:-${PRESENTON_HTTP_HOST_PORT:-3000}}}:3000"
+
+# Shared with gslide-api (same explicit network/volume names) so the two
+# Compose projects can run from separate GitLab checkouts.
+networks:
+  gslide:
+    name: gslide
+
+volumes:
+  gslide_app_data:
+    name: gslide_app_data
+  gslide_next_node_modules:
+
+services:
+  web:
+    platform: ${GSLIDE_DOCKER_PLATFORM:-${PRESENTON_DOCKER_PLATFORM:-linux/amd64}}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - *web-host-port
+    volumes:
+      - gslide_app_data:/app_data:ro
+    environment: *web-environment
+    networks:
+      gslide:
+        aliases:
+          - web
+
+  web-dev:
+    platform: ${GSLIDE_DOCKER_PLATFORM:-${PRESENTON_DOCKER_PLATFORM:-linux/amd64}}
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    ports:
+      - *web-host-port
+    volumes:
+      - .:/app
+      - gslide_next_node_modules:/app/node_modules
+      - gslide_app_data:/app_data:ro
+    environment: *web-environment
+    networks:
+      gslide:
+        aliases:
+          - web

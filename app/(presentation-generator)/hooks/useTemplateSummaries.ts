@@ -6,6 +6,7 @@ import TemplateService, {
   TemplateCreateTaskResponse,
   TemplateListItem,
 } from "../services/api/template";
+import { useT } from "@/i18n/provider";
 
 export type TemplateTab = "custom" | "default";
 
@@ -54,6 +55,7 @@ export function useTemplateSummaries({
 }: {
   includeProcessingTemplateTasks?: boolean;
 } = {}) {
+  const t = useT();
   const [templates, setTemplates] = useState<TemplateListItem[]>([]);
   const [processingTemplateTasks, setProcessingTemplateTasks] = useState<
     TemplateCreateTaskResponse[]
@@ -111,9 +113,9 @@ export function useTemplateSummaries({
           const message =
             error instanceof Error
               ? error.message
-              : "The template service could not be reached. Please try again.";
+              : t("templates.error.serviceUnavailable");
           setError(message);
-          toast.error("Could not load templates", { description: message });
+          toast.error(t("templates.error.loadTitle"), { description: message });
         }
       } finally {
         if (!cancelled) {
@@ -155,7 +157,7 @@ export function useTemplateSummaries({
         clearInterval(intervalId);
       }
     };
-  }, [includeProcessingTemplateTasks]);
+  }, [includeProcessingTemplateTasks, t]);
 
   const { defaultTemplates, customTemplates } = useMemo(
     () => splitTemplatesByDefault(templates),

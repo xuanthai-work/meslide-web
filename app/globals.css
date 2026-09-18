@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: var(--font-syne), var(--font-unbounded), var(--font-inter),
-    sans-serif;
+  font-family: var(--gslide-font-ui);
 }
 
 @layer utilities {
@@ -40,16 +39,20 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --gslide-bg: #EFF6FF;
+    --gslide-bg: #FFFFFF;
     --gslide-card: #FFFFFF;
-    --gslide-border: #BFDBFE;
-    --gslide-ink: #1E3A5F;
-    --gslide-muted: #4B7AB5;
+    --gslide-border: #EDEEF4;
+    --gslide-ink: #101323;
+    --gslide-muted: #6B6D78;
     --gslide-accent: #1D6FE8;
     --gslide-accent-hover: #1558C0;
-    --gslide-accent-soft: #DBEAFE;
-    --gslide-input-border: #93C5FD;
+    --gslide-accent-soft: #EFF4FF;
+    --gslide-input-border: #DADDE6;
     --gslide-input-focus: #1D6FE8;
+    /* Syne lacks Vietnamese glyphs, so UI text must not start with it.
+       Manrope (vietnamese subset) then bundled Inter cover ăâêôơưđ and tones. */
+    --gslide-font-ui: var(--font-manrope), var(--font-inter), ui-sans-serif,
+      system-ui, sans-serif;
   }
 
   .dark {
@@ -87,7 +90,7 @@ body {
 }
 
 strong {
-  @apply font-black;
+  @apply font-extrabold;
 }
 
 ::selection {

@@ -1,5 +1,5 @@
 "use client";
-import React, {
+import {
   useEffect,
   useState,
   memo,
@@ -24,6 +24,7 @@ import {
 } from "../../_shared/blank-slide";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
 import TemplateService from "../../services/api/template";
+import { useT } from "@/i18n/provider";
 
 interface LayoutItemProps {
   layout: any;
@@ -68,6 +69,7 @@ function createTemplateV2PreviewSlide(layout: TemplateV2Layout, layoutId: string
 }
 
 const LayoutItem = memo(({ layout, onSelect }: LayoutItemProps) => {
+  const t = useT();
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(0.2);
   const {
@@ -104,8 +106,8 @@ const LayoutItem = memo(({ layout, onSelect }: LayoutItemProps) => {
     <div
       role="button"
       tabIndex={0}
-      aria-label={`Add ${layoutName || "slide"} layout`}
-      title={layoutName || "Slide layout"}
+      aria-label={t("presentation.newSlide.addLayoutAria", { name: isEmptySlide ? t("presentation.newSlide.empty") : layoutName || t("presentation.newSlide.layoutFallback") })}
+      title={isEmptySlide ? t("presentation.newSlide.empty") : layoutName || t("presentation.newSlide.layoutFallback")}
       onClick={selectLayout}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
@@ -131,7 +133,7 @@ const LayoutItem = memo(({ layout, onSelect }: LayoutItemProps) => {
                 <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E2E2EA] bg-[#FAFAFB]">
                   <Plus className="h-4 w-4" />
                 </span>
-                <span className="text-sm font-medium">Empty Slide</span>
+                <span className="text-sm font-medium">{t("presentation.newSlide.empty")}</span>
               </div>
             </div>
           ) : v2Layout ? (
@@ -169,6 +171,7 @@ const NewSlideV1 = ({
   presentationId,
   onSlideAdded,
 }: NewSlideV1Props) => {
+  const t = useT();
   const dispatch = useDispatch();
   const presentationLayout = useSelector(
     (state: RootState) => state.presentationGeneration.presentationData?.layout
@@ -194,8 +197,8 @@ const NewSlideV1 = ({
     (sampleData: any, id: string) => {
       if (slideCount >= MAX_NUMBER_OF_SLIDES) {
         notify.warning(
-          "Slide limit reached",
-          `You can have up to ${MAX_NUMBER_OF_SLIDES} slides.`
+          t("presentation.slideLimit"),
+          t("presentation.slideLimitDescription", { max: MAX_NUMBER_OF_SLIDES })
         );
         return;
       }
@@ -224,7 +227,7 @@ const NewSlideV1 = ({
         setShowNewSlideSelection(false);
       } catch (error: any) {
         console.error(error);
-        notify.error("Could not add slide", "Something went wrong while adding the new slide.");
+        notify.error(t("presentation.newSlide.addFailed"), t("presentation.newSlide.addFailedDescription"));
       }
     },
     [
@@ -235,6 +238,7 @@ const NewSlideV1 = ({
       setShowNewSlideSelection,
       onSlideAdded,
       slideCount,
+      t,
     ]
   );
 
@@ -271,14 +275,14 @@ const NewSlideV1 = ({
         if (isMounted) {
           setLayouts(layoutItems);
           if (layoutItems.length === 0) {
-            setLoadError("This template does not contain any usable layouts.");
+            setLoadError(t("presentation.newSlide.noLayouts"));
           }
         }
       } catch (error) {
         console.error("Error loading slide layouts:", error);
         if (isMounted) {
           setLayouts([]);
-          setLoadError("Could not load layouts for this template.");
+          setLoadError(t("presentation.newSlide.loadFailed"));
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -290,15 +294,13 @@ const NewSlideV1 = ({
     return () => {
       isMounted = false;
     };
-  }, [presentationLayout, templateID]);
+  }, [presentationLayout, templateID, t]);
 
   const showEmptySlideLayout = true;
   const selectableLayouts = showEmptySlideLayout
     ? [EMPTY_SLIDE_LAYOUT, ...layouts]
     : layouts;
-  const layoutCountText = showEmptySlideLayout
-    ? `${selectableLayouts.length} Option${selectableLayouts.length === 1 ? "" : "s"}`
-    : `${layouts.length} Layout${layouts.length === 1 ? "" : "s"}`;
+  const layoutCountText = t("presentation.newSlide.layoutCount", { count: selectableLayouts.length });
 
 
   return (
@@ -310,7 +312,7 @@ const NewSlideV1 = ({
     >
       <button
         type="button"
-        aria-label="Close layout picker"
+        aria-label={t("presentation.newSlide.closeAria")}
         onClick={() => setShowNewSlideSelection(false)}
         className="absolute right-0 top-[-52px] z-50 flex h-10 w-10 items-center justify-center rounded-full border border-[#EDEEEF] bg-white text-[#191919] shadow-[0_6.6px_13.2px_rgba(0,0,0,0.10)] transition hover:bg-[#F7F6F9]"
       >
@@ -323,10 +325,10 @@ const NewSlideV1 = ({
             id="choose-slide-layout-title"
             className="text-base font-medium leading-tight text-[#191919]"
           >
-            Choose Slide Layout
+            {t("presentation.newSlide.choose")}
           </h2>
           <p className="mt-1 text-xs font-normal leading-none text-[#7A7A85]">
-            {loading ? "Loading layouts" : layoutCountText}
+            {loading ? t("presentation.newSlide.loading") : layoutCountText}
           </p>
         </div>
         {loading && (
@@ -356,7 +358,7 @@ const NewSlideV1 = ({
           </div>
         ) : (
           <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-[#D9D9E1] bg-[#FAFAFB] text-sm text-[#7A7A85]">
-            No layouts available.
+            {t("presentation.newSlide.noAvailable")}
           </div>
         )}
       </div>

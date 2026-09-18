@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import CreateCustomTemplate from "./CreateCustomTemplate";
@@ -13,8 +13,11 @@ import {
   TemplateListLoadingState,
   TemplateListEmptyState,
 } from "../../../components/TemplateListUi";
+import { useT } from "@/i18n/provider";
+import { GSlideHeader } from "@/components/gslide";
 
 const LayoutPreview = () => {
+  const t = useT();
   const [tab, setTab] = useState<TemplateTab>("default");
   const router = useRouter();
   const {
@@ -48,34 +51,30 @@ const LayoutPreview = () => {
   const activeTemplates = tab === "default" ? defaultTemplates : customTemplates;
 
   return (
-    <div className="min-h-screen relative font-syne">
-      <div className="sticky top-0 right-0 z-50 -mr-4 w-[calc(100%+1rem)] bg-[var(--gslide-bg)] py-[28px] px-6 backdrop-blur">
-        <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
-          <h3 className="text-[28px] tracking-[-0.84px] font-unbounded font-normal text-[#101828] flex items-center gap-2">
-            Templates
-          </h3>
-          <div className="flex gap-2.5 max-sm:w-full max-md:justify-center max-sm:flex-wrap">
-            <Link
-              href="/custom-template"
-              className="inline-flex items-center font-syne font-semibold gap-2 rounded-full px-4 py-2.5 text-white text-sm shadow-sm transition-colors hover:shadow-md bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)]"
-              aria-label="Create new template"
-            >
-              <span className="hidden md:inline">New Template</span>
-              <span className="md:hidden">New</span>
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="relative min-h-[100dvh] bg-[var(--gslide-bg)]">
+      <GSlideHeader
+        title={t("templates.page.title")}
+        actions={
+          <Link
+            href="/custom-template"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 text-sm font-semibold text-white transition active:scale-[0.98] hover:bg-[var(--gslide-accent-hover)] motion-reduce:active:scale-100"
+            aria-label={t("templates.actions.createNewAria")}
+          >
+            <span className="hidden md:inline">{t("templates.actions.newTemplate")}</span>
+            <span className="md:hidden">{t("templates.actions.newTemplateShort")}</span>
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        }
+      />
 
       <div className="mx-auto px-6 py-8">
         <TemplateTabSwitcher tab={tab} onTabChange={handleTabChange} />
 
         <section className="my-12">
           {loading ? (
-            <TemplateListLoadingState />
+            <TemplateListLoadingState message={t("templates.loading.default")} />
           ) : error ? (
-            <TemplateListEmptyState message={`Templates could not be loaded: ${error}`} />
+            <TemplateListEmptyState message={t("templates.error.loadFailed", { error })} />
           ) : tab === "custom" ? (
             <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               <CreateCustomTemplate />
@@ -92,7 +91,7 @@ const LayoutPreview = () => {
               ))}
             </div>
           ) : activeTemplates.length === 0 ? (
-            <TemplateListEmptyState message="No built-in templates available." />
+            <TemplateListEmptyState message={t("templates.empty.noBuiltin")} />
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {activeTemplates.map((template) => (

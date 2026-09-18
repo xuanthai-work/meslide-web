@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface ProgressBarProps {
     duration: number;
@@ -9,9 +9,10 @@ interface ProgressBarProps {
 export const ProgressBar = ({ duration, onComplete }: ProgressBarProps) => {
     const [progress, setProgress] = useState(0);
     const progressInterval = useRef<NodeJS.Timeout | null>(null);
-    const startTime = useRef<number>(Date.now());
+    const startTime = useRef<number>(0);
 
     useEffect(() => {
+        startTime.current = Date.now();
         const updateProgress = () => {
             const currentTime = Date.now();
             const elapsedTime = currentTime - startTime.current;

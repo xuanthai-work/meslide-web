@@ -1,6 +1,4 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import React from 'react'
-
 const CreatePageLoadingSkeleton = () => {
     return (
         <div className="min-h-screen bg-gray-50 ">

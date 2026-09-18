@@ -1,10 +1,12 @@
 import { LanguageType, PresentationConfig } from "../type";
+import { LANGUAGE_LABEL_KEY } from "../language";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronUp,
   Languages,
   Monitor,
+  Search,
 } from "lucide-react";
 import {
   Command,
@@ -21,15 +23,16 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import AdvanceSettings from "./AdvanceSettings";
+import GenerationModeDialog from "./GenerationModeDialog";
+import { type GenerationMode } from "../generation-mode";
 import {
   clampSlideCountValue,
   MAX_NUMBER_OF_SLIDES,
 } from "@/utils/presentationLimits";
-import { Button } from "@/components/ui/button";
-import GenerationModeDialog, {
-  type GenerationMode,
-} from "./GenerationModeDialog";
+import { useT } from "@/i18n/provider";
+import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 
 // Types
 interface ConfigurationSelectsProps {
@@ -84,6 +87,7 @@ const SlideCountSelect: React.FC<{
   onOpenChange: (open: boolean) => void;
   compact?: boolean;
 }> = ({ value, onValueChange, open, onOpenChange, compact = false }) => {
+  const t = useT();
   const [customInput, setCustomInput] = useState(
     value && !SLIDE_OPTIONS.includes(value as SlideOption) ? value : "",
   );
@@ -115,7 +119,7 @@ const SlideCountSelect: React.FC<{
     }
   };
 
-  const displayLabel = value ? `${value} slides` : "Auto slides";
+  const displayLabel = value ? t("upload.config.slides", { count: value }) : t("upload.config.autoSlides");
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -127,9 +131,9 @@ const SlideCountSelect: React.FC<{
           aria-expanded={open}
           aria-controls="slides-options"
           className={cn(
-            "flex h-[34px] items-center justify-between gap-2 overflow-hidden rounded-full bg-white px-3.5 font-syne font-medium text-[#191919]",
+            "flex h-[34px] items-center justify-between gap-2 overflow-hidden rounded-full bg-white px-3.5 font-medium text-[var(--gslide-ink)]",
             compact
-              ? "border border-[#EDEEEF] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
+              ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
               : "shadow-sm ring-1 ring-inset ring-slate-200 focus-visible:ring-[var(--gslide-accent)]/30 min-[1800px]:h-10 min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:px-5",
           )}
         >
@@ -175,7 +179,7 @@ const SlideCountSelect: React.FC<{
                   : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
               )}
             >
-              {compact && value ? `Slides ${value}` : displayLabel}
+              {compact && value ? t("upload.config.slides", { count: value }) : displayLabel}
             </span>
             {compact && (
               <ChevronUp
@@ -192,7 +196,7 @@ const SlideCountSelect: React.FC<{
       </PopoverTrigger>
       <PopoverContent
         id="slides-options"
-        className="w-[140px] p-0 font-syne min-[1800px]:w-[160px] min-[2200px]:w-[180px]"
+        className="w-[140px] p-0 min-[1800px]:w-[160px] min-[2200px]:w-[180px]"
         align="end"
       >
         <div
@@ -229,7 +233,7 @@ const SlideCountSelect: React.FC<{
               className="h-8 w-16 px-2 text-sm min-[1800px]:h-9 min-[1800px]:w-20 min-[1800px]:text-base"
             />
             <span className="text-sm font-medium min-[1800px]:text-base">
-              slides
+              {t("upload.config.slideUnit")}
             </span>
           </div>
         </div>
@@ -253,7 +257,7 @@ const SlideCountSelect: React.FC<{
                     isSelectingPresetRef.current = false;
                     onOpenChange(false);
                   }}
-                  className="font-syne text-sm font-medium min-[1800px]:text-base"
+                  className="text-sm font-medium min-[1800px]:text-base"
                 >
                   <Check
                     className={cn(
@@ -261,7 +265,7 @@ const SlideCountSelect: React.FC<{
                       value === option ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  {option} slides
+                  {t("upload.config.slides", { count: option })}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -276,12 +280,14 @@ const SlideCountSelect: React.FC<{
  * Renders a language selection component with search functionality
  */
 const LanguageSelect: React.FC<{
-  value: string | null;
+  value: LanguageType | null;
   onValueChange: (value: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   compact?: boolean;
-}> = ({ value, onValueChange, open, onOpenChange, compact = false }) => (
+}> = ({ value, onValueChange, open, onOpenChange, compact = false }) => {
+  const t = useT();
+  return (
   <Popover open={open} onOpenChange={onOpenChange}>
     <PopoverTrigger asChild>
       <button
@@ -291,9 +297,9 @@ const LanguageSelect: React.FC<{
         aria-expanded={open}
         aria-controls="language-options"
         className={cn(
-          "flex h-[34px] max-w-[160px] items-center gap-2 overflow-hidden rounded-full bg-white px-3.5 font-syne font-semibold text-[#191919]",
+          "flex h-[34px] max-w-[160px] items-center gap-2 overflow-hidden rounded-full bg-white px-3.5 font-semibold text-[var(--gslide-ink)]",
           compact
-            ? "border border-[#EDEEEF] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
+            ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
             : "shadow-sm ring-1 ring-inset ring-slate-200 min-[1800px]:h-10 min-[1800px]:max-w-[190px] min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:max-w-[220px] min-[2200px]:px-5",
         )}
       >
@@ -321,7 +327,7 @@ const LanguageSelect: React.FC<{
                 : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
             )}
           >
-            {value || "Select language"}
+            {value ? t(LANGUAGE_LABEL_KEY[value]) : t("upload.config.selectLanguage")}
           </span>
           {compact && (
             <ChevronUp
@@ -338,21 +344,22 @@ const LanguageSelect: React.FC<{
     </PopoverTrigger>
     <PopoverContent
       id="language-options"
-      className="w-[300px] p-0 min-[1800px]:w-[340px] min-[2200px]:w-[380px]"
+      className="w-[calc(100vw-2rem)] max-w-[300px] p-0 min-[1800px]:max-w-[340px] min-[2200px]:max-w-[380px]"
       align="end"
     >
       <Command>
         <CommandInput
-          placeholder="Search language..."
+          placeholder={t("upload.config.searchLanguage")}
           className="font-instrument_sans"
         />
         <CommandList>
-          <CommandEmpty>No language found.</CommandEmpty>
+          <CommandEmpty>{t("upload.config.noLanguage")}</CommandEmpty>
           <CommandGroup>
             {Object.values(LanguageType).map((language) => (
               <CommandItem
                 key={language}
                 value={language}
+                keywords={[t(LANGUAGE_LABEL_KEY[language])]}
                 role="option"
                 onSelect={(currentValue) => {
                   onValueChange(currentValue);
@@ -366,7 +373,7 @@ const LanguageSelect: React.FC<{
                     value === language ? "opacity-100" : "opacity-0",
                   )}
                 />
-                {language}
+                {t(LANGUAGE_LABEL_KEY[language])}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -374,7 +381,65 @@ const LanguageSelect: React.FC<{
       </Command>
     </PopoverContent>
   </Popover>
-);
+  );
+};
+
+const WebSearchToggle: React.FC<{
+  enabled: boolean;
+  onToggle: (enabled: boolean) => void;
+  compact?: boolean;
+}> = ({ enabled, onToggle, compact = false }) => {
+  const t = useT();
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      name="web-search"
+      data-testid="web-search-toggle"
+      aria-checked={enabled}
+      aria-label={t("upload.config.webSearchAria")}
+      onClick={() => onToggle(!enabled)}
+      className={cn(
+        "flex h-[34px] items-center gap-2 overflow-hidden rounded-full bg-white px-3.5 font-medium text-[var(--gslide-ink)]",
+        compact
+          ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
+          : "shadow-sm ring-1 ring-inset ring-slate-200 focus-visible:ring-[var(--gslide-accent)]/30 min-[1800px]:h-10 min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:px-5",
+        enabled && "text-[var(--gslide-accent)]",
+      )}
+    >
+      <Search
+        aria-hidden="true"
+        strokeWidth={1.75}
+        className={cn(
+          "shrink-0",
+          compact
+            ? "h-3.5 w-3.5"
+            : "h-3.5 w-3.5 min-[1800px]:h-4 min-[1800px]:w-4 min-[2200px]:h-5 min-[2200px]:w-5",
+        )}
+      />
+      <span
+        className={cn(
+          compact
+            ? "text-xs font-semibold tracking-[-0.12px]"
+            : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
+        )}
+      >
+        {t("upload.config.webSearch")}
+      </span>
+      <span
+        className={cn(
+          compact
+            ? "text-xs font-semibold tracking-[-0.12px]"
+            : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
+          enabled ? "text-[var(--gslide-accent)]" : "text-[var(--gslide-muted)]",
+        )}
+      >
+        {enabled ? t("upload.config.on") : t("upload.config.off")}
+      </span>
+    </button>
+  );
+};
 
 export function ConfigurationSelects({
   config,
@@ -383,10 +448,14 @@ export function ConfigurationSelects({
   mode,
   onModeChange,
 }: ConfigurationSelectsProps) {
+  const t = useT();
+  const { smartModeEnabled } = useFeatureFlags();
   const [openSlides, setOpenSlides] = useState(false);
   const [openLanguage, setOpenLanguage] = useState(false);
   const [modeDialogOpen, setModeDialogOpen] = useState(false);
-  const showMode = Boolean(mode && onModeChange);
+  const showModeSelector = Boolean(
+    smartModeEnabled && mode && onModeChange,
+  );
 
   return (
     <div
@@ -395,18 +464,29 @@ export function ConfigurationSelects({
         compact ? "gap-3" : "gap-4 min-[1800px]:gap-5",
       )}
     >
-      <Button
-        type="button"
-        onClick={() => setModeDialogOpen(true)}
-        className={cn(
-          "rounded-full border border-[#EDEEEF] bg-white px-4 py-1 font-syne text-sm font-medium text-[#101323] hover:bg-white",
-          compact ? "h-[34px] shadow-none" : "h-[38px] shadow-sm",
-        )}
-      >
-        {mode === "standard" ? "Standard" : "Smart"}
-        <ChevronUp className="h-4 w-4" />
-      </Button>
-
+      {showModeSelector && mode && onModeChange && (
+        <>
+          <Button
+            type="button"
+            onClick={() => setModeDialogOpen(true)}
+            className={cn(
+              "rounded-full border border-[var(--gslide-border)] bg-white px-4 py-1 text-sm font-medium text-[var(--gslide-ink)] hover:bg-[var(--gslide-accent-soft)]",
+              compact ? "h-[34px] shadow-none" : "h-[38px] shadow-sm",
+            )}
+          >
+            {mode === "standard"
+              ? t("upload.mode.standard.label")
+              : t("upload.mode.smart.label")}
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <GenerationModeDialog
+            open={modeDialogOpen}
+            selectedMode={mode}
+            onOpenChange={setModeDialogOpen}
+            onSelect={onModeChange}
+          />
+        </>
+      )}
       <SlideCountSelect
         value={config.slides}
         onValueChange={(value) => onConfigChange("slides", value)}
@@ -421,18 +501,16 @@ export function ConfigurationSelects({
         onOpenChange={setOpenLanguage}
         compact={compact}
       />
+      <WebSearchToggle
+        enabled={!!config.webSearch}
+        onToggle={(enabled) => onConfigChange("webSearch", enabled)}
+        compact={compact}
+      />
       <AdvanceSettings
         config={config}
         onConfigChange={onConfigChange}
         compact={compact}
       />
-      {showMode ? (
-        <GenerationModeDialog
-          open={modeDialogOpen}
-          onOpenChange={setModeDialogOpen}
-          onSelect={(nextMode) => onModeChange?.(nextMode)}
-        />
-      ) : null}
     </div>
   );
 }

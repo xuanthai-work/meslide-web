@@ -8,6 +8,15 @@ const nextConfig = {
   reactStrictMode: false,
   distDir: isProd ? ".next-build" : ".next",
   ...(isProd ? { output: "standalone" } : {}),
+  // proxy.ts rewrites /api/v1 uploads to FastAPI. Next.js buffers that body
+  // and defaults to 10MB, which truncates PPTX/docs the product allows up to
+  // 100MB. Leave headroom for multipart boundaries around the file field.
+  // Template preview (PPTX→HTML→Chromium screenshots) regularly exceeds the
+  // default 30s proxy timeout on a 26-slide deck.
+  experimental: {
+    proxyClientMaxBodySize: "110mb",
+    proxyTimeout: 15 * 60 * 1000,
+  },
   turbopack: {
     root: nextjsRoot,
   },

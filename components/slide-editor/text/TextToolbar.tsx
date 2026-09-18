@@ -67,6 +67,8 @@ import {
   preventInvalidNumberInput,
   sanitizeNumericInput,
 } from "@/components/slide-editor/toolbar/numericInput";
+import { useT } from "@/i18n/provider";
+import { normalizeSearchText } from "@/utils/normalizeSearchText";
 
 const EMPTY_TEMPLATE_FONTS: TemplateFontOption[] = [];
 
@@ -159,6 +161,7 @@ export function TextToolbar({
   onChange: (index: number, element: TextSlideElement) => void;
   onListMarkerChange?: (marker: Marker) => void;
 }) {
+  const t = useT();
   const activeSelectionRange = normalizedTextSelectionRange(
     selectionRange,
     textRunsContent(element.runs).length,
@@ -440,8 +443,8 @@ export function TextToolbar({
           <Divider />
           <div style={textToolbarStyles.fontSizeControl}>
             <input
-              aria-label="Font size"
-              title="Font size"
+              aria-label={t("slideEditor.text.fontSize")}
+              title={t("slideEditor.text.fontSize")}
               type="text"
               inputMode={numericInputMode(fontSizeInputOptions)}
               value={fontSizeDraft}
@@ -484,8 +487,8 @@ export function TextToolbar({
             <span style={textToolbarStyles.fontSizeStepper}>
               <button
                 type="button"
-                aria-label="Increase font size"
-                title="Increase font size"
+                aria-label={t("slideEditor.text.increaseFontSize")}
+                title={t("slideEditor.text.increaseFontSize")}
                 onClick={() => stepFontSize(1)}
                 style={textToolbarStyles.fontSizeStepButton}
               >
@@ -493,8 +496,8 @@ export function TextToolbar({
               </button>
               <button
                 type="button"
-                aria-label="Decrease font size"
-                title="Decrease font size"
+                aria-label={t("slideEditor.text.decreaseFontSize")}
+                title={t("slideEditor.text.decreaseFontSize")}
                 onClick={() => stepFontSize(-1)}
                 style={textToolbarStyles.fontSizeStepButton}
               >
@@ -504,8 +507,8 @@ export function TextToolbar({
           </div>
           <Divider />
           <label
-            aria-label="Text color"
-            title="Text color"
+            aria-label={t("slideEditor.text.textColor")}
+            title={t("slideEditor.text.textColor")}
             style={textToolbarStyles.colorControl}
             onMouseEnter={() => setHoveredControl("color")}
             onMouseLeave={() => setHoveredControl(null)}
@@ -518,7 +521,7 @@ export function TextToolbar({
               }}
             />
             <DeferredColorInput
-              aria-label="Text color"
+              aria-label={t("slideEditor.text.textColor")}
               value={font.color}
               onCommit={(color) => updateFont({ color })}
               style={textToolbarStyles.hiddenInput}
@@ -527,7 +530,7 @@ export function TextToolbar({
           <Divider />
           <div style={textToolbarStyles.modeGroup}>
             <ToolbarButton
-              title="Bold"
+              title={t("slideEditor.text.bold")}
               controlId="bold"
               hoveredControl={hoveredControl}
               pressed={font.bold ?? false}
@@ -537,7 +540,7 @@ export function TextToolbar({
               <Bold size={18} strokeWidth={2.25} aria-hidden="true" />
             </ToolbarButton>
             <ToolbarButton
-              title="Italic"
+              title={t("slideEditor.text.italic")}
               controlId="italic"
               hoveredControl={hoveredControl}
               pressed={font.italic ?? false}
@@ -547,7 +550,7 @@ export function TextToolbar({
               <Italic size={18} strokeWidth={2.25} aria-hidden="true" />
             </ToolbarButton>
             <ToolbarButton
-              title="Underline"
+              title={t("slideEditor.text.underline")}
               controlId="underline"
               hoveredControl={hoveredControl}
               pressed={font.underline ?? false}
@@ -561,8 +564,8 @@ export function TextToolbar({
             <ToolbarButton
               title={
                 selectionIsLatex
-                  ? "Convert LaTeX to text"
-                  : "Convert selected text to LaTeX"
+                  ? t("slideEditor.text.latexToText")
+                  : t("slideEditor.text.textToLatex")
               }
               controlId="latex"
               disabled={!latexToggleRange}
@@ -585,8 +588,8 @@ export function TextToolbar({
             <ToolbarButton
               title={
                 disableAlignment
-                  ? "Alignment is unavailable for list text"
-                  : "Horizontal alignment"
+                  ? t("slideEditor.text.listAlignmentUnavailable")
+                  : t("slideEditor.text.horizontalAlignment")
               }
               controlId="horizontal-alignment"
               disabled={disableAlignment}
@@ -617,7 +620,7 @@ export function TextToolbar({
             <>
               <div style={textToolbarStyles.settingsControlWrap}>
                 <ToolbarButton
-                  title="List marker"
+                  title={t("slideEditor.text.listMarker")}
                   controlId="list-marker"
                   hoveredControl={hoveredControl}
                   pressed={openPanel === "marker"}
@@ -649,7 +652,7 @@ export function TextToolbar({
           ) : null}
           <div style={textToolbarStyles.settingsControlWrap}>
             <ToolbarButton
-              title="Settings"
+              title={t("slideEditor.common.settings")}
               controlId="settings"
               hoveredControl={hoveredControl}
               setHoveredControl={setHoveredControl}
@@ -764,6 +767,7 @@ function FontFamilyPicker({
   googleFonts: GoogleFontOption[];
   onSelect: (family: string) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(selectedFamily);
   const [searching, setSearching] = useState(false);
@@ -845,7 +849,7 @@ function FontFamilyPicker({
     () => new Set(templateFonts.map(({ family }) => family)),
     [templateFonts],
   );
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = normalizeSearchText(query);
   const hasSearchQuery = searching && normalizedQuery.length > 0;
   const templateFamilies = useMemo(
     () => templateFonts.map(({ family }) => family),
@@ -870,16 +874,16 @@ function FontFamilyPicker({
     () =>
       hasSearchQuery
         ? searchFamilies.filter((family) =>
-            family.toLowerCase().includes(normalizedQuery),
+            normalizeSearchText(family).includes(normalizedQuery),
           )
         : activeFamilies,
     [activeFamilies, hasSearchQuery, normalizedQuery, searchFamilies],
   );
   const activeTitle = hasSearchQuery
-    ? "All Fonts"
+    ? t("slideEditor.text.allFonts")
     : activeSource === "template" && templateFamilies.length > 0
-      ? "Template Fonts"
-      : "Google Fonts";
+      ? t("slideEditor.text.templateFonts")
+      : t("slideEditor.text.googleFonts");
   const swapFontSource = () => {
     setSearching(false);
     setQuery(selectedFamily);
@@ -911,10 +915,10 @@ function FontFamilyPicker({
     >
       <button
         type="button"
-        aria-label="Font family"
+        aria-label={t("slideEditor.text.fontFamily")}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title="Font family"
+        title={t("slideEditor.text.fontFamily")}
         style={textToolbarStyles.fontTrigger}
         onClick={() => setOpen((current) => !current)}
         onKeyDown={(event) => {
@@ -932,7 +936,7 @@ function FontFamilyPicker({
         <FloatingToolbarPanel
           ref={menuPanelRef}
           role="listbox"
-          aria-label="Font family"
+          aria-label={t("slideEditor.text.fontFamily")}
           style={textToolbarStyles.fontMenu}
           onWheel={(event) => event.stopPropagation()}
           onScroll={(event) => event.stopPropagation()}
@@ -942,7 +946,7 @@ function FontFamilyPicker({
             <input
               ref={searchInputRef}
               data-font-search-input="true"
-              aria-label="Search fonts"
+              aria-label={t("slideEditor.text.searchFonts")}
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -958,8 +962,8 @@ function FontFamilyPicker({
             />
             <button
               type="button"
-              aria-label="Clear font search"
-              title="Clear"
+              aria-label={t("slideEditor.text.clearSearch")}
+              title={t("slideEditor.text.clearSearch")}
               style={textToolbarStyles.fontSearchClear}
               onClick={() => {
                 setQuery("");
@@ -997,6 +1001,7 @@ function FontMenuSection({
   onSelect: (family: string) => void;
   onSwap: () => void;
 }) {
+  const t = useT();
   const optionsRef = useRef<HTMLDivElement | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRows = Math.min(families.length, FONT_MENU_MAX_VISIBLE_ROWS);
@@ -1025,8 +1030,8 @@ function FontMenuSection({
         <span>{title}</span>
         <button
           type="button"
-          aria-label="Swap font source"
-          title="Swap font source"
+          aria-label={t("slideEditor.text.swapFontSource")}
+          title={t("slideEditor.text.swapFontSource")}
           style={textToolbarStyles.fontSourceSwapButton}
           onMouseDown={(event) => event.preventDefault()}
           onClick={onSwap}
@@ -1043,7 +1048,7 @@ function FontMenuSection({
         onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
       >
         {families.length === 0 ? (
-          <div style={textToolbarStyles.fontMenuEmpty}>No fonts</div>
+          <div style={textToolbarStyles.fontMenuEmpty}>{t("slideEditor.text.noFonts")}</div>
         ) : (
           <div
             style={{
@@ -1130,6 +1135,7 @@ function TextSettingsPanel({
   onLetterSpacingChange: (value: number) => void;
   onLineHeightChange: (value: number) => void;
 }) {
+  const t = useT();
   return (
     <FloatingToolbarPanel
       data-inline-edit-ignore="true"
@@ -1137,7 +1143,7 @@ function TextSettingsPanel({
       onMouseDown={(event) => event.stopPropagation()}
     >
       <SettingsSliderRow
-        label="Opacity"
+        label={t("slideEditor.common.opacity")}
         icon={<OpacityIcon />}
         value={opacity}
         valueLabel={formatOpacity(opacity)}
@@ -1147,7 +1153,7 @@ function TextSettingsPanel({
         onChange={onOpacityChange}
       />
       <SettingsSliderRow
-        label="Letter spacing"
+        label={t("slideEditor.text.letterSpacing")}
         icon={<LetterSpacingIcon />}
         value={letterSpacing}
         valueLabel={formatSettingsLetterSpacing(letterSpacing)}
@@ -1157,7 +1163,7 @@ function TextSettingsPanel({
         onChange={onLetterSpacingChange}
       />
       <SettingsSliderRow
-        label="Line height"
+        label={t("slideEditor.text.lineHeight")}
         icon={<LineHeightIcon />}
         value={lineHeight}
         valueLabel={formatLineHeight(lineHeight)}
@@ -1177,29 +1183,30 @@ function ListMarkerPanel({
   marker: Marker;
   onChange: (marker: Marker) => void;
 }) {
+  const t = useT();
   return (
     <FloatingToolbarPanel
-      aria-label="List marker"
+      aria-label={t("slideEditor.text.listMarker")}
       style={textToolbarStyles.markerPanel}
       onMouseDown={(event) => event.stopPropagation()}
     >
       <div style={textToolbarStyles.settingsBulletActions}>
         <SettingsPanelButton
-          label="Bullet list"
+          label={t("slideEditor.text.bulletList")}
           pressed={marker === "bullet"}
           onClick={() => onChange("bullet")}
         >
           <List size={19} strokeWidth={2.2} aria-hidden="true" />
         </SettingsPanelButton>
         <SettingsPanelButton
-          label="Numbered list"
+          label={t("slideEditor.text.numberedList")}
           pressed={marker === "number"}
           onClick={() => onChange("number")}
         >
           <ListOrdered size={19} strokeWidth={2.2} aria-hidden="true" />
         </SettingsPanelButton>
         <SettingsPanelButton
-          label="No list"
+          label={t("slideEditor.text.noList")}
           pressed={marker === "none"}
           onClick={() => onChange("none")}
         >

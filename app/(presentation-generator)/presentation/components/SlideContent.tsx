@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import SlideScale from "../../components/PresentationRender";

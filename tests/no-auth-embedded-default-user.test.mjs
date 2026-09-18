@@ -31,13 +31,9 @@ test("SettingPage no longer imports LogoutButton", async () => {
   assert.doesNotMatch(source, /LogoutButton/);
 });
 
-test("proxy still exempts /api/v1/auth/* paths", async () => {
+test("proxy does not auth-gate the embedded default-user flow", async () => {
   const source = await readNext("proxy.ts");
-  assert.match(source, /\/api\/v1\/auth\//);
-});
-
-test("can-change-keys always reflects env flag", async () => {
-  const source = await readNext("app/api/can-change-keys/route.ts");
-  assert.match(source, /canChangeKeys\s*=\s*process\.env\.CAN_CHANGE_KEYS/);
-  assert.doesNotMatch(source, /authStatusForRequest/);
+  assert.doesNotMatch(source, /getAuthStatus|isApiAuthExempt/);
+  assert.doesNotMatch(source, /detail:\s*["']Unauthorized["']/);
+  assert.match(source, /return continueRequest\(request\)/);
 });

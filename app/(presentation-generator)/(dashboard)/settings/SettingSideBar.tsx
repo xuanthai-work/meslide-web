@@ -1,27 +1,16 @@
 "use client";
 
 import {
-  Image as ImageIcon,
   Search as SearchIcon,
   Type as TypeIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/provider";
 
 export type SettingsSection =
   | "text-provider"
   | "image-provider"
   | "web-search-provider";
-
-const SECTIONS: {
-  id: SettingsSection;
-  label: string;
-  Icon: typeof TypeIcon;
-  hint?: string;
-}[] = [
-  { id: "text-provider", label: "Text", Icon: TypeIcon },
-  { id: "image-provider", label: "Image", Icon: ImageIcon },
-  { id: "web-search-provider", label: "Search", Icon: SearchIcon },
-];
 
 const SettingSideBar = ({
   selectedProvider,
@@ -30,8 +19,18 @@ const SettingSideBar = ({
   selectedProvider: SettingsSection;
   setSelectedProvider: (provider: SettingsSection) => void;
 }) => {
+  const t = useT();
+  const SECTIONS: {
+    id: SettingsSection;
+    label: string;
+    Icon: typeof TypeIcon;
+    hint?: string;
+  }[] = [
+    { id: "text-provider", label: t("settings.sections.text"), Icon: TypeIcon },
+    { id: "web-search-provider", label: t("settings.sections.search"), Icon: SearchIcon },
+  ];
   return (
-    <nav aria-label="Settings sections" className="-mx-1 overflow-x-auto">
+    <nav aria-label={t("settings.sections.aria")} className="-mx-1 overflow-x-auto">
       <div
         role="tablist"
         className="flex min-w-max items-end gap-1 border-b border-[var(--gslide-border)]"
@@ -46,7 +45,7 @@ const SettingSideBar = ({
               aria-selected={active}
               onClick={() => setSelectedProvider(id)}
               className={cn(
-                "relative isolate inline-flex items-center gap-2 rounded-t-[10px] px-3.5 pb-2.5 pt-3 text-sm font-medium transition-colors",
+                "relative isolate inline-flex items-center gap-2 rounded-t-lg px-3.5 pb-2.5 pt-3 text-sm font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2",
                 active
                   ? "text-[var(--gslide-accent)]"

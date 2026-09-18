@@ -1,12 +1,12 @@
 export const GSLIDE_TOKENS = {
-  bg: "#EFF6FF",
+  bg: "#FFFFFF",
   card: "#FFFFFF",
-  border: "#BFDBFE",
-  ink: "#1E3A5F",
-  muted: "#4B7AB5",
+  border: "#EDEEF4",
+  ink: "#101323",
+  muted: "#6B6D78",
   accent: "#1D6FE8",
   accentHover: "#1558C0",
-  accentSoft: "#DBEAFE",
-  inputBorder: "#93C5FD",
+  accentSoft: "#EFF4FF",
+  inputBorder: "#DADDE6",
   inputFocus: "#1D6FE8",
 } as const;

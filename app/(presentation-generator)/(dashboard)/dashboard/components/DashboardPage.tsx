@@ -21,6 +21,8 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { notify } from "@/components/ui/sonner";
 import { GSlideHeader } from "@/components/gslide";
+import { useT } from "@/i18n/provider";
+import { translate } from "@/i18n/translate";
 
 const actionCardBase =
   "absolute aspect-[16/9] h-[46.238px] w-[82.201px] rounded-[4.474px] border border-white/50 bg-cover bg-center bg-no-repeat shadow-[0_8px_18px_rgba(16,24,40,0.18)] transition-all duration-500 ease-out opacity-100 translate-y-0 scale-100";
@@ -74,20 +76,20 @@ const DashboardActionCard = ({
   mediaClassName = "w-[96px]",
 }: DashboardActionCardProps) => {
   const className =
-    "group/action relative isolate flex h-[90px] w-full min-w-0 overflow-visible rounded-[10.8px] border border-[var(--gslide-border)] bg-white text-[#191919] outline-none transition-all duration-300 hover:border-[#D7D8DE] hover:shadow-[0_10px_28px_rgba(16,24,40,0.08)] focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-4 disabled:cursor-wait disabled:opacity-70 disabled:hover:border-[var(--gslide-border)] disabled:hover:shadow-none";
+    "group/action relative isolate flex h-[90px] w-full min-w-0 overflow-visible rounded-[12px] border border-[var(--gslide-border)] bg-white text-[var(--gslide-ink)] outline-none transition-all duration-300 hover:border-[#D7D8DE] hover:shadow-[0_10px_28px_rgba(16,24,40,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-4 disabled:cursor-wait disabled:opacity-70 disabled:hover:border-[var(--gslide-border)] disabled:hover:shadow-none";
   const content = (
     <>
       {children}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-10 rounded-[10.8px] bg-white"
+        className="pointer-events-none absolute inset-0 z-10 rounded-[12px] bg-white"
       />
       <div
-        className={`relative z-20 h-full ${mediaClassName} shrink-0 overflow-hidden rounded-l-[10.8px] bg-[#F8F8FB]`}
+        className={`relative z-20 h-full ${mediaClassName} shrink-0 overflow-hidden rounded-l-[12px] bg-[#F8F8FB]`}
       >
         {media}
       </div>
-      <span className="relative z-20 flex min-w-0 flex-1 items-center justify-center px-3 text-center font-syne text-sm font-medium leading-normal text-[#191919] sm:px-4">
+      <span className="relative z-20 flex min-w-0 flex-1 items-center justify-center px-3 text-center text-sm font-medium leading-normal text-[var(--gslide-ink)] sm:px-4">
         {title}
       </span>
     </>
@@ -186,12 +188,13 @@ const sortPresentationsNewestFirst = (presentations: PresentationResponse[]) =>
 
 function DashboardHeader() {
   return (
-    <GSlideHeader title="Dashboard" />
+    <GSlideHeader title={translate("nav.dashboard")} />
   );
 }
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
+  const t = useT();
   const [presentations, setPresentations] = useState<PresentationResponse[]>(
     [],
   );
@@ -254,13 +257,13 @@ const DashboardPage: React.FC = () => {
       const message =
         creationError instanceof Error
           ? creationError.message
-          : "Something went wrong while creating the presentation.";
-      notify.error("Could not create blank presentation", message);
+          : t("dashboard.actions.blank.errorFallback");
+      notify.error(t("dashboard.actions.blank.errorTitle"), message);
     } finally {
       blankPresentationRequestInFlight.current = false;
       setIsCreatingBlankPresentation(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   const removePresentation = (presentationId: string) => {
     setPresentations((prev) => prev.filter((p) => p.id !== presentationId));
@@ -277,17 +280,17 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[var(--gslide-bg)] pb-10">
+    <div className="relative min-h-[100dvh] w-full bg-[var(--gslide-bg)] pb-10">
       <DashboardHeader />
       <section className="relative z-10 overflow-visible pb-0 pl-3 pr-3 pt-[17px] sm:pl-6 sm:pr-[9px]">
-        <h2 className="w-full font-syne text-[16px] font-medium leading-[normal] text-[#191919]">
-          Actions
+        <h2 className="w-full font-unbounded text-base font-normal tracking-[-0.03em] text-[var(--gslide-ink)]">
+          {t("dashboard.section.actions")}
         </h2>
         <div className="mt-[18px] grid w-full max-w-[625px] grid-cols-1 gap-4 sm:grid-cols-2">
           <DashboardActionCard
             href="/upload"
-            title="Create new Presentation"
-            ariaLabel="Create new presentation"
+            title={t("dashboard.actions.createNew.title")}
+            ariaLabel={t("dashboard.actions.createNew.ariaLabel")}
             media={
               <Image
                 src="/create_presentation_bg.png"
@@ -306,12 +309,12 @@ const DashboardPage: React.FC = () => {
             disabled={isCreatingBlankPresentation}
             isLoading={isCreatingBlankPresentation}
             title={
-              isCreatingBlankPresentation ? "Creating..." : "Blank Presentation"
+              isCreatingBlankPresentation ? t("dashboard.actions.blank.creating") : t("dashboard.actions.blank.title")
             }
             ariaLabel={
               isCreatingBlankPresentation
-                ? "Creating blank presentation"
-                : "Create blank presentation"
+                ? t("dashboard.actions.blank.creatingAriaLabel")
+                : t("dashboard.actions.blank.ariaLabel")
             }
             mediaClassName="w-[90px]"
             media={
@@ -324,15 +327,15 @@ const DashboardPage: React.FC = () => {
       </section>
       <section className="relative z-10 mt-[46px] pl-3 pr-3 sm:pl-6 sm:pr-[9px]">
         <div className="mb-[14px] flex items-center justify-between gap-4">
-          <h2 className="font-syne text-[16px] font-medium leading-[normal] text-[#191919]">
-            Decks
+          <h2 className="font-unbounded text-base font-normal tracking-[-0.03em] text-[var(--gslide-ink)]">
+            {t("dashboard.section.decks")}
           </h2>
           <div className="flex items-center gap-[17px]">
-            <div className="flex items-center rounded-[4px] border border-[#EDEEEF] p-1">
+            <div className="flex items-center rounded-lg border border-[var(--gslide-border)] p-1">
               <button
                 type="button"
                 onClick={() => setDeckViewMode("grid")}
-                aria-label="Grid view"
+                aria-label={t("dashboard.decks.gridViewAria")}
                 aria-pressed={deckViewMode === "grid"}
                 className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] ${deckViewMode === "grid" ? "bg-[var(--gslide-accent-soft)]" : "hover:bg-[#FAFAFC]"}`}
               >
@@ -341,7 +344,7 @@ const DashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDeckViewMode("list")}
-                aria-label="List view"
+                aria-label={t("dashboard.decks.listViewAria")}
                 aria-pressed={deckViewMode === "list"}
                 className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] ${deckViewMode === "list" ? "bg-[var(--gslide-accent-soft)]" : "hover:bg-[#FAFAFC]"}`}
               >

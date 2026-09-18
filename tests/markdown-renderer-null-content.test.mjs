@@ -25,5 +25,8 @@ test("dashboard cards provide a fallback title", async () => {
     "utf8"
   );
 
-  assert.match(source, /presentation\.title \?\? "Untitled presentation"/);
+  assert.match(
+    source,
+    /presentation\.title \?\? translate\("common\.untitledPresentation"\)/
+  );
 });

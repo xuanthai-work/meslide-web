@@ -1,4 +1,4 @@
-import { useFontLoader } from "../../hooks/useFontLoad";
+import { loadPresentationFonts } from "../../hooks/useFontLoad";
 import type { Theme } from "../../services/api/types";
 
 const THEME_CSS_KEYS = [
@@ -63,7 +63,7 @@ export function applyPresentationThemeToElement(
   Object.entries(cssVariables).forEach(([key, value]) => {
     element.style.setProperty(key, value);
   });
-  useFontLoader({ [theme.data.fonts.textFont.name]: theme.data.fonts.textFont.url });
+  loadPresentationFonts({ [theme.data.fonts.textFont.name]: theme.data.fonts.textFont.url });
   element.style.setProperty("font-family", `"${theme.data.fonts.textFont.name}"`);
   element.style.setProperty("--heading-font-family", `"${theme.data.fonts.textFont.name}"`);
   element.style.setProperty("--body-font-family", `"${theme.data.fonts.textFont.name}"`);

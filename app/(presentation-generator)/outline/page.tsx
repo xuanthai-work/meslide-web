@@ -1,10 +1,10 @@
-import React from "react";
 import { Metadata } from "next";
 import OutlinePage from "./components/OutlinePage";
+import { translate } from "@/i18n/translate";
 
 export const metadata: Metadata = {
-  title: "Outline Presentation",
-  description: "Customize and organize your presentation outline. Drag and drop slides, add charts, and generate your presentation with ease.",
+  title: translate("outline.metadata.title"),
+  description: translate("outline.metadata.description"),
   alternates: {
     canonical: "/create"
   },

@@ -1,9 +1,10 @@
 "use client";
 import { ArrowRight, Plus, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import React from 'react'
+import { useT } from '@/i18n/provider'
 
 const CustomTabEmpty = () => {
+    const t = useT()
     const router = useRouter()
     return (
         <div
@@ -29,8 +30,8 @@ const CustomTabEmpty = () => {
                     <Sparkles className='w-6 h-6 text-white' />
                 </div>
                 <div>
-                    <h4 className='text-[#191919] text-sm font-semibold '>Build Theme</h4>
-                    <p className='flex text-[#808080] text-sm  font-medium items-center gap-2'>From colors <ArrowRight className='w-3 h-3' /> fonts </p>
+                    <h4 className='text-[#191919] text-sm font-semibold '>{t('themes.empty.buildTheme')}</h4>
+                    <p className='flex text-[#808080] text-sm  font-medium items-center gap-2'>{t('themes.empty.fromColors')} <ArrowRight className='w-3 h-3' /> {t('themes.empty.fonts')} </p>
                 </div>
 
             </div>

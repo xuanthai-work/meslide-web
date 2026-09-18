@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { TemplateV2HtmlSlidePreview } from "../../../components/TemplateV2HtmlSlidePreview";
 import { quickPromptGroups } from "./chat-prompts";
 import type { AssistantActivity, ChatEditPreview } from "./chat-types";
+import { useT } from "@/i18n/provider";
 
 const AssistantSparkleIcon = ({ size = 14 }: { size?: number }) => (
   <svg
@@ -24,23 +25,27 @@ const AssistantSparkleIcon = ({ size = 14 }: { size?: number }) => (
   </svg>
 );
 
-export const AssistantMarker = () => (
-  <div className="mb-2 flex items-center gap-1.5 text-[#8A8F98]">
-    <AssistantSparkleIcon size={14} />
-    <span className="text-[11px] font-medium leading-4">Assistant</span>
-  </div>
-);
+export const AssistantMarker = () => {
+  const t = useT();
+  return (
+    <div className="mb-2 flex items-center gap-1.5 text-[#8A8F98]">
+      <AssistantSparkleIcon size={14} />
+      <span className="text-[11px] font-medium leading-4">{t("chat.title")}</span>
+    </div>
+  );
+};
 
 export const ActivityStatusIcon = ({
   activity,
 }: {
   activity: AssistantActivity;
 }) => {
+  const t = useT();
   if (activity.state === "running") {
     return (
       <span
         className="activity-flow-dots relative mt-1 h-[9px] w-[22px] shrink-0"
-        aria-label="Working"
+        aria-label={t("chat.widgets.working")}
       >
         <span className="absolute left-0 top-[1.5px] h-[6px] w-[6px] rounded-full bg-[#C3C3CB]" />
         <span className="absolute left-[8px] top-[1.5px] h-[6px] w-[6px] rounded-full bg-[#C3C3CB]" />
@@ -59,9 +64,11 @@ export const ActivityStatusIcon = ({
 export const QuickPromptsPanel = ({
   onPromptSelect,
   groups = quickPromptGroups,
+  localizeText = (value) => value,
 }: {
   onPromptSelect: (prompt: string) => void;
   groups?: typeof quickPromptGroups;
+  localizeText?: (value: string) => string;
 }) => (
   <div className="flex flex-col gap-6 font-syne">
     <AssistantSparkleIcon size={24} />
@@ -69,7 +76,7 @@ export const QuickPromptsPanel = ({
       {groups.map((group) => (
         <div key={group.label} className="flex flex-col gap-2">
           <p className="text-sm font-normal tracking-[0.28px] text-[#333333]">
-            {group.label}
+            {localizeText(group.label)}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {group.prompts.map((prompt) => (
@@ -79,7 +86,7 @@ export const QuickPromptsPanel = ({
                 onClick={() => onPromptSelect(prompt)}
                 className="rounded-full border border-black/[0.04] bg-black/[0.02] px-4 py-1.5 font-manrope text-xs font-normal tracking-[0.24px] text-[#333333] outline-none transition-colors hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1D6FE8] focus:border-[#1D6FE8] focus:outline-none focus:ring-0 focus-visible:border-[#1D6FE8] focus-visible:text-[#1D6FE8] focus-visible:outline-none focus-visible:ring-0 active:border-[#1D6FE8] active:text-[#1D6FE8]"
               >
-                {prompt}
+                {localizeText(prompt)}
               </button>
             ))}
           </div>
@@ -102,16 +109,17 @@ export const EditComparisonPreview = ({
   isApplying: boolean;
   onSelectVersion: (version: "original" | "modified") => void;
 }) => {
+  const t = useT();
   if (!preview.modifiedSlides?.length) return null;
 
   const cards = [
     {
-      label: "Original",
+      label: t("chat.widgets.original"),
       slides: preview.originalSlides,
       version: "original" as const,
     },
     {
-      label: "Modified",
+      label: t("chat.widgets.modified"),
       slides: preview.modifiedSlides,
       version: "modified" as const,
     },
@@ -127,9 +135,14 @@ export const EditComparisonPreview = ({
           height={14}
           className="h-[14px] w-[14px] shrink-0"
         />
-        <span className="font-semibold text-[#191919]">Select edits</span>
+        <span className="font-semibold text-[#191919]">
+          {t("chat.widgets.selectEdits")}
+        </span>
         <span className="ml-auto text-[11px] font-medium leading-[normal] text-[#1D6FE8]">
-          {preview.changeCount} {preview.changeCount === 1 ? "Change" : "Changes"}
+          {preview.changeCount}{" "}
+          {preview.changeCount === 1
+            ? t("chat.widgets.change")
+            : t("chat.widgets.changes")}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-[5px]">
@@ -146,7 +159,9 @@ export const EditComparisonPreview = ({
                 : "border-[#EDEEEF]",
             )}
             aria-pressed={selectedVersion === card.version}
-            aria-label={`Restore ${card.label.toLowerCase()} slide state`}
+            aria-label={t("chat.widgets.restoreAria", {
+              version: card.label.toLowerCase(),
+            })}
           >
             <span className="mb-[7px] flex items-center justify-center gap-1 truncate text-center text-[13px] font-medium leading-[normal] text-[#191919]">
               {isApplying && selectedVersion === card.version && (

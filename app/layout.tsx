@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { connection } from "next/server";
 import localFont from "next/font/local";
-import { Manrope, Syne, Unbounded } from "next/font/google";
+import { Manrope, Unbounded } from "next/font/google";
+import { translate } from "@/i18n/translate";
+import { defaultLocale, ogLocale } from "@/i18n/config";
+import { getServerFeatureFlags } from "@/lib/server-feature-flags";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 
@@ -19,21 +22,14 @@ const inter = localFont({
   variable: "--font-inter",
 });
 
-const syne = Syne({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-syne",
-});
-
 const manrope = Manrope({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700", "800"],
-  preload: false,
   variable: "--font-manrope",
 });
 
 const unbounded = Unbounded({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700", "800"],
   preload: false,
   variable: "--font-unbounded",
@@ -45,63 +41,62 @@ export async function generateMetadata(): Promise<Metadata> {
   await connection();
   const siteUrl = process.env.SITE_URL || "http://localhost:3000";
 
+  const metaTitle = translate("metadata.title");
+  const metaDescription = translate("metadata.description");
+  const metaKeywords = translate("metadata.keywords").split(", ");
+  const metaSiteName = translate("metadata.siteName");
+  const metaLogoAlt = translate("metadata.logoAlt");
+
   return {
     metadataBase: new URL(siteUrl),
-    title: "GSlide - AI presentation generator",
-    description:
-      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
-    keywords: [
-      "AI presentation generator",
-      "data storytelling",
-      "data visualization tool",
-      "AI data presentation",
-      "presentation generator",
-      "data to presentation",
-      "interactive presentations",
-      "professional slides",
-    ],
+    title: metaTitle,
+    description: metaDescription,
+    keywords: metaKeywords,
     openGraph: {
-      title: "GSlide - AI presentation generator",
-      description:
-        "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
+      title: metaTitle,
+      description: metaDescription,
       url: siteUrl,
-      siteName: "GSlide",
+      siteName: metaSiteName,
       images: [
         {
           url: "/apple-icon.png",
           width: 1200,
           height: 630,
-          alt: "GSlide Logo",
+          alt: metaLogoAlt,
         },
       ],
       type: "website",
-      locale: "en_US",
+      locale: ogLocale(defaultLocale),
     },
     alternates: {
       canonical: "/",
     },
     twitter: {
       card: "summary_large_image",
-      title: "GSlide - AI presentation generator",
-      description:
-        "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, OpenAI-compatible), and PDF/PPTX export. A free Gamma alternative.",
+      title: metaTitle,
+      description: metaDescription,
       images: ["/apple-icon.png"],
     },
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Defer environment reads to request time so one container image can use
+  // different feature settings in different deployments.
+  await connection();
+  const featureFlags = getServerFeatureFlags();
 
   return (
-    <html lang="en">
-      <body
-        className={`${inter.variable} ${syne.variable} ${manrope.variable} ${unbounded.variable} antialiased`}
-      >
-        <ClientRoot>{children}</ClientRoot>
+    <html
+      lang="vi"
+      className={`${inter.variable} ${manrope.variable} ${unbounded.variable}`}
+    >
+      <body className="antialiased">
+        <ClientRoot featureFlags={featureFlags}>{children}</ClientRoot>
       </body>
     </html>
   );

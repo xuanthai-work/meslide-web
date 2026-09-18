@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import {
   usePresentationStreaming,
+  useAutomaticPresentationGeneration,
   usePresentationData,
   usePresentationNavigation,
   useAutoSave,
@@ -51,6 +52,7 @@ import {
   type TemplateV2SurfaceSelectedDetail,
 } from "@/components/slide-editor/events/events";
 import { isEditableTarget } from "@/components/slide-editor/model/core";
+import { useT } from "@/i18n/provider";
 
 function hasTemplateV2Layouts(layout: unknown): boolean {
   if (!layout || typeof layout !== "object") return false;
@@ -83,22 +85,6 @@ type SlideAddedOptions = {
   promptOverlayKind?: "blank" | "layout";
 };
 
-const DEFAULT_LOADING_STATE: LoadingState = {
-  isLoading: true,
-  message: "Loading presentation",
-  showProgress: false,
-  duration: 0,
-  extra_info: "",
-};
-
-const STREAM_LOADING_STATE: LoadingState = {
-  isLoading: true,
-  message: "Creating your presentation",
-  showProgress: true,
-  duration: 90,
-  extra_info: "This can take a few minutes depending on slide count.",
-};
-
 const IDLE_LOADING_STATE: LoadingState = {
   isLoading: false,
   message: "",
@@ -115,12 +101,13 @@ const NAVIGATION_SCROLL_WINDOW_MS = 800;
 const PresentationPage: React.FC<PresentationPageProps> = ({
   presentation_id,
 }) => {
+  const t = useT();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   // State management
   const [loading, setLoading] = useState(true);
   const [loadingState, setLoadingState] =
-    useState<LoadingState>(DEFAULT_LOADING_STATE);
+    useState<LoadingState>(() => ({ isLoading: true, message: t("presentation.status.loading"), showProgress: false, duration: 0, extra_info: "" }));
   const [selectedSlide, setSelectedSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChatSending, setIsChatSending] = useState(false);
@@ -153,6 +140,8 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const navigationHintSlideRef = useRef<number | null>(null);
   const navigationScrollIntentRef = useRef({ amount: 0, lastAt: 0 });
   const router = useRouter();
+  const autoGenerate = searchParams.get("auto") === "1";
+  const automaticTemplateId = searchParams.get("template")?.trim() || null;
   const shouldPreloadTemplateV2Presentation =
     searchParams.get("editor") === "v2" || searchParams.get("type") === "smart";
 
@@ -161,15 +150,16 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   );
   const presentationDataRef = useRef(presentationData);
   const slidesLength = presentationData?.slides?.length ?? 0;
-  const isSmartPresentation =
-    searchParams.get("type") === "smart" ||
-    presentationData?.type === "smart" ||
-    presentationData?.generation_mode === "smart";
+  const persistedGenerationMode =
+    presentationData?.generation_mode ?? presentationData?.type;
+  const isSmartPresentation = persistedGenerationMode
+    ? persistedGenerationMode === "smart"
+    : searchParams.get("type") === "smart";
   const isTemplateV2Presentation =
     presentationData?.version === "v2-standard" ||
     hasTemplateV2Layouts(presentationData?.layout) ||
     hasTemplateV2Slides(presentationData?.slides);
-  const editingDisabled = isStreaming === true;
+  const editingDisabled = isStreaming === true || autoGenerate;
 
   useEffect(() => {
     presentationDataRef.current = presentationData;
@@ -219,6 +209,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     enabled:
       !!presentationData &&
       !isStreaming &&
+      !autoGenerate &&
       !isChatSending &&
       !isChatMutating,
   });
@@ -244,6 +235,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     setIsFullscreen
   );
 
+  const automaticGenerationControls = useAutomaticPresentationGeneration(
+    presentation_id,
+    autoGenerate,
+    automaticTemplateId,
+  );
+
   // Initialize streaming
   const streamControls = usePresentationStreaming(
     presentation_id,
@@ -265,6 +262,27 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     retry: streamRetry,
     canKeepWaiting: streamCanKeepWaiting,
   } = streamControls;
+  const generationLifecycle = autoGenerate
+    ? automaticGenerationControls.lifecycle
+    : streamLifecycle;
+  const generationStatusMessage = autoGenerate
+    ? automaticGenerationControls.statusMessage
+    : streamStatusMessage;
+  const generationDraftCount = autoGenerate
+    ? automaticGenerationControls.draftCount
+    : streamDraftCount;
+  const generationCancel = autoGenerate
+    ? automaticGenerationControls.cancel
+    : streamCancel;
+  const generationKeepWaiting = autoGenerate
+    ? automaticGenerationControls.keepWaiting
+    : streamKeepWaiting;
+  const generationRetry = autoGenerate
+    ? automaticGenerationControls.retry
+    : streamRetry;
+  const generationCanKeepWaiting = autoGenerate
+    ? automaticGenerationControls.canKeepWaiting
+    : streamCanKeepWaiting;
   // Planned total slide count for the slides confirm string. Prefer the
   // structure outline total, then the n_slides field, then fall back to the
   // drafted count so far.
@@ -279,6 +297,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
       !presentationData ||
       loading ||
       error ||
+      autoGenerate ||
       stream ||
       !isTemplateV2Presentation ||
       slidesLength > 0
@@ -298,6 +317,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   }, [
     dispatch,
     error,
+    autoGenerate,
     isTemplateV2Presentation,
     loading,
     presentationData,
@@ -312,8 +332,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
       return;
     }
 
-    setLoadingState(stream ? STREAM_LOADING_STATE : DEFAULT_LOADING_STATE);
-  }, [loading, stream]);
+    setLoadingState(stream
+      ? { isLoading: true, message: t("presentation.status.creating"), showProgress: true, duration: 90, extra_info: t("presentation.status.creatingHint") }
+      : { isLoading: true, message: t("presentation.status.loading"), showProgress: false, duration: 0, extra_info: "" });
+  }, [loading, stream, t]);
 
   useEffect(() => {
     if (isStreaming && slidesLength > 0) {
@@ -737,9 +759,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           role="alert"
         >
           <AlertCircle className="w-16 h-16 mb-4 text-red-500" />
-          <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("presentation.error.title")}</h2>
           <p className="text-center mb-4">
-            We couldn't load your presentation. Please try again.
+            {t("presentation.error.loadDescription")}
           </p>
           <div className="flex gap-2 justify-center items-center">
             <Button
@@ -747,14 +769,14 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 window.location.reload();
               }}
             >
-              Refresh Page
+              {t("presentation.error.refresh")}
             </Button>
             <Button
               onClick={() => {
                 router.push("/upload");
               }}
             >
-              Go to Upload
+              {t("presentation.error.goToUpload")}
             </Button>
           </div>
         </div>
@@ -786,15 +808,15 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
         />
         <div className="px-4">
           <GenerationStatusBar
-            surface="presentation"
-            lifecycle={streamLifecycle}
-            statusMessage={streamStatusMessage}
-            draftCount={streamDraftCount}
+            surface={autoGenerate ? "outline" : "presentation"}
+            lifecycle={generationLifecycle}
+            statusMessage={generationStatusMessage}
+            draftCount={generationDraftCount}
             totalCount={streamTotalCount}
-            onCancel={streamCancel}
-            onKeepWaiting={streamKeepWaiting}
-            onRetry={streamRetry}
-            canKeepWaiting={streamCanKeepWaiting}
+            onCancel={generationCancel}
+            onKeepWaiting={generationKeepWaiting}
+            onRetry={generationRetry}
+            canKeepWaiting={generationCanKeepWaiting}
           />
         </div>
         <div className="flex flex-1 min-h-0 gap-3 overflow-hidden xl:gap-5 2xl:gap-6">
@@ -820,10 +842,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                   className="h-4 w-4 text-[#1D6FE8]"
                   aria-hidden="true"
                 />
-                <span>Navigate with</span>
+                <span>{t("presentation.page.navigateWith")}</span>
                 <span
                   className="flex items-center gap-1"
-                  aria-label="arrow keys"
+                  aria-label={t("presentation.page.arrowKeys")}
                 >
                   {NAVIGATION_HINT_KEYS.map((key) => (
                     <kbd
@@ -834,10 +856,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                     </kbd>
                   ))}
                 </span>
-                <span>or the left thumbnails</span>
+                <span>{t("presentation.page.orThumbnails")}</span>
                 <button
                   type="button"
-                  aria-label="Dismiss navigation hint"
+                  aria-label={t("presentation.page.dismissHint")}
                   onClick={dismissNavigationHint}
                   className="pointer-events-auto ml-1 flex h-7 w-7 items-center justify-center rounded-full text-[#667085] transition hover:bg-[#EFF6FF] hover:text-[#101323] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]"
                 >
@@ -897,12 +919,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             className="fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-white/70 px-4 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(29,111,232,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--gslide-accent-hover)] bg-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:hidden"
           >
             <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
-            AI Assistant
+            {t("presentation.page.assistant")}
           </button>
 
           <button
             type="button"
-            aria-label="Close AI Assistant"
+            aria-label={t("presentation.page.closeAssistant")}
             onClick={closeMobileAssistant}
             className={cn(
               "inset-0 z-[60] bg-black/35 xl:hidden",
@@ -913,7 +935,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           <div
             id="presentation-mobile-assistant"
             role={isMobileAssistantOpen ? "dialog" : undefined}
-            aria-label={isMobileAssistantOpen ? "AI Assistant" : undefined}
+            aria-label={isMobileAssistantOpen ? t("presentation.page.assistant") : undefined}
             aria-modal={isMobileAssistantOpen ? true : undefined}
             className={cn(
               "h-screen w-[calc(100vw-16px)] max-w-[375px] shrink-0 flex-col bg-white shadow-[-12px_0_32px_rgba(16,24,40,0.18)] transition-[width] duration-200 xl:relative xl:z-auto xl:h-full xl:max-w-none xl:self-start xl:border-l xl:border-[#EDEEEF] xl:shadow-none",
@@ -926,7 +948,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             {isRightPanelOpen ? (
               <button
                 type="button"
-                aria-label="Close tools panel"
+                aria-label={t("presentation.page.closeTools")}
                 onClick={() => setIsRightPanelOpen(false)}
                 className="absolute -left-[10px] top-1/2 z-[80] hidden h-[36px] w-[16px] -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#BFDBFE] bg-[#FEFEFF] text-[#1558C0] shadow-[0_10px_26px_rgba(52,48,96,0.10)] transition-[border-color,box-shadow,color] hover:border-[#BFDBFE] hover:text-[#1558C0] hover:shadow-[0_12px_30px_rgba(52,48,96,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:flex"
               >
@@ -940,12 +962,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#EDEEEF] px-4 xl:hidden">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#101323]">
                 <Sparkles className="h-4 w-4 text-[#1D6FE8]" aria-hidden="true" />
-                AI Assistant
+                {t("presentation.page.assistant")}
               </div>
               <button
                 ref={mobileAssistantCloseRef}
                 type="button"
-                aria-label="Close AI Assistant"
+                aria-label={t("presentation.page.closeAssistant")}
                 onClick={closeMobileAssistant}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-[#667085] transition hover:bg-[#F6F6F9] hover:text-[#101323] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]"
               >

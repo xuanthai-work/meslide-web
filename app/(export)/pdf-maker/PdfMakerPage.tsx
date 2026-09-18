@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import "@/app/(presentation-generator)/utils/prism-languages";
@@ -10,7 +10,7 @@ import { AlertCircle } from "lucide-react";
 import { setPresentationData } from "@/store/slices/presentationGeneration";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
 import { ApiResponseHandler } from "@/app/(presentation-generator)/services/api/api-error-handler";
-import { useFontLoader } from "@/app/(presentation-generator)/hooks/useFontLoad";
+import { loadPresentationFonts } from "@/app/(presentation-generator)/hooks/useFontLoad";
 import { Theme } from "@/app/(presentation-generator)/services/api/types";
 import SlideScale from "@/app/(presentation-generator)/components/PresentationRender";
 import {
@@ -20,6 +20,7 @@ import {
 import { normalizeBackendAssetUrls } from "@/utils/api";
 import { ensureTailwindBrowserScript } from "@/lib/tailwind-browser";
 import { useSmartChartInjection } from "@/app/(presentation-generator)/components/useSmartChartInjection";
+import { useT } from "@/i18n/provider";
 
 const PDF_PRINT_STYLE = `
   html,
@@ -151,6 +152,7 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
   const { presentationData } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
+  const t = useT();
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -164,58 +166,6 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
       ensureTailwindBrowserScript();
     }
   }, [presentationData]);
-  useEffect(() => {
-    fetchUserSlides();
-    // The export scene is immutable for its lifetime; re-fetching when helper
-    // identities change can race Chromium's readiness signal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchUserSlides = async () => {
-    try {
-      const data = effectiveExportCookie
-        ? await fetchPresentationForExport(presentation_id, effectiveExportCookie)
-        : await DashboardApi.getPresentation(presentation_id);
-      const normalizedData = normalizeBackendAssetUrls(data);
-      dispatch(setPresentationData(normalizedData));
-
-      if (normalizedData.fonts) {
-        useFontLoader(normalizedData.fonts);
-      }
-      if (normalizedData?.theme) {
-        try {
-          applyTheme(normalizedData.theme);
-        } catch (themeError) {
-          // Theme issues should not block export rendering.
-          console.warn("Theme application skipped for pdf-maker:", themeError);
-        }
-      }
-    } catch (error) {
-      setError(true);
-      notify.error("Failed to load presentation", "The presentation could not be loaded. Please try again.");
-      console.error("Error fetching user slides:", error);
-    } finally {
-      setContentLoading(false);
-    }
-  };
-
-  const fetchPresentationForExport = async (
-    id: string,
-    cookieHeader: string
-  ) => {
-    const response = await fetch(`/api/export-presentation-data/${id}`, {
-      method: "GET",
-      headers: {
-        "x-export-cookie": cookieHeader,
-      },
-      cache: "no-store",
-    });
-
-    return ApiResponseHandler.handleResponse(
-      response,
-      "Presentation not found"
-    );
-  };
 
   const applyTheme = (theme: Theme) => {
     const element = document.getElementById("presentation-slides-wrapper");
@@ -248,11 +198,64 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
     });
     const textFontName = theme.data.fonts.textFont.name;
     const textFontUrl = theme.data.fonts.textFont.url;
-    useFontLoader({ [textFontName]: textFontUrl });
+    loadPresentationFonts({ [textFontName]: textFontUrl });
     element.style.setProperty("font-family", `"${textFontName}"`);
     element.style.setProperty("--heading-font-family", `"${textFontName}"`);
     element.style.setProperty("--body-font-family", `"${textFontName}"`);
   };
+
+  const fetchPresentationForExport = async (
+    id: string,
+    cookieHeader: string
+  ) => {
+    const response = await fetch(`/api/export-presentation-data/${id}`, {
+      method: "GET",
+      headers: {
+        "x-export-cookie": cookieHeader,
+      },
+      cache: "no-store",
+    });
+
+    return ApiResponseHandler.handleResponse(
+      response,
+      t("export.pdfMaker.error.notFound")
+    );
+  };
+
+  const fetchUserSlides = async () => {
+    try {
+      const data = effectiveExportCookie
+        ? await fetchPresentationForExport(presentation_id, effectiveExportCookie)
+        : await DashboardApi.getPresentation(presentation_id);
+      const normalizedData = normalizeBackendAssetUrls(data);
+      dispatch(setPresentationData(normalizedData));
+
+      if (normalizedData.fonts) {
+        loadPresentationFonts(normalizedData.fonts);
+      }
+      if (normalizedData?.theme) {
+        try {
+          applyTheme(normalizedData.theme);
+        } catch (themeError) {
+          // Theme issues should not block export rendering.
+          console.warn("Theme application skipped for pdf-maker:", themeError);
+        }
+      }
+    } catch (error) {
+      setError(true);
+      notify.error(t("export.pdfMaker.error.toastTitle"), t("export.pdfMaker.error.toastDesc"));
+      console.error("Error fetching user slides:", error);
+    } finally {
+      setContentLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserSlides();
+    // The export scene is immutable for its lifetime; re-fetching when helper
+    // identities change can race Chromium's readiness signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const slides = presentationData?.slides ?? [];
   const isLoading = contentLoading || slides.length === 0;
@@ -266,12 +269,12 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
             role="alert"
           >
             <AlertCircle className="w-16 h-16 mb-4 text-red-500" />
-            <strong className="font-bold text-4xl mb-2">Oops!</strong>
+            <strong className="font-bold text-4xl mb-2">{t("export.pdfMaker.error.oopsTitle")}</strong>
             <p className="block text-2xl py-2">
-              We encountered an issue loading your presentation.
+              {t("export.pdfMaker.error.message")}
             </p>
             <p className="text-lg py-2">
-              Please check your internet connection or try again later.
+              {t("export.pdfMaker.error.suggestion")}
             </p>
             <Button
               className="mt-4 bg-red-500 text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300"
@@ -279,7 +282,7 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
                 window.location.reload();
               }}
             >
-              Retry
+              {t("common.actions.retry")}
             </Button>
           </div>
         </div>

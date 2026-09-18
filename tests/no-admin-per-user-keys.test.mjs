@@ -22,11 +22,17 @@ test("proxy drops setup_required flag", async () => {
   assert.doesNotMatch(proxy, /setup_required/);
 });
 
-test("can-change-keys reflects env flag without admin role or auth gate", async () => {
-  const route = await readNext("app/api/can-change-keys/route.ts");
-  assert.match(route, /CAN_CHANGE_KEYS/);
-  assert.doesNotMatch(route, /role === "admin"/);
-  assert.doesNotMatch(route, /authStatusForRequest|requireAuthenticatedApi/);
+test("provider settings are always loaded for the current user", async () => {
+  const initializer = await readNext("app/ConfigurationInitializer.tsx");
+  const boot = initializer.slice(initializer.indexOf("const fetchUserConfigState"));
+  assert.match(boot, /fetchLocalProviderConfigJson/);
+  assert.match(boot, /fetchUserConfigJsonWithRetries/);
+  const localIdx = boot.indexOf("fetchLocalProviderConfigJson");
+  const overlayIdx = boot.indexOf("fetchUserConfigJsonWithRetries");
+  assert.ok(localIdx >= 0 && overlayIdx > localIdx);
+  const loader = await readNext("lib/startup-llm-config.ts");
+  assert.match(loader, /source=local/);
+  assert.match(loader, /STARTUP_USER_CONFIG_ATTEMPTS/);
 });
 
 test("user-config forwards to /api/v1/settings/provider", async () => {
@@ -34,9 +40,13 @@ test("user-config forwards to /api/v1/settings/provider", async () => {
   assert.match(route, /\/api\/v1\/settings\/provider/);
   assert.doesNotMatch(route, /\/api\/v1\/admin\/provider-settings/);
   assert.doesNotMatch(route, /requireAdminApi/);
-  assert.match(route, /DISABLE_ANONYMOUS_TRACKING/);
-  assert.match(route, /isTrackingOnlyBody/);
-  assert.match(route, /!canChangeKeys && !isTrackingOnlyBody/);
+  assert.doesNotMatch(route, /status:\s*403|immutableResponse/);
+  assert.match(route, /searchParams\.get\(["']source["']\) === ["']local["']/);
+  assert.match(route, /getEffectiveUserConfig/);
+  assert.match(route, /status:\s*503/);
+  assert.match(route, /retryable:\s*true/);
+  assert.doesNotMatch(route, /GET_RETRY_DELAYS_MS/);
+  assert.doesNotMatch(route, /console\.warn\([^)]+,\s*error\)/);
 });
 
 test("server-auth role helper no longer exposes admin roles", async () => {
@@ -99,8 +109,15 @@ test("admin persona files are removed", async () => {
   );
 });
 
-test("ConfigurationInitializer mentions operator not administrator", async () => {
+test("ConfigurationInitializer contains no administrator-specific behavior", async () => {
   const config = await readNext("app/ConfigurationInitializer.tsx");
   assert.doesNotMatch(config, /administrator/i);
-  assert.match(config, /operator|sign in and add your own keys/i);
+
+  // Shared catalog copy must also remain free of the removed admin persona.
+  const en = await readNext("i18n/locales/en.ts");
+  const vi = await readNext("i18n/locales/vi.ts");
+  assert.match(en, /operator/);
+  assert.doesNotMatch(en, /administrator/i);
+  assert.match(vi, /người vận hành/);
+  assert.doesNotMatch(vi, /quản trị viên/i);
 });

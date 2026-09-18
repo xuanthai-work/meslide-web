@@ -15,3 +15,8 @@ export {
   gslideNavIdleClass,
 } from "./GSlideSidebar";
 export { GSlideHeader } from "./GSlideHeader";
+export { GSlideStudioTitle } from "./GSlideStudioTitle";
+export { GSlideStepRail } from "./GSlideStepRail";
+export type { GSlideStudioStep } from "./GSlideStepRail";
+export { GSlideFadeHeader } from "./GSlideFadeHeader";
+export { GSlideDropCard } from "./GSlideDropCard";

@@ -25,6 +25,8 @@ import {
   type GenerationLifecycleState,
   type StallCause,
 } from "@/lib/generation-lifecycle";
+import { useT } from "@/i18n/provider";
+import { translateBackendError, translateBackendStatus } from "@/i18n/backend-messages";
 
 const MAX_STREAM_RETRIES = 3;
 const STALL_INTERVAL_MS = 1_000;
@@ -113,6 +115,7 @@ export const usePresentationStreaming = (
     generationMode?: "standard" | "smart";
   } = {}
 ) => {
+  const t = useT();
   const dispatch = useDispatch();
   const presentationData = useSelector(
     (state: RootState) => state.presentationGeneration.presentationData
@@ -122,8 +125,8 @@ export const usePresentationStreaming = (
   const isSmartMode = options.generationMode === "smart";
 
   const defaultStatusMessage = isSmartMode
-    ? "Preparing Smart presentation"
-    : "Creating your presentation";
+    ? t("presentation.status.preparingSmart")
+    : t("presentation.status.creating");
 
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
@@ -155,7 +158,7 @@ export const usePresentationStreaming = (
     stallCauseRef.current = stallCause;
   }, [stallCause]);
 
-  // Keep statusMessage ref in sync so stall analytics read the latest value.
+  // Keep statusMessage ref in sync so stall detection reads the latest value.
   useEffect(() => {
     statusMessageRef.current = statusMessage;
   }, [statusMessage]);
@@ -183,11 +186,11 @@ export const usePresentationStreaming = (
         setStallCause(cause);
         setLifecycle("stalled");
         setStatusMessage(
-          "Presentation stream stalled — waiting for the server."
+          t("presentation.status.stalled")
         );
       }
     }, STALL_INTERVAL_MS);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!stream) {
@@ -202,6 +205,16 @@ export const usePresentationStreaming = (
     let preloadRequest: Promise<void> | null = null;
     const streamStartedAt = Date.now();
     let streamIsTemplateV2 = preloadPresentationData;
+    const localizeBackendStatus = (status: string) => {
+      const known: Record<string, string> = {
+        "Preparing Smart presentation": t("presentation.status.preparingSmart"),
+        "Reading source documents": t("presentation.status.readingDocuments"),
+        "Searching the web": t("presentation.status.searchingWeb"),
+        "Applying community design reference": t("presentation.status.applyingCommunity"),
+        "Designing the complete presentation": t("presentation.status.designingComplete"),
+      };
+      return known[status] ?? status;
+    };
     let smartGenerationOutcomeTracked = false;
 
     streamStartedAtRef.current = streamStartedAt;
@@ -236,8 +249,7 @@ export const usePresentationStreaming = (
       description: string,
       opts: { showToast?: boolean } = {}
     ) => {
-      // Local logging only; GSlide no longer ships analytics. Keep this so a
-      // failure with showToast === false is never silently swallowed.
+      // Keep local failure diagnostics even when the UI toast is suppressed.
       console.error("Presentation streaming failed", description);
       closeEventSource();
       clearRetryTimer();
@@ -250,7 +262,7 @@ export const usePresentationStreaming = (
       // reopen /presentation/stream/{id} and start a second generation job.
       removeStreamParamFromUrl();
       if (opts.showToast !== false) {
-        notify.error("Presentation streaming failed", description);
+        notify.error(t("presentation.status.streamingFailed"), description);
       }
     };
 
@@ -276,7 +288,7 @@ export const usePresentationStreaming = (
       accumulatedChunks = "";
       accumulatedChunksRef.current = "";
       previousSlidesLength.current = 0;
-      setStatusMessage("Reconnecting to presentation stream");
+      setStatusMessage(t("presentation.status.reconnecting"));
       setLifecycle("connecting");
 
       retryTimerRef.current = setTimeout(() => {
@@ -348,8 +360,8 @@ export const usePresentationStreaming = (
           ?.slides?.length ?? 0;
       setStatusMessage(
         total
-          ? `Creating slide ${slidesLength} of ${total}…`
-          : `Creating slide ${slidesLength}…`
+          ? t("presentation.status.generatingSlideOf", { current: slidesLength, total })
+          : t("presentation.status.generatingSlide", { current: slidesLength })
       );
     };
 
@@ -380,7 +392,7 @@ export const usePresentationStreaming = (
       setLifecycle("connecting");
 
       const eventSource = new EventSource(
-        getApiUrl(`/api/v1/ppt/presentation/stream/${presentationId}`)
+        getApiUrl(`/api/v1/ppt/presentation/stream/${presentationId}?regenerate=true`)
       );
       eventSourceRef.current = eventSource;
 
@@ -549,17 +561,38 @@ export const usePresentationStreaming = (
             }
             if (Array.isArray(data.warnings)) {
               for (const warning of data.warnings) {
-                const detail =
-                  warning &&
-                  typeof warning === "object" &&
-                  typeof warning.detail === "string"
-                    ? warning.detail
-                    : null;
-                if (!detail || shownAssetWarnings.has(detail)) {
+                if (!warning || typeof warning !== "object") {
                   continue;
                 }
-                shownAssetWarnings.add(detail);
-                notify.warning("Some images could not be generated", detail, {
+                const errorCode =
+                  typeof warning.error_code === "string" ? warning.error_code : null;
+                const legacyDetail =
+                  typeof warning.detail === "string" && warning.detail.length > 0
+                    ? warning.detail
+                    : null;
+                if (!errorCode && !legacyDetail) {
+                  continue;
+                }
+                // Coded warnings (image search / generation) localize through
+                // the catalog; legacy plain-text warnings stay verbatim.
+                const detail = errorCode
+                  ? translateBackendError(t, {
+                      detail: legacyDetail,
+                      error_code: errorCode,
+                    })
+                  : legacyDetail;
+                if (!detail) {
+                  continue;
+                }
+                const dedupeKey = errorCode ?? detail;
+                if (shownAssetWarnings.has(dedupeKey)) {
+                  continue;
+                }
+                shownAssetWarnings.add(dedupeKey);
+                const title = errorCode?.startsWith("image_search.")
+                  ? t("presentation.data.imageSearchWarningTitle")
+                  : t("presentation.data.imageWarningTitle");
+                notify.warning(title, detail, {
                   duration: 12_000,
                 });
               }
@@ -619,7 +652,7 @@ export const usePresentationStreaming = (
               clearRetryTimer();
               clearStallInterval();
               retryCountRef.current = 0;
-              setStatusMessage("Presentation ready");
+              setStatusMessage(t("presentation.status.ready"));
               setLifecycle("complete");
 
               // Remove stream parameter from URL
@@ -627,7 +660,7 @@ export const usePresentationStreaming = (
             } catch (error) {
               console.error("Could not finalize presentation stream:", error);
               if (!scheduleRetry("failed to parse complete payload")) {
-                finalizeFailure("Failed to load the completed presentation.");
+                finalizeFailure(t("presentation.status.completedLoadFailed"));
               }
             }
             accumulatedChunks = "";
@@ -651,7 +684,7 @@ export const usePresentationStreaming = (
             clearRetryTimer();
             clearStallInterval();
             retryCountRef.current = 0;
-            setStatusMessage("Presentation ready");
+            setStatusMessage(t("presentation.status.ready"));
             setLifecycle("complete");
 
             // Remove stream parameter from URL
@@ -661,14 +694,17 @@ export const usePresentationStreaming = (
           case "error":
             // Server already failed the job: do NOT silent-retry.
             finalizeFailure(
-              data.detail ||
-                "Failed to connect to the server. Please try again."
+              translateBackendError(t, data) ||
+                t("presentation.status.connectFailed")
             );
             break;
 
           case "status":
             if (data.status) {
-              setStatusMessage(data.status);
+              setStatusMessage(translateBackendStatus(t, {
+                ...data,
+                status: localizeBackendStatus(data.status),
+              }));
             }
             break;
 
@@ -687,7 +723,7 @@ export const usePresentationStreaming = (
           // Connection lost before any useful event: silent retry allowed.
           if (!scheduleRetry("connection lost")) {
             finalizeFailure(
-              "Failed to connect to the server. Please try again."
+              t("presentation.status.connectFailed")
             );
           }
           return;
@@ -699,7 +735,7 @@ export const usePresentationStreaming = (
         setStallCause("socket");
         setLifecycle("stalled");
         setStatusMessage(
-          "Presentation stream stalled — waiting for the server."
+          t("presentation.status.stalled")
         );
       };
 
@@ -744,6 +780,7 @@ export const usePresentationStreaming = (
     options.generationMode,
     defaultStatusMessage,
     startStallWatcher,
+    t,
   ]);
 
   // isStreaming is derived from lifecycle so it always agrees.
@@ -788,10 +825,13 @@ export const usePresentationStreaming = (
           JSON.stringify(presentationData)
         );
       } catch {
-        notify.error("Draft not saved", "Refresh may lose the stopped slides.");
+        notify.error(
+          t("presentation.data.draftNotSavedTitle"),
+          t("presentation.data.draftNotSavedDescription")
+        );
       }
     }
-  }, [dispatch, setLoading]);
+  }, [dispatch, setLoading, t]);
 
   const keepWaiting = useCallback(() => {
     if (!eventSourceRef.current) {

@@ -21,6 +21,7 @@ import {
   parseLimitedSlideCount,
   trimTextToWordLimit,
 } from "@/utils/presentationLimits";
+import { useT } from "@/i18n/provider";
 
 import Chat from "../../presentation/components/Chat";
 import {
@@ -42,14 +43,12 @@ import TemplateSelection from "./TemplateSelection";
 
 const DEFAULT_OUTLINE_CONFIG: PresentationConfig = {
   slides: null,
-  language: LanguageType.Auto,
+  language: LanguageType.Vietnamese,
   prompt: "",
   tone: ToneType.Default,
   verbosity: VerbosityType.Standard,
   instructions: "",
-  includeTableOfContents: false,
-  includeTitleSlide: false,
-  webSearch: false,
+  webSearch: true,
 };
 
 const normalizeOutlineConfig = (
@@ -111,12 +110,14 @@ const scrollToPageTop = () => {
 const OutlinePage: React.FC = () => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const t = useT();
   const searchParams = useSearchParams();
   const { presentation_id: storedPresentationId, outlines } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
   const queryPresentationId = searchParams.get("id")?.trim() || null;
   const suggestedTemplate = searchParams.get("template")?.trim() || null;
+  const autoGenerate = searchParams.get("auto") === "1";
   const presentation_id = queryPresentationId || storedPresentationId;
   const { config: savedConfig, files } = useSelector(
     (state: RootState) => state.pptGenUpload
@@ -151,10 +152,12 @@ const OutlinePage: React.FC = () => {
     hasSelectedTemplate && hasOutlineStreamFinished && !outlineControlsBusy;
   const isOutlineAssistantVisible = !isTemplateStage && hasSelectedTemplate;
   const isRegenerateDisabled = !isOutlineReady;
+  // Compare against the stable lifecycle enum, never the localized display
+  // status message (FR-5). "Outline ready" is now display-only copy.
   const outlineStreamFinished =
     !isTemplateStage &&
     !outlineControlsBusy &&
-    (outlines.length > 0 || streamState.statusMessage === "Outline ready");
+    (outlines.length > 0 || streamState.lifecycle === "complete");
 
   useEffect(() => {
     if (queryPresentationId && queryPresentationId !== storedPresentationId) {
@@ -212,10 +215,22 @@ const OutlinePage: React.FC = () => {
       position: number;
     }) => {
       setSelectedTemplateId(template.id);
+
+      if (autoGenerate && presentation_id) {
+        const params = new URLSearchParams({
+          id: presentation_id,
+          auto: "1",
+          type: "standard",
+          template: template.id,
+        });
+        router.replace(`/presentation?${params.toString()}`);
+        return;
+      }
+
       setIsTemplateStage(false);
       scrollToPageTop();
     },
-    []
+    [autoGenerate, presentation_id, router]
   );
 
   const handleRegenerateOutline = useCallback(async () => {
@@ -224,7 +239,7 @@ const OutlinePage: React.FC = () => {
     }
 
     if (!hasSelectedTemplate) {
-      toast.error("Please select a template first");
+      toast.error(t("outline.toast.selectTemplateFirst"));
       return;
     }
 
@@ -233,17 +248,17 @@ const OutlinePage: React.FC = () => {
     }
 
     if (!draftConfig.language) {
-      toast.error("Please select language");
+      toast.error(t("outline.toast.selectLanguage"));
       return;
     }
 
     if (documentPaths.length > 0 && draftConfig.language === LanguageType.Auto) {
-      toast.error("Please choose a language before regenerating from documents");
+      toast.error(t("outline.toast.selectLanguageBeforeRegenFromDocs"));
       return;
     }
 
     if (!draftConfig.prompt.trim() && documentPaths.length === 0) {
-      toast.error("No Prompt or Document Provided");
+      toast.error(t("outline.toast.noPromptOrDocument"));
       return;
     }
 
@@ -255,12 +270,10 @@ const OutlinePage: React.FC = () => {
         content: draftConfig.prompt ?? "",
         n_slides: parseLimitedSlideCount(draftConfig.slides),
         file_paths: documentPaths,
-        language: draftConfig.language ?? "",
+        language: draftConfig.language ?? null,
         tone: draftConfig.tone,
         verbosity: draftConfig.verbosity,
         instructions: draftConfig.instructions || null,
-        include_table_of_contents: !!draftConfig.includeTableOfContents,
-        include_title_slide: !!draftConfig.includeTitleSlide,
         web_search: !!draftConfig.webSearch,
       });
 
@@ -270,11 +283,11 @@ const OutlinePage: React.FC = () => {
       setIsTemplateStage(false);
     } catch (error: unknown) {
       console.error("Error regenerating outline", error);
-      toast.error("Outline Error", {
+      toast.error(t("outline.toast.outlineError.title"), {
         description:
           error instanceof Error
             ? error.message
-            : "Failed to regenerate outline.",
+            : t("outline.toast.outlineError.fallbackDescription"),
       });
     } finally {
       setIsRegeneratingOutline(false);
@@ -287,6 +300,7 @@ const OutlinePage: React.FC = () => {
     hasSelectedTemplate,
     isOutlineReady,
     outlineControlsBusy,
+    t,
   ]);
 
   const handleUpdateOutline = (index: number, newContent: string) => {
@@ -328,9 +342,9 @@ const OutlinePage: React.FC = () => {
 
   if (!presentation_id) {
     return (
-      <div className="min-h-screen bg-[#FEFEFF]">
+      <div className="min-h-[100dvh] bg-[var(--gslide-bg)]">
         <OutlineStandardHeader
-          title="Outline Generation"
+          title={t("outline.header.title.outlineGeneration")}
           onBack={() => router.push("/dashboard")}
         />
         <EmptyStateView />
@@ -341,8 +355,8 @@ const OutlinePage: React.FC = () => {
   return (
     <div
       className={cn(
-        "min-h-screen overflow-x-clip font-syne",
-        isTemplateStage ? "bg-[#FEFEFF]" : "bg-[#F6F6F9]"
+        "min-h-[100dvh] overflow-x-clip",
+        isTemplateStage ? "bg-[var(--gslide-bg)]" : "bg-[#F6F6F9]"
       )}
     >
       <OverlayLoader
@@ -353,7 +367,7 @@ const OutlinePage: React.FC = () => {
       />
 
       <OutlineStandardHeader
-        title={isTemplateStage ? "Select Template" : "Outline Generation"}
+        title={isTemplateStage ? t("outline.header.title.selectTemplate") : t("outline.header.title.outlineGeneration")}
         onBack={() => {
           if (isTemplateStage) {
             router.push("/dashboard");

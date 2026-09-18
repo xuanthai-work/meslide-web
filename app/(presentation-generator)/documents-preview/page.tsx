@@ -1,4 +1,3 @@
-import React from 'react'
 import DocumentPreviewPage from './components/DocumentPreviewPage'
 
 const page = () => {

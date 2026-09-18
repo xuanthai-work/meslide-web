@@ -29,7 +29,7 @@ import { ensureTailwindBrowserScript } from "@/lib/tailwind-browser";
 import TemplateService from "../../services/api/template";
 import { useTemplateDetails } from "../../hooks/useTemplateDetails";
 import {
-  useFontLoader as loadFontAssets,
+  loadPresentationFonts as loadFontAssets,
 } from "../../hooks/useFontLoad";
 import type {
   PaletteItem,
@@ -71,6 +71,7 @@ import {
   type UnknownRecord,
 } from "./editor/templatePreviewUtils";
 import { TemplateV2PromptOverlay } from "../../_shared/TemplateV2PromptOverlay";
+import { useT } from "@/i18n/provider";
 
 type GroupLayoutPreviewProps = {
   useKonvaTemplateV2Preview?: boolean;
@@ -135,6 +136,7 @@ function blankLayoutWithFullSlideRectangle(layoutId: string): TemplateV2Layout {
 const GroupLayoutPreview = ({
   useKonvaTemplateV2Preview = true,
 }: GroupLayoutPreviewProps) => {
+  const t = useT();
   void useKonvaTemplateV2Preview;
 
   const searchParams = useSearchParams();
@@ -150,8 +152,8 @@ const GroupLayoutPreview = ({
   const [activePanel, setActivePanel] = useState<PanelMode>("schema");
   const [density, setDensity] = useState<Density>("");
   const [openFieldId, setOpenFieldId] = useState("");
-  const [templateNameDraft, setTemplateNameDraft] = useState("Template");
-  const [savedTemplateName, setSavedTemplateName] = useState("Template");
+  const [templateNameDraft, setTemplateNameDraft] = useState(t("templateStudio.editor.templateFallback"));
+  const [savedTemplateName, setSavedTemplateName] = useState(t("templateStudio.editor.templateFallback"));
   const [historyCommand, setHistoryCommand] = useState<HistoryCommand | null>(
     null,
   );
@@ -207,10 +209,10 @@ const GroupLayoutPreview = ({
   }, [layouts, templateId]);
 
   useEffect(() => {
-    const nextName = template?.name?.trim() || "Template";
+    const nextName = template?.name?.trim() || t("templateStudio.editor.templateFallback");
     setTemplateNameDraft(nextName);
     setSavedTemplateName(nextName);
-  }, [template?.name, templateId]);
+  }, [t, template?.name, templateId]);
 
   const canEditTemplate = Boolean(template && !template.is_default);
   const activeLayout = editableLayouts[activeLayoutIndex] ?? null;
@@ -263,11 +265,11 @@ const GroupLayoutPreview = ({
 
     try {
       await navigator.clipboard.writeText(layoutToken);
-      notify.success("Copied", "Template layout ID copied.");
+      notify.success(t("templateStudio.toast.copied"), t("templateStudio.toast.layoutIdCopied"));
     } catch {
-      notify.error("Copy failed", layoutToken);
+      notify.error(t("templateStudio.toast.copyFailed"), layoutToken);
     }
-  }, [editableLayouts, templateId]);
+  }, [editableLayouts, t, templateId]);
 
   const copyActiveLayoutId = useCallback(async () => {
     await copyLayoutId(activeLayoutIndex);
@@ -276,14 +278,14 @@ const GroupLayoutPreview = ({
   const copyTemplateId = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(templateId);
-      notify.success("Copied", "Template ID copied.");
+      notify.success(t("templateStudio.toast.copied"), t("templateStudio.toast.templateIdCopied"));
     } catch (copyError) {
       notify.error(
-        "Copy failed",
+        t("templateStudio.toast.copyFailed"),
         copyError instanceof Error ? copyError.message : templateId,
       );
     }
-  }, [templateId]);
+  }, [t, templateId]);
 
   const commitTemplateName = useCallback(async () => {
     if (!templateId || !template) return;
@@ -292,7 +294,7 @@ const GroupLayoutPreview = ({
       return;
     }
 
-    const nextName = templateNameDraft.trim() || "Untitled Template";
+    const nextName = templateNameDraft.trim() || t("templateStudio.editor.untitled");
     if (nextName !== templateNameDraft) {
       setTemplateNameDraft(nextName);
     }
@@ -305,6 +307,7 @@ const GroupLayoutPreview = ({
     template,
     templateId,
     templateNameDraft,
+    t,
   ]);
 
   const cancelTemplateNameEdit = useCallback(() => {
@@ -358,8 +361,8 @@ const GroupLayoutPreview = ({
     );
     if (!hasEditableContent) {
       notify.warning(
-        "No editable content",
-        "Mark a schema field as non-decorative before testing content density.",
+        t("templateStudio.editor.noEditableTitle"),
+        t("templateStudio.editor.noEditableDescription"),
       );
       return;
     }
@@ -369,6 +372,7 @@ const GroupLayoutPreview = ({
     activeLayout,
     canEditTemplate,
     schemaFields,
+    t,
   ]);
 
   const resetContentDensity = useCallback(() => {
@@ -519,8 +523,8 @@ const GroupLayoutPreview = ({
       );
       if (targetIndex < 0) {
         notify.error(
-          "Slide unavailable",
-          "The blank slide is no longer available. Add a new one and try again.",
+          t("templateStudio.editor.blankUnavailableTitle"),
+          t("templateStudio.editor.blankUnavailableDescription"),
         );
         setPromptLayoutId(null);
         return false;
@@ -559,16 +563,16 @@ const GroupLayoutPreview = ({
         setPromptLayoutId(null);
         setHasUnsavedChanges(true);
         notify.success(
-          "Slide created",
-          `Slide ${targetIndex + 1} was generated. Save to keep it.`,
+          t("templateStudio.editor.slideCreated"),
+          t("templateStudio.editor.slideCreatedDescription", { number: targetIndex + 1 }),
         );
         return true;
       } catch (generationError) {
         notify.error(
-          "Failed to create slide",
+          t("templateStudio.editor.createSlideFailed"),
           generationError instanceof Error
             ? generationError.message
-            : "Something went wrong while creating this slide.",
+            : t("templateStudio.editor.createSlideFallback"),
         );
         return false;
       } finally {
@@ -580,6 +584,7 @@ const GroupLayoutPreview = ({
       isPromptGenerating,
       promptLayoutId,
       templateId,
+      t,
       updateEditableLayouts,
     ],
   );
@@ -613,8 +618,8 @@ const GroupLayoutPreview = ({
     if (!canEditTemplate) return;
     if (editableLayouts.length <= 1) {
       notify.warning(
-        "Cannot delete slide",
-        "A template needs at least one layout.",
+        t("templateStudio.editor.cannotDelete"),
+        t("templateStudio.editor.cannotDeleteDescription"),
       );
       return;
     }
@@ -633,6 +638,7 @@ const GroupLayoutPreview = ({
     canEditTemplate,
     editableLayouts.length,
     resetContentDensity,
+    t,
     updateEditableLayouts,
   ]);
 
@@ -657,15 +663,15 @@ const GroupLayoutPreview = ({
 
       updateActiveLayout(normalizeBackendAssetUrls(createdLayout.layout));
       notify.success(
-        "Slide reconstructed",
-        `Slide ${activeLayoutIndex + 1} was reconstructed. Save to keep it.`,
+        t("templateStudio.editor.reconstructed"),
+        t("templateStudio.editor.reconstructedDescription", { number: activeLayoutIndex + 1 }),
       );
     } catch (reconstructError) {
       notify.error(
-        "Failed to reconstruct slide",
+        t("templateStudio.editor.reconstructFailed"),
         reconstructError instanceof Error
           ? reconstructError.message
-          : "Something went wrong while reconstructing this slide.",
+          : t("templateStudio.editor.reconstructFallback"),
       );
     } finally {
       setIsReconstructing(false);
@@ -677,6 +683,7 @@ const GroupLayoutPreview = ({
     isReconstructing,
     resetContentDensity,
     templateId,
+    t,
     updateActiveLayout,
   ]);
 
@@ -689,8 +696,8 @@ const GroupLayoutPreview = ({
       if (!canEditTemplate || !activeLayout || typeof window === "undefined") {
         if (!activeLayout) {
           notify.warning(
-            "Create a layout first",
-            "Add a blank layout before inserting content.",
+            t("templateStudio.editor.createLayoutFirst"),
+            t("templateStudio.editor.createLayoutFirstDescription"),
           );
         }
         return false;
@@ -715,8 +722,8 @@ const GroupLayoutPreview = ({
 
       if (!detail.handled) {
         notify.warning(
-          "Insert unavailable",
-          "Select the active layout and try again.",
+          t("templateStudio.editor.insertUnavailable"),
+          t("templateStudio.editor.selectActiveLayout"),
         );
         return false;
       }
@@ -728,6 +735,7 @@ const GroupLayoutPreview = ({
       activeLayoutId,
       activeLayoutIndex,
       canEditTemplate,
+      t,
     ],
   );
 
@@ -796,8 +804,8 @@ const GroupLayoutPreview = ({
         recordArray(block.raw, "elements").length === 0
       ) {
         notify.warning(
-          "Component unavailable",
-          "This merged component cannot be inserted yet.",
+          t("templateStudio.editor.componentUnavailable"),
+          t("templateStudio.editor.componentUnavailableDescription"),
         );
         return;
       }
@@ -808,7 +816,7 @@ const GroupLayoutPreview = ({
         true,
       );
     },
-    [insertEditorContent],
+    [insertEditorContent, t],
   );
 
   const saveTemplate = useCallback(async () => {
@@ -833,7 +841,7 @@ const GroupLayoutPreview = ({
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
       layoutsToSave = editableLayoutsRef.current;
 
-      const nextTemplateName = templateNameDraft.trim() || "Untitled Template";
+      const nextTemplateName = templateNameDraft.trim() || t("templateStudio.editor.untitled");
       if (nextTemplateName !== templateNameDraft) {
         setTemplateNameDraft(nextTemplateName);
       }
@@ -850,15 +858,15 @@ const GroupLayoutPreview = ({
       setHasUnsavedChanges(false);
       setSavedTemplateName(nextTemplateName);
       notify.success(
-        "Changes saved",
-        "Template JSON was updated.",
+        t("templateStudio.toast.changesSaved"),
+        t("templateStudio.toast.jsonUpdated"),
       );
     } catch (saveError) {
       notify.error(
-        "Failed to save template",
+        t("templateStudio.toast.saveFailedTitle"),
         saveError instanceof Error
           ? saveError.message
-          : "Something went wrong while saving the template.",
+          : t("templateStudio.editor.saveFallback"),
       );
     } finally {
       setIsSaving(false);
@@ -868,6 +876,7 @@ const GroupLayoutPreview = ({
     template,
     templateId,
     templateNameDraft,
+    t,
   ]);
 
   const openDeleteTemplateDialog = useCallback(() => {
@@ -884,28 +893,28 @@ const GroupLayoutPreview = ({
       if (result.success) {
         setIsDeleteDialogOpen(false);
         notify.success(
-          "Template deleted",
-          "The template was deleted successfully.",
+          t("templateStudio.toast.deleted"),
+          t("templateStudio.toast.deletedDescription"),
         );
         router.push("/templates");
         return;
       }
 
       notify.error(
-        "Could not delete template",
-        result.message || "Something went wrong while deleting the template.",
+        t("templateStudio.toast.deleteFailed"),
+        result.message || t("templateStudio.editor.deleteFallback"),
       );
     } catch (deleteError) {
       notify.error(
-        "Could not delete template",
+        t("templateStudio.toast.deleteFailed"),
         deleteError instanceof Error
           ? deleteError.message
-          : "Something went wrong while deleting the template.",
+          : t("templateStudio.editor.deleteFallback"),
       );
     } finally {
       setIsDeletingTemplate(false);
     }
-  }, [isDeletingTemplate, router, template?.is_default, templateId]);
+  }, [isDeletingTemplate, router, t, template?.is_default, templateId]);
 
   if (!templateId) {
     return (
@@ -960,14 +969,14 @@ const GroupLayoutPreview = ({
             !activeLayout ||
             !activePreviewLayout ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 text-sm text-[#696969]">
-              <p>No layouts available for this template.</p>
+              <p>{t("templateStudio.editor.noLayouts")}</p>
               {canEditTemplate ? (
                 <button
                   className="rounded-[8px] border border-[#BFDBFE] bg-white px-4 py-2 text-[13px] font-medium text-[#1D6FE8] transition-colors hover:bg-[#DBEAFE]"
                   onClick={createBlankLayout}
                   type="button"
                 >
-                  Create blank layout
+                  {t("templateStudio.editor.createBlankLayout")}
                 </button>
               ) : null}
             </div>
