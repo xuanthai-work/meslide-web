@@ -14,22 +14,37 @@ test("lint ceiling ratchets remaining warnings and only stays or goes down", asy
   );
 });
 
+const WEB_CI_COMMANDS = [
+  "npm ci",
+  "npm test",
+  "npm run check:i18n-copy",
+  "npm run typecheck",
+  "npm run lint",
+  "npm run deadcode",
+  "npm run build",
+  "npx cypress run --component --browser electron",
+];
+
 test("web CI stays aligned with npm run check plus build and Cypress", async () => {
   const workflow = await read(".github/workflows/test.yml");
-  for (const command of [
-    "npm ci",
-    "npm test",
-    "npm run check:i18n-copy",
-    "npm run typecheck",
-    "npm run lint",
-    "npm run deadcode",
-    "npm run build",
-    "npx cypress run --component --browser electron",
-  ]) {
+  for (const command of WEB_CI_COMMANDS) {
     assert.match(workflow, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(workflow, /GSLIDE_FEATURE_SMART_MODE:\s*"true"/);
   assert.match(workflow, /GSLIDE_FEATURE_COMMUNITY:\s*"true"/);
+});
+
+test("GitLab CI runs the same web gates as GitHub Actions", async () => {
+  const pipeline = await read(".gitlab-ci.yml");
+  for (const command of WEB_CI_COMMANDS) {
+    assert.match(
+      pipeline,
+      new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    );
+  }
+  assert.match(pipeline, /GSLIDE_FEATURE_SMART_MODE:\s*"true"/);
+  assert.match(pipeline, /GSLIDE_FEATURE_COMMUNITY:\s*"true"/);
+  assert.doesNotMatch(pipeline, /POSTHOG_/);
 });
 
 test("Knip ignoreDependencies keep an owner comment", async () => {
