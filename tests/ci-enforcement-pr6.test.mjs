@@ -34,6 +34,15 @@ test("web CI stays aligned with npm run check plus build and Cypress", async () 
   assert.match(workflow, /GSLIDE_FEATURE_COMMUNITY:\s*"true"/);
 });
 
+test("ESLint and Knip skip the in-repo Cypress cache GitLab CI uses", async () => {
+  const eslint = await read("eslint.config.mjs");
+  const knip = await read("knip.jsonc");
+  const gitignore = await read(".gitignore");
+  assert.match(eslint, /\.cache\/\*\*/);
+  assert.match(knip, /!\.cache\/\*\*/);
+  assert.match(gitignore, /^\.cache\/?$/m);
+});
+
 test("GitLab CI runs the same web gates as GitHub Actions", async () => {
   const pipeline = await read(".gitlab-ci.yml");
   for (const command of WEB_CI_COMMANDS) {
