@@ -1,4 +1,5 @@
 # App-owned test pipeline. Matches .github/workflows/test.yml.
+# Project CI config path must be `.gitlab-ci.yml` (not the infra-layer template).
 # Image publish / cluster deploy stays with DevOps (registry, runners, Ingress).
 workflow:
   rules:
@@ -19,6 +20,10 @@ variables:
 default:
   interruptible: true
 
+.test_rules: &test_rules
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  - if: $CI_COMMIT_BRANCH
+
 cache:
   key:
     files:
@@ -30,6 +35,7 @@ cache:
 test-nextjs:
   stage: test
   image: node:22-bookworm
+  rules: *test_rules
   before_script:
     - apt-get update
     - apt-get install -y --no-install-recommends
@@ -54,6 +60,7 @@ test-nextjs:
 test-nextjs-features-on:
   stage: test
   image: node:22-bookworm
+  rules: *test_rules
   variables:
     GSLIDE_FEATURE_SMART_MODE: "true"
     GSLIDE_FEATURE_COMMUNITY: "true"
