@@ -91,6 +91,8 @@ import Chat from "./Chat";
 import TemplateService from "../../services/api/template";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import { isTemplateFreePresentation } from "../../_shared/blank-slide";
+import { useT } from "@/i18n/provider";
+import { normalizeSearchText } from "@/utils/normalizeSearchText";
 
 type PresentationActionsProps = React.ComponentProps<typeof Chat> & {
   editingDisabled?: boolean;
@@ -872,6 +874,7 @@ function BlockGroupCard({
   group: TemplateBlockGroup;
   onInsertBlock: (block: TemplateBlock) => void;
 }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [hasExpanded, setHasExpanded] = useState(false);
   const firstVariant = group.variants[0];
@@ -929,7 +932,7 @@ function BlockGroupCard({
           onClick={toggleExpanded}
         >
           <span className="shrink-0 rounded-full border border-[#BFDBFE] bg-[#FAF8FF] px-3 py-1.5 text-[11px] font-medium leading-4 text-[#7F00FF]">
-            {variantCount} Layouts
+            {t("presentation.tools.layoutCount", { count: variantCount })}
           </span>
           <ChevronDown
             className={cn(
@@ -956,6 +959,7 @@ export const BlocksPanel = ({
   presentationData?: unknown;
   onInsertBlock: (block: TemplateBlock) => void;
 }) => {
+  const t = useT();
   const [blockPrompt, setBlockPrompt] = useState("");
   const [{ blocks, error, loading }, dispatchBlockState] = useReducer(
     blocksPanelReducer,
@@ -966,16 +970,16 @@ export const BlocksPanel = ({
     [presentationData, presentationId],
   );
   const visibleBlocks = useMemo(() => {
-    const query = blockPrompt.trim().toLowerCase();
+    const query = normalizeSearchText(blockPrompt);
     if (!query) return blocks;
     return blocks.filter(
       (group) =>
-        group.title.toLowerCase().includes(query) ||
-        group.description.toLowerCase().includes(query) ||
+        normalizeSearchText(group.title).includes(query) ||
+        normalizeSearchText(group.description).includes(query) ||
         group.variants.some(
           (variant) =>
-            variant.title.toLowerCase().includes(query) ||
-            variant.description.toLowerCase().includes(query),
+            normalizeSearchText(variant.title).includes(query) ||
+            normalizeSearchText(variant.description).includes(query),
         ),
     );
   }, [blockPrompt, blocks]);
@@ -1001,14 +1005,14 @@ export const BlocksPanel = ({
         if (cancelled) return;
         dispatchBlockState({
           type: "failed",
-          message: "Could not load template components.",
+          message: t("presentation.tools.loadBlocksFailed"),
         });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, presentationData, presentationId]);
+  }, [cacheKey, presentationData, presentationId, t]);
 
   return (
     <div className="h-full overflow-y-auto px-[clamp(14px,1.4vw,20px)] pb-[clamp(24px,2.2vw,32px)] pt-[clamp(24px,2.2vw,32px)] hide-scrollbar">
@@ -1030,21 +1034,21 @@ export const BlocksPanel = ({
         }
       `}</style>
       <h3 className="mb-3 text-[clamp(13px,0.95vw,15px)] font-semibold leading-5 text-[#101323]">
-        Blocks
+        {t("presentation.tools.blocks")}
       </h3>
 
       <div className="mb-7 flex h-[clamp(46px,3.6vw,52px)] items-center rounded-[10px] border border-[#EDEEF0] bg-white pl-[clamp(10px,0.9vw,12px)] pr-[clamp(6px,0.6vw,8px)] shadow-[0_10px_26px_rgba(17,24,39,0.08)]">
         <input
           value={blockPrompt}
           onChange={(event) => setBlockPrompt(event.target.value)}
-          placeholder="Search blocks"
+          placeholder={t("presentation.tools.searchBlocks")}
           className="min-w-0 flex-1 bg-transparent text-[clamp(10px,0.75vw,12px)] text-[#101323] outline-none placeholder:text-[#9CA3AF]"
         />
         <button
           type="button"
           disabled={disabled}
           className="flex h-[clamp(32px,2.5vw,36px)] w-[clamp(32px,2.5vw,36px)] shrink-0 items-center justify-center rounded-full bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Create block"
+          aria-label={t("presentation.tools.createBlock")}
         >
           <Search
             className="h-[clamp(12px,0.9vw,14px)] w-[clamp(12px,0.9vw,14px)] text-white"
@@ -1053,12 +1057,12 @@ export const BlocksPanel = ({
         </button>
       </div>
 
-      <SectionLabel>Content</SectionLabel>
+      <SectionLabel>{t("presentation.tools.content")}</SectionLabel>
 
       <div className="space-y-3">
         {loading && (
           <p className="rounded-[8px] border border-[#E5E7EB] bg-[#F9FAFB] p-4 text-[11px] leading-4 text-[#667085]">
-            Loading template components...
+            {t("presentation.tools.loadingBlocks")}
           </p>
         )}
         {!loading && error && (
@@ -1068,7 +1072,7 @@ export const BlocksPanel = ({
         )}
         {!loading && !error && visibleBlocks.length === 0 && (
           <p className="rounded-[8px] border border-dashed border-[#D0D5DD] bg-[#F9FAFB] p-4 text-[11px] leading-4 text-[#667085]">
-            No template components found.
+            {t("presentation.tools.noBlocks")}
           </p>
         )}
         {!loading &&
@@ -1146,9 +1150,21 @@ function ActionsSidebar({
   blocksUnavailable?: boolean;
   onActionSelect: (action: ActionId) => void;
 }) {
+  const t = useT();
+  const localizedActionLabel = (id: ActionId) => {
+    switch (id) {
+      case "texts": return t("presentation.tools.texts");
+      case "charts": return t("presentation.tools.charts");
+      case "tables": return t("presentation.tools.tables");
+      case "images": return t("presentation.tools.images");
+      case "elements": return t("presentation.tools.elements");
+      case "blocks": return t("presentation.tools.blocks");
+      default: return t("presentation.tools.ai");
+    }
+  };
   return (
     <aside
-      aria-label="Editor tools"
+      aria-label={t("presentation.tools.aria")}
       className="ml-auto flex h-full w-[78px] shrink-0 flex-col items-center gap-5 bg-white px-[10px] py-2"
     >
       <div
@@ -1160,7 +1176,7 @@ function ActionsSidebar({
         <PrimaryActionButton
           active={activeAction === "ai"}
           iconSrc={actionIconSrc.ai}
-          label="AI"
+          label={t("presentation.tools.ai")}
           onClick={() => onActionSelect("ai")}
         />
         {!aiOnly && (
@@ -1169,9 +1185,9 @@ function ActionsSidebar({
             <PrimaryActionButton
               active={activeAction === "blocks"}
               disabled={blocksUnavailable}
-              disabledReason="Blocks require a presentation template"
+              disabledReason={t("presentation.tools.blocksNeedTemplate")}
               iconSrc={actionIconSrc.blocks}
-              label="Blocks"
+              label={t("presentation.tools.blocks")}
               onClick={() => onActionSelect("blocks")}
             />
           </>
@@ -1185,7 +1201,7 @@ function ActionsSidebar({
             {insertActions.map((item) => (
               <React.Fragment key={item.id}>
                 <NavButton
-                  item={item}
+                  item={{ ...item, label: localizedActionLabel(item.id) }}
                   active={activeAction === item.id}
                   onClick={() => onActionSelect(item.id)}
                 />
@@ -1234,6 +1250,7 @@ function ActionsPanel({
   presentationData?: unknown;
   presentationId: string;
 }) {
+  const t = useT();
   return (
     <div className="min-w-0 flex-1 bg-white">
       <div className={cn("h-full", activeAction === "ai" ? "block" : "hidden")}>
@@ -1255,18 +1272,18 @@ function ActionsPanel({
       {!aiOnly && activeAction === "texts" && (
         <InsertPanel
           disabled={editingDisabled}
-          title="Texts"
-          groups={[{ label: "Add", items: textItems }]}
+          title={t("presentation.tools.texts")}
+          groups={[{ label: t("presentation.tools.add"), items: textItems }]}
           onItemSelect={onTextItemSelect}
         />
       )}
       {!aiOnly && activeAction === "charts" && (
         <InsertPanel
           disabled={editingDisabled}
-          title="Charts"
+          title={t("presentation.tools.charts")}
           groups={[
-            { label: "Chart Type", items: chartTypeItems },
-            { label: "Infographics", items: infographicItems },
+            { label: t("presentation.tools.chartType"), items: chartTypeItems },
+            { label: t("presentation.tools.infographics"), items: infographicItems },
           ]}
           onItemSelect={onChartItemSelect}
         />
@@ -1274,23 +1291,23 @@ function ActionsPanel({
       {!aiOnly && activeAction === "tables" && (
         <InsertPanel
           disabled={editingDisabled}
-          title="Tables"
-          groups={[{ label: "Table Type", items: tableTypeItems }]}
+          title={t("presentation.tools.tables")}
+          groups={[{ label: t("presentation.tools.tableType"), items: tableTypeItems }]}
           onItemSelect={onTableItemSelect}
         />
       )}
       {!aiOnly && activeAction === "images" && (
         <InsertPanel
           disabled={editingDisabled}
-          title="Images"
-          groups={[{ label: "Add", items: imageItems }]}
+          title={t("presentation.tools.images")}
+          groups={[{ label: t("presentation.tools.add"), items: imageItems }]}
           onItemSelect={onImageItemSelect}
         />
       )}
       {!aiOnly && activeAction === "elements" && (
         <InsertPanel
           disabled={editingDisabled}
-          title="Elements"
+          title={t("presentation.tools.elements")}
           groups={elementItemGroups}
           onItemSelect={onElementItemSelect}
         />
@@ -1322,6 +1339,7 @@ function templateV2TargetKey(
 }
 
 const PresentationActions = (props: PresentationActionsProps) => {
+  const t = useT();
   const {
     editingDisabled = false,
     presentationData,
@@ -1412,7 +1430,10 @@ const PresentationActions = (props: PresentationActionsProps) => {
     if (editingDisabled) return false;
     if (typeof window === "undefined") return false;
     if (typeof props.currentSlide !== "number") {
-      notify.warning("Select a slide", "Choose a slide before adding content.");
+      notify.warning(
+        t("presentation.tools.selectSlideTitle"),
+        t("presentation.tools.selectSlideDescription")
+      );
       return false;
     }
     if (
@@ -1434,8 +1455,8 @@ const PresentationActions = (props: PresentationActionsProps) => {
 
     if (!detail.handled) {
       notify.warning(
-        "Insert unavailable",
-        "Content can be added only to slides imported through the slide editor.",
+        t("presentation.tools.insertUnavailableTitle"),
+        t("presentation.tools.insertUnavailableDescription"),
       );
       return false;
     }
@@ -1498,8 +1519,8 @@ const PresentationActions = (props: PresentationActionsProps) => {
     const element = adaptTemplateV2ComponentToElement(block.raw, block.index);
     if (!element) {
       notify.warning(
-        "Component unavailable",
-        "This template component cannot be inserted yet.",
+        t("presentation.tools.componentUnavailableTitle"),
+        t("presentation.tools.componentUnavailableDescription"),
       );
       return;
     }

@@ -1,3 +1,6 @@
+# Keep these steps aligned with package.json `check` (test, i18n, lint,
+# typecheck, deadcode) plus production build and Cypress. Local `npm run check`
+# must stay green before changing this workflow.
 name: Test web
 
 on:
@@ -35,8 +38,17 @@ jobs:
       - name: Run Node.js tests
         run: npm test
 
+      - name: Check for hard-coded localized UI copy
+        run: npm run check:i18n-copy
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
       - name: Run ESLint
         run: npm run lint
+
+      - name: Check for unused files and dependencies
+        run: npm run deadcode
 
       - name: Build application
         env:
@@ -45,4 +57,34 @@ jobs:
         run: npm run build
 
       - name: Run Cypress component tests
+        run: npx cypress run --component --browser electron
+
+  # PR 3/6: retained Smart + Community must not rot behind the default-off gate.
+  # The default Cypress job above covers flags off; this job mounts the same
+  # specs with both runtime flags enabled.
+  test-nextjs-features-on:
+    name: Cypress with Smart and Community on
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    env:
+      GSLIDE_FEATURE_SMART_MODE: "true"
+      GSLIDE_FEATURE_COMMUNITY: "true"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Cypress component tests with retained features enabled
         run: npx cypress run --component --browser electron

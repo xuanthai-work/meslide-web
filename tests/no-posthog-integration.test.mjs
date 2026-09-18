@@ -1,4 +1,4 @@
-// Regression test: GSlide no longer ships any PostHog/analytics integration.
+// Regression test: GSlide no longer ships its own tracking integration.
 //
 // Asserts that the active application source, dependencies and BFF routes stay
 // free of PostHog so a re-added initializer, wrapper, telemetry-status route,
@@ -27,7 +27,7 @@ async function assertAbsent(relativePath) {
 // Terms that may never return to application source. Mirrors the plan's
 // acceptance grep (`posthog|telemetry-status|captureError`) plus the removed
 // wrapper API surface.
-const BANNED = /posthog|telemetry-status|captureError|initPostHog|setTelemetryEnabled/i;
+const BANNED = /posthog|telemetry-status|captureError|initPostHog|setTelemetryEnabled|DISABLE_ANONYMOUS_TRACKING|rewrite-telemetry|logRewriteOutcome|anonymous error reports|báo cáo lỗi ẩn danh/i;
 
 // Application source directories scanned for the banned terms. The tests/
 // directory is intentionally excluded: regression tests may reference the
@@ -35,6 +35,7 @@ const BANNED = /posthog|telemetry-status|captureError|initPostHog|setTelemetryEn
 const SOURCE_DIRS = [
   "app",
   "components",
+  "i18n",
   "lib",
   "models",
   "store",
@@ -85,6 +86,9 @@ test("PostHog files are removed", async () => {
   await assertAbsent(
     "app/(presentation-generator)/(dashboard)/settings/PrivacySettings.tsx",
   );
+  await assertAbsent(
+    "app/(presentation-generator)/upload/services/rewrite-telemetry.ts",
+  );
 });
 
 test("ClientRoot no longer wires a telemetry initializer", async () => {
@@ -107,7 +111,7 @@ test("proxy no longer exempts a telemetry-status BFF route", async () => {
   assert.doesNotMatch(proxy, /captureError/);
 });
 
-test("application source contains no PostHog integration", async () => {
+test("application source contains no GSlide-owned tracking integration", async () => {
   const offenders = [];
   for (const dir of SOURCE_DIRS) {
     const absDir = path.join(nextRoot, dir);

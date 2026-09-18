@@ -5,23 +5,28 @@ import {
     normalizeSvgNumberish,
     transformSvgMarkup,
 } from "@/lib/svg-color";
+import {
+    MAX_SVG_SIZE_BYTES,
+    STATIC_ICONS_URL_PREFIX,
+    StaticIconSourceError,
+    fetchStaticIconSvgFromApi,
+} from "@/lib/static-icon-fetch";
+import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_ICONS_URL_PREFIX = "/static/icons/";
-const MAX_SVG_SIZE_BYTES = 5 * 1024 * 1024;
 let staticIconsRootPromise: Promise<string> | null = null;
 
 class SvgSourceError extends Error {
-    constructor(
-        message: string,
-        readonly status: number
-    ) {
+    status: number;
+
+    constructor(message: string, status: number) {
         super(message);
         this.name = "SvgSourceError";
+        this.status = status;
     }
 }
 
@@ -156,7 +161,18 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "url is required" }, { status: 400 });
         }
 
-        const svgContent = await readLocalStaticIconSvg(svgUrl, req.url);
+        let svgContent: string | null = null;
+        try {
+            svgContent = await readLocalStaticIconSvg(svgUrl, req.url);
+        } catch {
+            // Split web/api deployments do not share the API's static/icons
+            // directory; fall back to fetching the SVG from FastAPI, the
+            // same origin that serves /static/icons to the browser.
+            svgContent = await fetchStaticIconSvgFromApi(svgUrl, req.url, {
+                fetchImpl: fetch,
+                baseUrl: getFastApiBaseUrl(),
+            });
+        }
         if (svgContent === null) {
             return NextResponse.json(
                 { error: "Only /static/icons SVG sources are supported" },
@@ -191,7 +207,10 @@ export async function GET(req: Request) {
             },
         });
     } catch (error) {
-        if (error instanceof SvgSourceError) {
+        if (
+            error instanceof SvgSourceError ||
+            error instanceof StaticIconSourceError
+        ) {
             return NextResponse.json(
                 { error: error.message },
                 { status: error.status }

@@ -3,6 +3,17 @@ import {
   type ApiErrorResponse,
 } from "@/utils/apiErrorMessages";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string,
+    public readonly params?: Record<string, unknown>,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 // API Response Handler Utility
 export class ApiResponseHandler {
   static async handleResponse(response: Response, defaultErrorMessage: string): Promise<any> {
@@ -24,9 +35,13 @@ export class ApiResponseHandler {
 
     // Handle error responses
     let errorMessage = defaultErrorMessage;
+    let errorCode: string | undefined;
+    let errorParams: Record<string, unknown> | undefined;
 
     try {
       const errorData: ApiErrorResponse = await response.json();
+      errorCode = typeof errorData.error_code === "string" ? errorData.error_code : undefined;
+      errorParams = errorData.error_params;
       errorMessage = extractApiErrorMessage(
         errorData,
         defaultErrorMessage,
@@ -38,7 +53,7 @@ export class ApiResponseHandler {
     }
 
     // Throw error with appropriate message
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, errorCode, errorParams);
   }
 
 

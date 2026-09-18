@@ -24,7 +24,14 @@ import {
 import { useSelector } from "react-redux";
 
 import { Button } from "@/components/ui/button";
-import { GSlideWordmark } from "@/components/gslide";
+import {
+  GSlideButton,
+  GSlideDropCard,
+  GSlideFadeHeader,
+  GSlideStepRail,
+  GSlideStudioTitle,
+  GSlideWordmark,
+} from "@/components/gslide";
 import {
   Command,
   CommandEmpty,
@@ -51,8 +58,11 @@ import {
 import type { RootState } from "@/store/store";
 import { normalizeBackendAssetUrls, resolveBackendAssetUrl } from "@/utils/api";
 import { setupImageUrlConverter } from "@/utils/image-url-converter";
+import { useI18n, useT } from "@/i18n/provider";
+import { formatFileSize } from "@/i18n/format";
+import { normalizeSearchText } from "@/utils/normalizeSearchText";
 
-import { useFontLoader as loadFontAssets } from "../hooks/useFontLoad";
+import { loadPresentationFonts as loadFontAssets } from "../hooks/useFontLoad";
 import TemplateService from "../services/api/template";
 import { ensureTailwindBrowserScript } from "@/lib/tailwind-browser";
 import { TemplateV2LayoutPreview } from "./components/EachSlide/TemplateV2LayoutPreview";
@@ -77,13 +87,6 @@ type StudioStep = 1 | 2 | 3 | 4;
 
 
 
-const studioSteps: { id: StudioStep; label: string }[] = [
-  { id: 1, label: "Upload" },
-  { id: 2, label: "Analyze" },
-  { id: 3, label: "Preview" },
-  { id: 4, label: "Review" },
-];
-
 const FONT_FALLBACK_OPTION_HEIGHT = 40;
 const FONT_FALLBACK_MAX_VISIBLE_ROWS = 7;
 const FONT_FALLBACK_OVERSCAN_ROWS = 4;
@@ -93,62 +96,11 @@ function getDefaultTemplateName(file: File | null): string {
   return file.name.replace(/\.pptx$/i, "").trim();
 }
 
-function formatFileSize(size: number): string {
-  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-}
-
 function activeStudioStep(step: TemplateCreationStep): StudioStep {
   if (step === "font-check" || step === "font-upload") return 2;
   if (step === "slides-preview") return 3;
   if (step === "template-creation" || step === "completed") return 4;
   return 1;
-}
-
-function StudioTopBar({ activeStep }: { activeStep: StudioStep }) {
-  return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-40 h-[72px] sm:h-[80px] 2xl:h-[96px] bg-gradient-to-b from-white via-white to-white/0">
-      <div className="relative mx-auto flex h-full max-w-[1280px] 2xl:max-w-[1536px] items-center justify-between px-5 sm:px-8 2xl:px-[90px]">
-        <a
-          href="/dashboard"
-          className="pointer-events-auto flex h-8 items-center sm:h-[34px] 2xl:h-[44px] shrink-0"
-          aria-label="Dashboard"
-        >
-          <GSlideWordmark className="text-sm sm:text-base 2xl:text-lg" />
-        </a>
-
-        <nav
-          className="pointer-events-auto flex items-center"
-          aria-label="Template Studio progress"
-        >
-          {studioSteps.map((step, index) => {
-            const isActive = step.id === activeStep;
-            return (
-              <React.Fragment key={step.id}>
-                <div className="flex items-center gap-1 sm:gap-1.5 2xl:gap-2">
-                  <span
-                    className={`flex h-5 w-5 sm:h-6 sm:w-6 2xl:h-7 2xl:w-7 items-center justify-center rounded-full border text-[10px] sm:text-[11px] 2xl:text-xs leading-none ${isActive
-                      ? "border-black bg-black text-white"
-                      : "border-[#E4E5EB] bg-white text-[#9B9CA3]"
-                      }`}
-                  >
-                    {step.id}
-                  </span>
-                  <span
-                    className={`hidden text-[10px] font-medium sm:inline sm:text-[11px] 2xl:text-xs ${isActive ? "text-black" : "text-[#9B9CA3]"}`}
-                  >
-                    {step.label}
-                  </span>
-                </div>
-                {index < studioSteps.length - 1 ? (
-                  <span className="mx-1.5 sm:mx-2 2xl:mx-2.5 h-px w-3 sm:w-[18px] 2xl:w-[22px] bg-[#E9EAF0]" />
-                ) : null}
-              </React.Fragment>
-            );
-          })}
-        </nav>
-      </div>
-    </header>
-  );
 }
 
 function StudioBottomAction({ children }: { children: React.ReactNode }) {
@@ -157,54 +109,6 @@ function StudioBottomAction({ children }: { children: React.ReactNode }) {
       <div className="pointer-events-auto w-full max-w-[260px] sm:max-w-[300px] 2xl:max-w-[380px]">
         {children}
       </div>
-    </div>
-  );
-}
-
-function GradientPillButton({
-  children,
-  onClick,
-  disabled,
-  className = "",
-  mutedWhenDisabled = false,
-  fullWidth = false,
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
-  mutedWhenDisabled?: boolean;
-  fullWidth?: boolean;
-}) {
-  const isMuted = mutedWhenDisabled && disabled;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex ${fullWidth ? "w-full" : ""} h-10 items-center justify-center gap-2 rounded-[58px] px-5 text-sm font-medium shadow-none transition disabled:cursor-not-allowed ${isMuted
-        ? "bg-[#ECECF1] text-[#5C5E68] disabled:opacity-100"
-        : "bg-[var(--gslide-accent)] text-white hover:bg-[var(--gslide-accent-hover)] disabled:opacity-60"
-        } ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function TemplateStudioTitle({ compact = false }: { compact?: boolean }) {
-  return (
-    <div
-      className={`px-4 text-center ${compact ? "pt-[88px] sm:pt-[96px] 2xl:pt-[112px]" : "pt-[96px] sm:pt-[108px] 2xl:pt-[128px]"}`}
-    >
-      <h1 className="font-unbounded text-[36px] font-normal leading-none tracking-[-1.2px] text-[#101323] sm:text-[48px] sm:tracking-[-1.4px] md:text-[56px] 2xl:text-[68px] 2xl:tracking-[-1.8px]">
-        Template Studio
-      </h1>
-      <p className="mx-auto mt-3 max-w-[480px] text-center font-syne text-[15px] font-normal leading-[1.4] text-[#101323CC] sm:mt-4 sm:max-w-[520px] sm:text-[16px] 2xl:mt-5 2xl:max-w-[600px] 2xl:text-[18px]">
-        Upload your PPTX file to extract slides and convert them to a template
-        which you can use to generate AI presentations.
-      </p>
     </div>
   );
 }
@@ -224,6 +128,8 @@ function UploadPanel({
   onRemove: () => void;
   onStart: () => void;
 }) {
+  const t = useT();
+  const { locale } = useI18n();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dropInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -242,19 +148,23 @@ function UploadPanel({
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-white font-syne">
-      <TemplateStudioTitle />
+    <main className="flex min-h-[100dvh] flex-col items-center bg-white">
+      <GSlideStudioTitle
+        title={t("templateStudio.topbar.title")}
+        description={t("templateStudio.topbar.description")}
+      />
 
       <section className="mt-8 w-full max-w-[640px] px-4 sm:mt-10 sm:max-w-[700px] 2xl:mt-12 2xl:max-w-[820px]">
-        <div className="group relative">
-          <div className="relative z-10 ml-8 2xl:ml-10 w-max rounded-t-[28px] 2xl:rounded-t-[32px] border border-b-0 border-[#EDEEF4] bg-white px-3 2xl:px-4 pb-2.5 2xl:pb-3 pt-2 2xl:pt-2.5">
+        <GSlideDropCard
+          tab={
+            <>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               className="flex h-[34px] 2xl:h-[42px] items-center gap-1.5 2xl:gap-2 rounded-[80px] bg-white px-3.5 2xl:px-4 text-[12px] 2xl:text-sm font-semibold text-black shadow-[0_0_4px_rgba(0,0,0,0.06)]"
             >
               <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[var(--gslide-accent)]" />
-              Upload PPTX File
+              {t("templateStudio.upload.uploadPptx")}
             </button>
             <input
               ref={inputRef}
@@ -263,9 +173,9 @@ function UploadPanel({
               className="hidden"
               onChange={onFileInput}
             />
-          </div>
-
-          <div className="relative -mt-px rounded-[28px] 2xl:rounded-[32px] border border-[#EDEEF4] bg-white p-2.5 2xl:p-3 shadow-[0_0_16px_rgba(80,71,230,0.08)] transition-shadow duration-200 ">
+            </>
+          }
+        >
             <div
               className={`relative h-[120px] 2xl:h-[150px] overflow-hidden rounded-[18px] 2xl:rounded-[22px] border border-[#E8E8EF] bg-white ${selectedFile ? "" : "cursor-pointer"
                 }`}
@@ -295,12 +205,12 @@ function UploadPanel({
                       </p>
                       <p className="mt-2 2xl:mt-2.5 text-sm 2xl:text-base text-[#777985]">
                         {isProcessing ? (
-                          "Processing..."
+                          t("templateStudio.upload.processingFile")
                         ) : (
                           <>
-                            {formatFileSize(selectedFile.size)}
+                            {formatFileSize(selectedFile.size, locale)}
                             <span className="px-2">•</span>
-                            Ready
+                            {t("templateStudio.upload.ready")}
                           </>
                         )}
                       </p>
@@ -316,7 +226,7 @@ function UploadPanel({
                       }}
                       disabled={isProcessing}
                       className="w-[36px] h-[36px] 2xl:w-[44px] 2xl:h-[44px] top-1/2 z-20 flex items-center justify-center rounded-full border border-[#E8E8EF] bg-[#EFF0F4] text-black disabled:opacity-50"
-                      aria-label="Remove file"
+                      aria-label={t("templateStudio.upload.removeFileAria")}
                     >
                       <X className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                     </button>
@@ -331,31 +241,30 @@ function UploadPanel({
                     draggable={false}
                   />
                   <p className="mt-3 2xl:mt-4 text-sm 2xl:text-base font-normal text-[#808080]">
-                    Drag &amp; Drop your files here
+                    {t("templateStudio.upload.dropTitle")}
                   </p>
                 </div>
               )}
             </div>
 
             <div className="mt-3 flex items-center justify-end gap-3 px-1">
-              <GradientPillButton
+              <GSlideButton
                 onClick={handleGetStarted}
                 disabled={isProcessing}
-                className="h-9 px-5 text-xs font-semibold"
+                className="h-9 gap-2 px-5 py-0 text-xs font-semibold"
               >
-                {isProcessing ? "Processing" : "Get Started"}
+                {isProcessing ? t("templateStudio.upload.processing") : t("templateStudio.upload.getStarted")}
                 {isProcessing ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <ChevronRight className="h-3.5 w-3.5" />
                 )}
-              </GradientPillButton>
+              </GSlideButton>
             </div>
-          </div>
-        </div>
+        </GSlideDropCard>
 
         <ul className="mx-auto mt-6 2xl:mt-8 flex max-w-[480px] 2xl:max-w-[600px] items-center justify-between gap-5 2xl:gap-8">
-          {["Test in Real Time", "Max 100MB", "5min Generation"].map((item) => (
+          {[t("templateStudio.upload.realtime"), t("templateStudio.upload.maxSize"), t("templateStudio.upload.generationTime")].map((item) => (
             <li key={item} className="flex items-center gap-2 2xl:gap-2.5">
               <span className="h-2.5 w-2.5 2xl:h-3 2xl:w-3 rounded-full bg-[#EBE9FE]" />
               <span className="text-[13px] 2xl:text-[15px] font-normal text-[#3A3A3A]">{item}</span>
@@ -370,9 +279,7 @@ function UploadPanel({
             i
           </span>
           <p>
-            GSlide sends each slide as a screenshot and HTML reference. Use a
-            vision-enabled model for accurate layouts. Text-only models may produce
-            poor results or fail.
+            {t("templateStudio.upload.modelHint")}
           </p>
         </div>
       </div>
@@ -380,14 +287,14 @@ function UploadPanel({
   );
 }
 
-function chipLabel(font: FontItem): string {
-  return font.name || font.family_name || font.original_name || "Unknown font";
+function chipLabel(font: FontItem, unknownFont = "Unknown font"): string {
+  return font.name || font.family_name || font.original_name || unknownFont;
 }
 
-function uniqueFontChips(fontsData: FontData): FontItem[] {
+function uniqueFontChips(fontsData: FontData, unknownFont?: string): FontItem[] {
   const seen = new Set<string>();
   return [...fontsData.available_fonts, ...fontsData.unavailable_fonts].filter((font) => {
-    const key = chipLabel(font).toLowerCase();
+    const key = chipLabel(font, unknownFont).toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -439,6 +346,7 @@ function FontFallbackPicker({
   onLoadOptions: () => void;
   onChange: (option: GoogleFontOption) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [scrollTop, setScrollTop] = useState(0);
@@ -457,12 +365,12 @@ function FontFallbackPicker({
     onChange(option);
     setOpen(false);
   };
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = normalizeSearchText(query);
   const filteredOptions = useMemo(
     () =>
       normalizedQuery
         ? options.filter((option) =>
-          option.family.toLowerCase().includes(normalizedQuery),
+          normalizeSearchText(option.family).includes(normalizedQuery),
         )
         : options,
     [normalizedQuery, options],
@@ -516,12 +424,12 @@ function FontFallbackPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          aria-label={`Fallback font for ${fontName}`}
+          aria-label={t("templateStudio.fonts.fallbackFor", { name: fontName })}
           disabled={disabled}
-          className="h-11 w-full justify-between rounded-lg border-[#DADDE6] bg-white px-3 font-syne text-sm font-medium text-[#282A32] shadow-none hover:border-[#B8BCC8] hover:bg-white"
+          className="h-11 w-full justify-between rounded-lg border-[#DADDE6] bg-white px-3 text-sm font-medium text-[#282A32] shadow-none hover:border-[#B8BCC8] hover:bg-white"
         >
           <span className="min-w-0 truncate">
-            {selectedOption?.family ?? "Choose fallback"}
+            {selectedOption?.family ?? t("templateStudio.fonts.chooseFallback")}
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-[#61646F]" />
         </Button>
@@ -534,8 +442,8 @@ function FontFallbackPicker({
           <CommandInput
             value={query}
             onValueChange={setQuery}
-            placeholder="Search fonts"
-            className="font-syne text-sm"
+            placeholder={t("templateStudio.fonts.search")}
+            className="text-sm"
           />
           <CommandList
             ref={listRef}
@@ -545,7 +453,7 @@ function FontFallbackPicker({
           >
             {filteredOptions.length === 0 ? (
               <CommandEmpty>
-                {options.length === 0 ? "Loading fonts..." : "No fonts found"}
+                {options.length === 0 ? t("templateStudio.fonts.loading") : t("templateStudio.fonts.empty")}
               </CommandEmpty>
             ) : (
               <CommandGroup
@@ -562,7 +470,7 @@ function FontFallbackPicker({
                       key={option.family}
                       value={option.family}
                       onSelect={() => handleSelect(option)}
-                      className="absolute left-1 right-1 h-10 cursor-pointer justify-between rounded-lg px-3 font-syne text-sm font-medium text-[#242630] data-[selected=true]:bg-[#F6F5FF]"
+                      className="absolute left-1 right-1 h-10 cursor-pointer justify-between rounded-lg px-3 text-sm font-medium text-[#242630] data-[selected=true]:bg-[#F6F5FF]"
                       style={{
                         top: optionIndex * FONT_FALLBACK_OPTION_HEIGHT + 4,
                       }}
@@ -610,12 +518,13 @@ function AnalyzePanel({
   onContinue: () => void;
   isAutoContinuing?: boolean;
 }) {
+  const t = useT();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [resolvingFont, setResolvingFont] = useState<FontItem | null>(null);
   const missingFonts = fontsData?.unavailable_fonts ?? [];
-  const fontChips = fontsData ? uniqueFontChips(fontsData) : [];
+  const fontChips = fontsData ? uniqueFontChips(fontsData, t("templateStudio.fonts.unknown")) : [];
   const missingFontsByKey = new Map(
-    missingFonts.map((font) => [chipLabel(font).toLowerCase(), font]),
+    missingFonts.map((font) => [chipLabel(font, t("templateStudio.fonts.unknown")).toLowerCase(), font]),
   );
 
   const uploadedFontNames = new Set(uploadedFonts.map((font) => font.fontName));
@@ -629,20 +538,19 @@ function AnalyzePanel({
     ? allFontsAvailable
       ? {
         tone: "success",
-        title: "All fonts are available",
-        description: "Preparing the slide preview automatically.",
+        title: t("templateStudio.fonts.allAvailable"),
+        description: t("templateStudio.fonts.preparingPreview"),
       }
       : allMissingFontsResolved
         ? {
           tone: "success",
-          title: "Missing fonts resolved",
-          description: "All required font files are attached. Continue to preview.",
+          title: t("templateStudio.fonts.resolved"),
+          description: t("templateStudio.fonts.resolvedDescription"),
         }
         : {
           tone: "warning",
-          title: `${pendingMissingCount} font${pendingMissingCount === 1 ? "" : "s"} need attention`,
-          description:
-            "Upload exact font files or keep the selected fallback fonts before continuing.",
+          title: t("templateStudio.fonts.attentionCount", { count: pendingMissingCount }),
+          description: t("templateStudio.fonts.uploadOrFallback"),
         }
     : null;
 
@@ -661,8 +569,12 @@ function AnalyzePanel({
     : undefined;
 
   return (
-    <main className="flex min-h-screen flex-col bg-white px-4 pb-28 font-syne sm:px-6 sm:pb-32 2xl:px-10 2xl:pb-36">
-      <TemplateStudioTitle compact />
+    <main className="flex min-h-[100dvh] flex-col bg-white px-4 pb-28 sm:px-6 sm:pb-32 2xl:px-10 2xl:pb-36">
+      <GSlideStudioTitle
+        title={t("templateStudio.topbar.title")}
+        description={t("templateStudio.topbar.description")}
+        compact
+      />
       <section className="mx-auto mt-8 w-full max-w-[600px] sm:mt-10 2xl:mt-12 2xl:max-w-[900px]">
 
 
@@ -678,7 +590,7 @@ function AnalyzePanel({
             className="flex h-[34px] 2xl:h-[42px] items-center gap-1.5 2xl:gap-2 rounded-[80px] bg-white px-3.5 2xl:px-4 text-[12px] 2xl:text-sm font-semibold text-black shadow-[0_0_4px_rgba(0,0,0,0.06)]"
           >
             <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[var(--gslide-accent)]" />
-            Fonts Upload
+            {t("templateStudio.fonts.uploadTitle")}
           </button>
         </div>
 
@@ -726,7 +638,7 @@ function AnalyzePanel({
           <div className="flex flex-wrap gap-3 pt-2 min-h-[140px] ">
             {fontChips.length > 0 ? (
               fontChips.map((font, index) => {
-                const label = chipLabel(font);
+                const label = chipLabel(font, t("templateStudio.fonts.unknown"));
                 const missingFont = missingFontsByKey.get(label.toLowerCase());
                 const isMissing = Boolean(missingFont);
                 const isUploaded = missingFont
@@ -764,39 +676,39 @@ function AnalyzePanel({
               })
             ) : (
               <div className="col-span-full flex min-h-[140px] items-center justify-center rounded-xl border border-[#E8EAF0] bg-white text-sm font-medium text-[#686C78]">
-                No fonts detected
+                {t("templateStudio.fonts.noDetected")}
               </div>
             )}
           </div>
 
           <div className="mt-6 flex justify-end px-1 pb-1">
-            <GradientPillButton
+            <GSlideButton
               onClick={onContinue}
               disabled={isUploading || isAutoContinuing}
-              className="h-9 min-w-[120px] px-6 text-sm font-semibold"
+              className="h-9 min-w-[120px] gap-2 px-6 py-0 text-sm font-semibold"
             >
               {isUploading || isAutoContinuing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {isAutoContinuing ? "Preparing..." : "Creating..."}
+                  {isAutoContinuing ? t("templateStudio.fonts.preparing") : t("templateStudio.fonts.creating")}
                 </>
               ) : (
                 <>
-                  Continue
+                  {t("templateStudio.fonts.continue")}
                   <ChevronRight className="h-4 w-4" />
                 </>
               )}
-            </GradientPillButton>
+            </GSlideButton>
           </div>
         </div>
 
         {resolvingFont ? (
-          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 px-4 font-syne">
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 px-4">
             <div className="relative w-full max-w-[550px] rounded-2xl bg-white shadow-[0_22px_70px_rgba(16,24,40,0.22)]">
               <button
                 type="button"
                 onClick={() => setResolvingFont(null)}
-                aria-label="Close"
+                aria-label={t("templateStudio.preview.close")}
                 className="absolute -right-14 top-0 flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#20222B] shadow-sm"
               >
                 <X className="h-6 w-6" />
@@ -805,10 +717,10 @@ function AnalyzePanel({
               <div className="flex items-center justify-between gap-4 border-b border-[#EEF0F5] px-5 py-4">
                 <div className="min-w-0">
                   <h3 className=" text-lg font-semibold text-[#191919]">
-                    Resolve Missing Font
+                    {t("templateStudio.fonts.resolveTitle")}
                   </h3>
                   <p className="mt-1 text-xs text-[#808080]">
-                    {resolvingFontName} is missing.
+                    {t("templateStudio.fonts.missingDescription", { name: resolvingFontName })}
                   </p>
                 </div>
                 <button
@@ -816,14 +728,14 @@ function AnalyzePanel({
                   onClick={() => setResolvingFont(null)}
                   className="h-9 rounded-full px-5 text-sm font-medium text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors"
                 >
-                  Save
+                  {t("templateStudio.modal.save")}
                 </button>
               </div>
 
               <div className="space-y-4 px-5 py-4">
                 <div>
                   <p className="mb-2 text-xs font-semibold text-[#30323A]">
-                    Upload original font file
+                    {t("templateStudio.fonts.uploadOriginal")}
                   </p>
                   <input
                     ref={(node) => {
@@ -847,19 +759,19 @@ function AnalyzePanel({
                         <Upload className="h-4 w-4" />
                       )}
                     </span>
-                    {resolvingFontUploaded ? "Font file uploaded" : "Upload .ttf / .otf"}
+                    {resolvingFontUploaded ? t("templateStudio.fonts.uploaded") : t("templateStudio.fonts.uploadFile")}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
                   <span className="h-px bg-[#EEF0F5]" />
-                  <span className="text-xs font-medium text-[#686C78]">or</span>
+                  <span className="text-xs font-medium text-[#686C78]">{t("templateStudio.fonts.or")}</span>
                   <span className="h-px bg-[#EEF0F5]" />
                 </div>
 
                 <div>
                   <p className="mb-2 text-xs font-semibold text-[#30323A]">
-                    Fallback font
+                    {t("templateStudio.fonts.fallback")}
                   </p>
                   <FontFallbackPicker
                     fontName={resolvingFontName}
@@ -885,8 +797,7 @@ function AnalyzePanel({
             i
           </span>
           <p>
-            Exact font files maintain typography and spacing. Fallback fonts may
-            slightly change the layout and text wrapping.
+            {t("templateStudio.fonts.exactHint")}
           </p>
         </div>
       </div>
@@ -999,13 +910,14 @@ function KonvaLayoutSlide({
 }
 
 function GeneratingSlidesOverlay() {
+  const t = useT();
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center sm:bottom-8">
       <span className="relative z-20 flex items-center overflow-hidden rounded-[50px] bg-white px-4 py-2.5 text-sm font-medium text-[#666666] shadow-[0_2px_12px_rgba(16,24,40,0.08)]">
         <span aria-hidden className="generating-slides-background absolute" />
         <span className="relative z-10 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[#9034EA]" />
-          Updating slides...
+          {t("templateStudio.preview.updating")}
         </span>
       </span>
     </div>
@@ -1062,6 +974,7 @@ function ThumbnailStrip({
   onSelect: (index: number) => void;
   bottomOffset?: string;
 }) {
+  const t = useT();
   const count = slides?.length ?? urls?.length ?? 0;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -1130,7 +1043,7 @@ function ThumbnailStrip({
         <button
           type="button"
           onClick={() => scrollThumbnails(-1)}
-          aria-label="Scroll thumbnails left"
+          aria-label={t("templateStudio.preview.scrollLeft")}
           className={`absolute left-0 top-1/2 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E6E7ED] bg-white/95 text-black shadow-[0_2px_10px_rgba(16,24,40,0.14)] transition sm:h-9 sm:w-9 ${canScrollLeft ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1176,7 +1089,7 @@ function ThumbnailStrip({
         <button
           type="button"
           onClick={() => scrollThumbnails(1)}
-          aria-label="Scroll thumbnails right"
+          aria-label={t("templateStudio.preview.scrollRight")}
           className={`absolute right-0 top-1/2 z-10 flex h-8 w-8 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E6E7ED] bg-white/95 text-black shadow-[0_2px_10px_rgba(16,24,40,0.14)] transition sm:h-9 sm:w-9 ${canScrollRight ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
           <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1201,6 +1114,7 @@ function ReviewSlideCanvas({
   fonts?: Record<string, string>;
   isGenerating?: boolean;
 }) {
+  const t = useT();
   if (hasRenderableKonvaLayout(slide)) {
     return (
       <KonvaLayoutSlide
@@ -1235,7 +1149,7 @@ function ReviewSlideCanvas({
   return (
     <ResponsiveSlideViewport className="border border-[#E8E8EF] bg-[#F7F7FA]">
       <div className="flex h-full w-full items-center justify-center text-sm text-[#777985] 2xl:text-base">
-        {slide.processing ? "Generating slide..." : "Slide unavailable"}
+        {slide.processing ? t("templateStudio.preview.generating") : t("templateStudio.preview.unavailable")}
       </div>
     </ResponsiveSlideViewport>
   );
@@ -1270,10 +1184,11 @@ function PreviewPanel({
   selectedIndex: number;
   onSelect: (index: number) => void;
 }) {
+  const t = useT();
   const selectedUrl = previewUrls[selectedIndex] ?? previewUrls[0];
 
   return (
-    <main className="h-screen overflow-hidden bg-white px-4 pt-[80px] font-syne sm:px-6 sm:pt-[92px] 2xl:px-10 2xl:pt-[104px]">
+    <main className="h-screen overflow-hidden bg-white px-4 pt-[80px] sm:px-6 sm:pt-[92px] 2xl:px-10 2xl:pt-[104px]">
       <div className="relative mx-auto w-full max-w-[1280px]">
         {selectedUrl ? (
           <ScaledScreenshotSlide
@@ -1289,7 +1204,7 @@ function PreviewPanel({
             bottomReserve={176}
           >
             <div className="flex h-full w-full items-center justify-center text-sm text-[#777985] 2xl:text-base">
-              Preview unavailable
+              {t("templateStudio.preview.unavailable")}
             </div>
           </ResponsiveSlideViewport>
         )}
@@ -1319,6 +1234,7 @@ function ReviewPanel({
   enableEditing?: boolean;
   isGenerating?: boolean;
 }) {
+  const t = useT();
   const selectedSlide = slides[selectedIndex] ?? slides[0];
   const isReady =
     Boolean(selectedSlide?.processed && !selectedSlide.processing && selectedSlide.v2Layout) ||
@@ -1331,7 +1247,7 @@ function ReviewPanel({
   };
 
   return (
-    <main className="min-h-screen bg-white px-4 pb-44 pt-[80px] font-syne sm:px-6 sm:pb-48 sm:pt-[92px] 2xl:px-10 2xl:pb-52 2xl:pt-[104px]">
+    <main className="min-h-screen bg-white px-4 pb-44 pt-[80px] sm:px-6 sm:pb-48 sm:pt-[92px] 2xl:px-10 2xl:pb-52 2xl:pt-[104px]">
       <div className="relative mx-auto w-full max-w-[1280px]">
         <div
           className={`relative ${enableEditing ? "" : ""}`}
@@ -1347,7 +1263,7 @@ function ReviewPanel({
                     disabled={!selectedSlide || selectedSlide.processing}
                     className="h-8 rounded-[4px] px-2.5 text-[12px] font-medium text-black transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:px-3 2xl:text-sm"
                   >
-                    Re-Construct
+                    {t("templateStudio.preview.reconstruct")}
                   </button>
                   <span className="h-6 w-px bg-[#E8E8EE] 2xl:h-7" />
                   <button
@@ -1355,7 +1271,7 @@ function ReviewPanel({
                     onClick={handleDelete}
                     disabled={!isReady}
                     className="flex h-8 w-8 items-center justify-center rounded-[4px] text-black transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:w-9"
-                    aria-label="Delete slide"
+                    aria-label={t("templateStudio.preview.deleteSlide")}
                   >
                     <Trash2 className="h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" />
                   </button>
@@ -1386,9 +1302,9 @@ function SaveTemplateModal({
   isOpen,
   defaultName,
   isSaving,
-  title = "Save Template",
-  subtitle = "Give your template a name.",
-  submitLabel = "Save",
+  title,
+  subtitle,
+  submitLabel,
   onClose,
   onSave,
 }: {
@@ -1401,6 +1317,7 @@ function SaveTemplateModal({
   onClose: () => void;
   onSave: (name: string, description: string) => Promise<void>;
 }) {
+  const t = useT();
   const [name, setName] = useState(defaultName);
   const [description, setDescription] = useState("");
 
@@ -1420,21 +1337,21 @@ function SaveTemplateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/30 px-4 2xl:px-6 font-syne">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/30 px-4 2xl:px-6">
       <div className="relative w-full max-w-[512px] 2xl:max-w-[600px] rounded-[14px] 2xl:rounded-[16px] bg-white shadow-[0_18px_55px_rgba(16,24,40,0.18)]">
         <button
           type="button"
           onClick={onClose}
           disabled={isSaving}
-          aria-label="Close"
+          aria-label={t("templateStudio.preview.close")}
           className="absolute -right-[54px] 2xl:-right-[62px] top-0 flex h-[46px] w-[46px] 2xl:h-[52px] 2xl:w-[52px] items-center justify-center rounded-full bg-white text-black shadow-sm disabled:opacity-50"
         >
           <X className="h-6 w-6 2xl:h-7 2xl:w-7" />
         </button>
         <div className="flex h-[74px] 2xl:h-[84px] items-center justify-between border-b border-[#EDEEF3] px-5 2xl:px-6">
           <div>
-            <h2 className="text-[16px] 2xl:text-lg font-medium text-black">{title}</h2>
-            <p className="mt-1 text-[11px] 2xl:text-[13px] text-[#7E818C]">{subtitle}</p>
+            <h2 className="text-[16px] 2xl:text-lg font-medium text-black">{title ?? t("templateStudio.modal.saveTitle")}</h2>
+            <p className="mt-1 text-[11px] 2xl:text-[13px] text-[#7E818C]">{subtitle ?? t("templateStudio.modal.saveSubtitle")}</p>
           </div>
           <button
             type="button"
@@ -1442,32 +1359,32 @@ function SaveTemplateModal({
             disabled={isSaving || !name.trim()}
             className="inline-flex h-8 2xl:h-9 min-w-[78px] 2xl:min-w-[88px] items-center justify-center rounded-[58px] px-5 2xl:px-6 text-[13px] 2xl:text-sm font-medium text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? <Loader2 className="h-4 w-4 2xl:h-5 2xl:w-5 animate-spin" /> : submitLabel}
+            {isSaving ? <Loader2 className="h-4 w-4 2xl:h-5 2xl:w-5 animate-spin" /> : (submitLabel ?? t("templateStudio.modal.save"))}
           </button>
         </div>
 
         <div className="space-y-4 2xl:space-y-5 px-[18px] 2xl:px-6 pb-[18px] 2xl:pb-6 pt-5 2xl:pt-6">
           <label className="block">
             <span className="mb-2 2xl:mb-2.5 block text-[12px] 2xl:text-sm font-medium text-[#25272F]">
-              Template Name
+              {t("templateStudio.modal.name")}
             </span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               disabled={isSaving}
-              placeholder="e.g. Modern Tech Pitch Deck"
+              placeholder={t("templateStudio.modal.namePlaceholder")}
               className="h-9 2xl:h-10 w-full rounded-[5px] border border-[#E1E2E8] bg-white px-3 2xl:px-4 text-[13px] 2xl:text-[15px] text-black outline-none placeholder:text-[#8C8E96] focus:border-[#B9ABFF]"
             />
           </label>
           <label className="block">
             <span className="mb-2 2xl:mb-2.5 block text-[12px] 2xl:text-sm font-medium text-[#25272F]">
-              Description
+              {t("templateStudio.modal.description")}
             </span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               disabled={isSaving}
-              placeholder="Briefly describe when or how this template should be used."
+              placeholder={t("templateStudio.modal.descriptionPlaceholder")}
               rows={4}
               className="h-[86px] 2xl:h-[100px] w-full resize-none rounded-[5px] border border-[#E1E2E8] bg-white px-3 2xl:px-4 py-3 2xl:py-3.5 text-[13px] 2xl:text-[15px] text-black outline-none placeholder:text-[#8C8E96] focus:border-[#B9ABFF]"
             />
@@ -1479,6 +1396,7 @@ function SaveTemplateModal({
 }
 
 const CustomTemplatePage = () => {
+  const t = useT();
   const router = useRouter();
   const llmConfig = useSelector((state: RootState) => state.userConfig.llm_config);
   const [reviewSlideIndex, setReviewSlideIndex] = useState(0);
@@ -1511,7 +1429,7 @@ const CustomTemplatePage = () => {
     retrySlide,
   } = useTemplateCreation();
 
-  const defaultTemplateName = getDefaultTemplateName(selectedFile) || "Untitled Template";
+  const defaultTemplateName = getDefaultTemplateName(selectedFile) || t("templateStudio.modal.untitled");
   const activeStep = activeStudioStep(state.step);
   const showUpload = state.step === "file-upload";
   const showAnalyze = state.step === "font-check" || state.step === "font-upload";
@@ -1693,24 +1611,24 @@ const CustomTemplatePage = () => {
     const unavailableFontCount = data.unavailable_fonts?.length ?? 0;
     if (unavailableFontCount === 0) {
       notify.success(
-        "All fonts available",
-        "Preparing the slide preview automatically.",
+        t("templateStudio.fonts.allAvailable"),
+        t("templateStudio.fonts.preparingPreview"),
       );
       return;
     }
 
     notify.warning(
-      "Fonts need attention",
-      `${unavailableFontCount} font${unavailableFontCount === 1 ? "" : "s"} are unavailable. Upload exact font files or use the selected fallback fonts before continuing.`,
+      t("templateStudio.fonts.needAttention"),
+      t("templateStudio.fonts.unavailableCount", { count: unavailableFontCount }),
     );
-  }, [checkFonts, selectedFile]);
+  }, [checkFonts, selectedFile, t]);
 
   const handleFontUploadAndPreview = useCallback(async () => {
     if (!selectedFile) return;
     if (hasPendingMissingFonts) {
       notify.warning(
-        "Missing fonts",
-        "Continuing without uploaded font files. Selected Google replacements will be applied.",
+        t("templateStudio.fonts.missing"),
+        t("templateStudio.fonts.continueWithFallback"),
       );
     }
     const data = await fontUploadAndPreview(
@@ -1725,6 +1643,7 @@ const CustomTemplatePage = () => {
     hasPendingMissingFonts,
     selectedGoogleFontReplacements,
     selectedFile,
+    t,
   ]);
 
   useEffect(() => {
@@ -1764,7 +1683,7 @@ const CustomTemplatePage = () => {
   const handleCreateTemplate = useCallback(
     async (name: string, description: string) => {
       if (!state.previewData) {
-        notify.error("Preview unavailable", "Create the slide preview before continuing.");
+        notify.error(t("templateStudio.preview.unavailable"), t("templateStudio.preview.createFirst"));
         return;
       }
 
@@ -1781,27 +1700,27 @@ const CustomTemplatePage = () => {
           description: description || null,
         });
         notify.success(
-          "Template generation started",
-          "You can track the template status from the Templates page.",
+          t("templateStudio.toast.generationStartedTitle"),
+          t("templateStudio.toast.generationStartedDescription"),
         );
         setTemplateModalMode(null);
         router.push("/templates?tab=custom");
       } catch (error) {
         notify.error(
-          "Failed to create template",
-          error instanceof Error ? error.message : "An unexpected error occurred",
+          t("templateStudio.toast.generationFailedTitle"),
+          error instanceof Error ? error.message : t("templateStudio.toast.unexpected"),
         );
       } finally {
         setIsSubmittingTemplate(false);
       }
     },
-    [router, selectedGoogleFontAssets, state.previewData],
+    [router, selectedGoogleFontAssets, state.previewData, t],
   );
 
   const handleSaveTemplate = useCallback(
     async (name: string, description: string) => {
       if (!state.templateId) {
-        notify.error("Template unavailable", "Generate the template before saving.");
+        notify.error(t("templateStudio.preview.unavailableTitle"), t("templateStudio.preview.generateFirst"));
         return;
       }
 
@@ -1811,19 +1730,19 @@ const CustomTemplatePage = () => {
           name,
           description: description || null,
         });
-        notify.success("Template saved", "The template was saved successfully.");
+        notify.success(t("templateStudio.toast.savedTitle"), t("templateStudio.toast.savedDescription"));
         setTemplateModalMode(null);
         router.push(`/template-preview?templateV2Id=${encodeURIComponent(state.templateId)}`);
       } catch (error) {
         notify.error(
-          "Failed to save template",
-          error instanceof Error ? error.message : "An unexpected error occurred",
+          t("templateStudio.toast.saveFailedTitle"),
+          error instanceof Error ? error.message : t("templateStudio.toast.unexpected"),
         );
       } finally {
         setIsSubmittingTemplate(false);
       }
     },
-    [router, state.templateId],
+    [router, state.templateId, t],
   );
 
   const handleTemplateModalSubmit = useCallback(
@@ -1844,25 +1763,26 @@ const CustomTemplatePage = () => {
 
     if (showPreview) {
       return (
-        <GradientPillButton
+        <GSlideButton
           onClick={() => setTemplateModalMode("create")}
           disabled={state.isLoading || isSubmittingTemplate}
           fullWidth
         >
-          {isSubmittingTemplate ? "Creating Template..." : "Create Template"}
-        </GradientPillButton>
+          {isSubmittingTemplate ? t("templateStudio.modal.creating") : t("templateStudio.modal.createTitle")}
+        </GSlideButton>
       );
     }
 
     if (showReview) {
       return (
-        <GradientPillButton
+        <GSlideButton
           onClick={() => setTemplateModalMode("save")}
           disabled={!generatedSlidesReady || state.isLoading || isSubmittingTemplate}
           fullWidth
+          muted
         >
-          {generatedSlidesReady ? "Save as Template" : "Generating Template"}
-        </GradientPillButton>
+          {generatedSlidesReady ? t("templateStudio.modal.saveAs") : t("templateStudio.modal.generating")}
+        </GSlideButton>
       );
     }
 
@@ -1874,12 +1794,34 @@ const CustomTemplatePage = () => {
     showPreview,
     showReview,
     state.isLoading,
+    t,
   ]);
 
   return (
-    <div className="relative min-h-screen bg-white">
+    <div className="relative min-h-[100dvh] bg-white">
       <div className={""}>
-        <StudioTopBar activeStep={activeStep} />
+        <GSlideFadeHeader
+          left={
+            <a
+              href="/dashboard"
+              aria-label={t("templateStudio.topbar.dashboard")}
+            >
+              <GSlideWordmark className="text-sm sm:text-base 2xl:text-lg" />
+            </a>
+          }
+          center={
+            <GSlideStepRail
+              aria-label={t("templateStudio.topbar.progressAria")}
+              activeId={activeStep}
+              steps={[
+                { id: 1, label: t("templateStudio.steps.upload") },
+                { id: 2, label: t("templateStudio.steps.analyze") },
+                { id: 3, label: t("templateStudio.steps.preview") },
+                { id: 4, label: t("templateStudio.steps.review") },
+              ]}
+            />
+          }
+        />
 
         {showUpload ? (
           <UploadPanel
@@ -1935,13 +1877,13 @@ const CustomTemplatePage = () => {
         isOpen={isTemplateModalOpen}
         defaultName={defaultTemplateName}
         isSaving={isSubmittingTemplate}
-        title={isCreateTemplateModal ? "Create Template" : "Save Template"}
+        title={isCreateTemplateModal ? t("templateStudio.modal.createTitle") : t("templateStudio.modal.saveTitle")}
         subtitle={
           isCreateTemplateModal
-            ? "Name this template before generation starts."
-            : "Give your template a name."
+            ? t("templateStudio.modal.createSubtitle")
+            : t("templateStudio.modal.saveSubtitle")
         }
-        submitLabel={isCreateTemplateModal ? "Create" : "Save"}
+        submitLabel={isCreateTemplateModal ? t("templateStudio.modal.create") : t("templateStudio.modal.save")}
         onClose={() => {
           if (!isSubmittingTemplate) setTemplateModalMode(null);
         }}

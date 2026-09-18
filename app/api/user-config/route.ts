@@ -1,22 +1,9 @@
 import { NextResponse } from "next/server";
+import { describeFastApiConnectError } from "@/lib/fastapi-connect-error";
 import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
+import { getEffectiveUserConfig } from "@/lib/effective-user-config";
 
-const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
-const INSTANCE_LEVEL_FIELDS = new Set(["DISABLE_ANONYMOUS_TRACKING"]);
-
-function isTrackingOnlyBody(parsed: Record<string, unknown>): boolean {
-  const keys = Object.keys(parsed);
-  return (
-    keys.length > 0 && keys.every((key) => INSTANCE_LEVEL_FIELDS.has(key))
-  );
-}
-
-function immutableResponse() {
-  return NextResponse.json(
-    { error: "You are not allowed to access this resource", status: 403 },
-    { status: 403 }
-  );
-}
+export const dynamic = "force-dynamic";
 
 async function forwardProviderSettings(
   request: Request,
@@ -46,16 +33,37 @@ async function forwardProviderSettings(
   });
 }
 
+function readLocalProviderConfig(): Record<string, unknown> {
+  const path = process.env.USER_CONFIG_PATH?.trim();
+  if (!path) return {};
+  try {
+    return getEffectiveUserConfig(path) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function unavailableSaveResponse() {
+  return NextResponse.json(
+    {
+      error: "Unable to save provider settings",
+      retryable: true,
+    },
+    { status: 503 }
+  );
+}
+
 export async function GET(request: Request) {
-  if (!canChangeKeys) return immutableResponse();
+  const url = new URL(request.url);
+  if (url.searchParams.get("source") === "local") {
+    return NextResponse.json(readLocalProviderConfig());
+  }
 
   try {
     return await forwardProviderSettings(request, "GET");
   } catch {
-    return NextResponse.json(
-      { error: "Unable to read provider settings", status: 500 },
-      { status: 500 }
-    );
+    // FastAPI is not required to open the app: instance file/env is enough.
+    return NextResponse.json(readLocalProviderConfig());
   }
 }
 
@@ -75,10 +83,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const record = parsed as Record<string, unknown>;
-    if (!canChangeKeys && !isTrackingOnlyBody(record)) {
-      return immutableResponse();
-    }
     return await forwardProviderSettings(request, "PUT", body);
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -87,9 +91,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    return NextResponse.json(
-      { error: "Unable to save provider settings", status: 500 },
-      { status: 500 }
+    console.warn(
+      `FastAPI provider settings unreachable at ${getFastApiBaseUrl()} (${describeFastApiConnectError(error)})`
     );
+    return unavailableSaveResponse();
   }
 }

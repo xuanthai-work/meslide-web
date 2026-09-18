@@ -9,6 +9,7 @@ import {
   needsCancelConfirm,
   type GenerationLifecycleState,
 } from "@/lib/generation-lifecycle";
+import { useT } from "@/i18n/provider";
 
 type Props = {
   surface: "outline" | "presentation";
@@ -33,6 +34,7 @@ const GenerationStatusBar: React.FC<Props> = ({
   onKeepWaiting,
   onRetry,
 }) => {
+  const t = useT();
   // Render nothing for terminal/idle states.
   if (lifecycle === "idle" || lifecycle === "complete" || lifecycle === "cancelled") {
     return null;
@@ -42,15 +44,15 @@ const GenerationStatusBar: React.FC<Props> = ({
     if (needsCancelConfirm(draftCount)) {
       const message =
         surface === "outline"
-          ? `Stop generating this outline? ${draftCount} section(s) already drafted will be kept.`
-          : `Stop generating these slides? ${draftCount} of ${totalCount ?? draftCount} slide(s) already drafted will be kept.`;
+          ? t("common.generation.stopOutlineConfirm", { count: draftCount })
+          : t("common.generation.stopSlidesConfirm", { draft: draftCount, total: totalCount ?? draftCount });
       if (!window.confirm(message)) return;
     }
     void onCancel();
     toast.success(
       draftCount > 0
-        ? "Generation stopped. Your draft so far was kept."
-        : "Generation stopped.",
+        ? t("presentation.status.stoppedWithDraft")
+        : t("presentation.status.stopped"),
     );
   };
 
@@ -100,7 +102,7 @@ const GenerationStatusBar: React.FC<Props> = ({
             onClick={handleStop}
             className="h-7 shrink-0 px-2 text-sm"
           >
-            Stop
+            {t("common.generation.stop")}
           </Button>
         </>
       )}
@@ -108,10 +110,10 @@ const GenerationStatusBar: React.FC<Props> = ({
       {isStalled && (
         <div className="flex min-w-0 flex-col gap-2">
           <span className="text-sm font-semibold">
-            This is taking longer than usual
+            {t("common.generation.takingLonger")}
           </span>
           <span className="min-w-0 text-sm opacity-80">
-            {statusMessage || "No new content for 45 seconds."}
+            {statusMessage || t("presentation.status.noContent")}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {canKeepWaiting && (
@@ -122,7 +124,7 @@ const GenerationStatusBar: React.FC<Props> = ({
                 style={accentStyle}
                 className="h-7 shrink-0 px-2.5"
               >
-                Keep waiting
+                {t("common.generation.keepWaiting")}
               </Button>
             )}
             <Button
@@ -132,7 +134,7 @@ const GenerationStatusBar: React.FC<Props> = ({
               onClick={handleStop}
               className="h-7 shrink-0 px-2.5"
             >
-              Stop
+              {t("common.generation.stop")}
             </Button>
             <Button
               type="button"
@@ -142,7 +144,7 @@ const GenerationStatusBar: React.FC<Props> = ({
               style={canKeepWaiting ? undefined : accentStyle}
               className="h-7 shrink-0 px-2.5"
             >
-              Try again
+              {t("common.generation.retry")}
             </Button>
           </div>
         </div>
@@ -155,7 +157,7 @@ const GenerationStatusBar: React.FC<Props> = ({
             style={{ color: "var(--gslide-accent)" }}
             aria-hidden="true"
           />
-          <span className="min-w-0 truncate text-sm">Stopping…</span>
+          <span className="min-w-0 truncate text-sm">{t("presentation.status.stopping")}</span>
           <Button
             type="button"
             variant="ghost"
@@ -163,7 +165,7 @@ const GenerationStatusBar: React.FC<Props> = ({
             disabled
             className="h-7 shrink-0 px-2"
           >
-            Stopping…
+            {t("presentation.status.stopping")}
           </Button>
         </>
       )}
@@ -179,7 +181,7 @@ const GenerationStatusBar: React.FC<Props> = ({
               style={accentStyle}
               className="h-7 shrink-0 px-2.5"
             >
-              Try again
+              {t("common.generation.retry")}
             </Button>
             <Button
               type="button"
@@ -188,7 +190,7 @@ const GenerationStatusBar: React.FC<Props> = ({
               onClick={handleStop}
               className="h-7 shrink-0 px-2.5"
             >
-              Stop
+              {t("common.generation.stop")}
             </Button>
           </div>
         </div>

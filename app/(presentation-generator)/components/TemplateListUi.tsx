@@ -14,6 +14,8 @@ import {
   LayoutsBadge,
 } from "./TemplatePreviewComponents";
 import { TemplateTab } from "../hooks/useTemplateSummaries";
+import { useT } from "@/i18n/provider";
+import { translate } from "@/i18n/translate";
 
 export function TemplateThumbnailPreview({
   thumbnail,
@@ -24,6 +26,7 @@ export function TemplateThumbnailPreview({
   templateName: string;
   selectionPage?: boolean;
 }) {
+  const t = useT();
   const resolvedThumbnail = thumbnail ? resolveBackendAssetUrl(thumbnail) : "";
 
   if (!resolvedThumbnail) {
@@ -47,7 +50,7 @@ export function TemplateThumbnailPreview({
       )}
     >
       <div
-        aria-label={`${templateName} thumbnail`}
+        aria-label={t("templates.card.thumbnailAria", { name: templateName })}
         className={cn(
           "h-full w-full rounded-[12px] border border-[#EDEEEF] bg-white bg-contain bg-center bg-no-repeat",
           !selectionPage && "shadow-sm"
@@ -74,6 +77,7 @@ export const TemplateListCard = memo(function TemplateListCard({
   showArrow?: boolean;
   selectionPage?: boolean;
 }) {
+  const t = useT();
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (event.currentTarget.getAttribute("aria-disabled") === "true") {
@@ -95,8 +99,7 @@ export const TemplateListCard = memo(function TemplateListCard({
     status === "processing" ||
     status === "pending" ||
     status === "queued" ||
-    status === "running" ||
-    status === "in progress";
+    status === "running";
   const statusLabel =
     status && !isGeneratingStatus
       ? status.replace(/\b\w/g, (char) => char.toUpperCase())
@@ -107,7 +110,7 @@ export const TemplateListCard = memo(function TemplateListCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      aria-label={`${showArrow ? "Open" : "Select"} ${template.name} template`}
+      aria-label={showArrow ? t("templates.card.openAria", { name: template.name }) : t("templates.card.selectAria", { name: template.name })}
       className={cn(
         "group relative overflow-hidden border bg-white shadow-none outline-none transition-all duration-200",
         selectionPage ? "rounded-[12px]" : "rounded-[22px]",
@@ -137,7 +140,7 @@ export const TemplateListCard = memo(function TemplateListCard({
       )}
       {isSuggested && (
         <span className="absolute right-3.5 top-[52px] z-50 rounded-full border border-[#DDD7FF] bg-white/95 px-2.5 py-1 font-syne text-[10px] font-semibold text-[#6553E8] shadow-sm backdrop-blur">
-          Suggested
+          {t("templates.card.suggested")}
         </span>
       )}
       <TemplatePreviewStage selectionPage={selectionPage}>
@@ -217,7 +220,8 @@ export const ProcessingTemplateListCard = memo(
   }: {
     task: TemplateCreateTaskResponse;
   }) {
-    const templateName = task.data?.name?.trim() || "New template";
+    const t = useT();
+    const templateName = task.data?.name?.trim() || t("templates.card.newTemplate");
     const createdLayouts = task.data?.created_layouts ?? 0;
     const remainingLayouts = task.data?.remaining_layouts ?? 0;
     const totalLayouts = createdLayouts + remainingLayouts;
@@ -235,14 +239,14 @@ export const ProcessingTemplateListCard = memo(
     );
     const progressLabel =
       totalLayouts > 0
-        ? `${createdLayouts} of ${totalLayouts} layouts`
-        : "Preparing layouts";
+        ? t("templates.card.layoutsProgress", { done: createdLayouts, total: totalLayouts })
+        : t("templates.card.preparingLayouts");
 
     return (
       <Card
         role="group"
         aria-disabled="true"
-        aria-label={`${templateName} template is processing`}
+        aria-label={t("templates.card.processingAria", { name: templateName })}
         className={cn(
           "relative overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-white",
           "cursor-not-allowed opacity-90 shadow-sm"
@@ -321,6 +325,7 @@ export function TemplateTabSwitcher({
   tab: TemplateTab;
   onTabChange: (tab: TemplateTab) => void;
 }) {
+  const t = useT();
   return (
     <div className="p-1 rounded-[40px] bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center">
       <button
@@ -332,7 +337,7 @@ export function TemplateTabSwitcher({
           color: tab === "custom" ? "#1D6FE8" : "#3A3A3A",
         }}
       >
-        Custom
+        {t("outline.template.section.custom")}
       </button>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -354,13 +359,13 @@ export function TemplateTabSwitcher({
           color: tab === "default" ? "#1D6FE8" : "#3A3A3A",
         }}
       >
-        Built-in
+        {t("outline.template.section.builtin")}
       </button>
     </div>
   );
 }
 
-export function TemplateListLoadingState({ message = "Loading templates..." }: { message?: string }) {
+export function TemplateListLoadingState({ message = translate("templates.loading.default") }: { message?: string }) {
   return (
     <div className="flex items-center justify-center py-12 font-syne">
       <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -369,7 +374,7 @@ export function TemplateListLoadingState({ message = "Loading templates..." }: {
   );
 }
 
-export function TemplateListEmptyState({ message = "No templates available." }: { message?: string }) {
+export function TemplateListEmptyState({ message = translate("templates.empty.noTemplates") }: { message?: string }) {
   return (
     <div className="flex items-center justify-center py-12 font-syne text-gray-600">
       {message}

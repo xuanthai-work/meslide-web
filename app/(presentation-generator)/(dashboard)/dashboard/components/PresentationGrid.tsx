@@ -1,7 +1,7 @@
-import React from "react";
 import { PresentationCard } from "./PresentationCard";
 import { PresentationResponse } from "@/app/(presentation-generator)/services/api/dashboard";
 import { EmptyState } from "./EmptyState";
+import { translate } from "@/i18n/translate";
 
 interface PresentationGridProps {
   presentations: PresentationResponse[];
@@ -21,7 +21,7 @@ export const PresentationGrid = ({
   onPresentationDuplicated,
 }: PresentationGridProps) => {
   const ShimmerCard = () => (
-    <div className="flex min-h-[216px] flex-col overflow-hidden rounded-[12px] border border-[#EDEEEF] bg-[#F8FBFB] shadow-none animate-pulse">
+    <div className="flex min-h-[216px] flex-col overflow-hidden rounded-xl border border-[var(--gslide-border)] bg-white shadow-none animate-pulse">
       <div className="relative flex-1 overflow-hidden p-4">
         <img
           src="/card_bg.svg"
@@ -54,14 +54,14 @@ export const PresentationGrid = ({
 
   if (error) {
     return (
-      <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-[#EDEEEF] bg-white/80">
+      <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-[var(--gslide-border)] bg-white">
         <div className="text-center text-gray-500">
           <p className="mb-2">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="text-primary hover:text-primary/80 underline"
           >
-            Try again
+            {translate("common.actions.retry")}
           </button>
         </div>
       </div>
@@ -85,7 +85,7 @@ export const PresentationGrid = ({
         <PresentationCard
           key={presentation.id}
           id={presentation.id}
-          title={presentation.title ?? "Untitled presentation"}
+          title={presentation.title ?? translate("common.untitledPresentation")}
           presentation={presentation}
           viewMode={viewMode}
           onDeleted={onPresentationDeleted}

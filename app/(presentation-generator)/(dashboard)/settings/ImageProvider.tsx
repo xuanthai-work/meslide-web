@@ -7,15 +7,17 @@ import { LLMConfig } from '@/types/llm_config'
 import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageFields'
 import { GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS } from '@/utils/providerConstants'
 import { Check, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
     SettingsField,
     settingsControlClassName,
     settingsDropdownClassName,
     settingsFormColumnClassName,
 } from './SettingsField'
+import { useT } from '@/i18n/provider'
 
 const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setLlmConfig: (config: any) => void }) => {
+    const t = useT();
     const [showApiKey, setShowApiKey] = useState(false);
     const [openImageProviderSelect, setOpenImageProviderSelect] = useState(false);
     const [openaiCompatListMeta, setOpenaiCompatListMeta] = useState<{
@@ -58,13 +60,13 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
     const renderQualitySelector = (llmConfig: LLMConfig, input_field_changed: (value: string, field: string) => void) => {
         if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
             return (
-                <SettingsField label="GPT Image 1.5 Quality">
+                <SettingsField label={t("settings.image.qualityLabel")}>
                     <Select
                         value={llmConfig.GPT_IMAGE_1_5_QUALITY || 'low'}
                         onValueChange={(value) => input_field_changed(value, "GPT_IMAGE_1_5_QUALITY")}
                     >
                         <SelectTrigger className={settingsDropdownClassName}>
-                            <SelectValue placeholder="Select a quality" />
+                            <SelectValue placeholder={t("settings.image.selectQuality")} />
                         </SelectTrigger>
                         <SelectContent>
                             {GPT_IMAGE_1_5_QUALITY_OPTIONS.map((option) => (
@@ -86,22 +88,22 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                     <Switch
                         checked={!isImageGenerationDisabled}
                         onCheckedChange={(checked) => handleChangeImageGenerationDisabled(!checked)}
-                        aria-label="Enable/Disable Image Generation"
+                        aria-label={t("settings.image.enableDisableAria")}
                     />
                 </div>
                 <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
                     <div className="max-w-[280px] shrink-0">
                         <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[4px] bg-[var(--gslide-accent-soft)]">
-                            <img src="/image-markup.svg" className="h-full w-full object-cover" alt="image-markup" />
+                            <img src="/image-markup.svg" className="h-full w-full object-cover" alt="" />
                         </div>
-                        <h3 className="py-2.5 text-xl font-normal text-[#191919]">Image Generation Settings</h3>
+                        <h3 className="py-2.5 text-xl font-normal text-[#191919]">{t("settings.image.title")}</h3>
                         <p className="text-sm text-gray-500">
-                            Choosing where images come from
+                            {t("settings.image.subtitle")}
                         </p>
                     </div>
                     {!isImageGenerationDisabled && (
                         <div className={settingsFormColumnClassName}>
-                            <SettingsField label="Select Image Provider">
+                            <SettingsField label={t("settings.image.selectProvider")}>
                                 <Popover
                                     open={openImageProviderSelect}
                                     onOpenChange={setOpenImageProviderSelect}
@@ -116,7 +118,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                             <span className="truncate text-sm font-medium text-gray-900">
                                                 {llmConfig.IMAGE_PROVIDER
                                                     ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label || llmConfig.IMAGE_PROVIDER
-                                                    : "Select image provider"}
+                                                    : t("settings.image.providerPlaceholder")}
                                             </span>
                                             {openImageProviderSelect ? (
                                                 <ChevronUp className="h-4 w-4 shrink-0 text-gray-500" />
@@ -131,9 +133,9 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                         style={{ width: "var(--radix-popover-trigger-width)" }}
                                     >
                                         <Command>
-                                            <CommandInput placeholder="Search provider..." />
+                                            <CommandInput placeholder={t("settings.image.searchProvider")} />
                                             <CommandList>
-                                                <CommandEmpty>No provider found.</CommandEmpty>
+                                                <CommandEmpty>{t("settings.image.noProvider")}</CommandEmpty>
                                                 <CommandGroup>
                                                     {Object.values(IMAGE_PROVIDERS).map((provider) => (
                                                         <CommandItem
@@ -191,11 +193,11 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                     }
 
                                     return (
-                                        <SettingsField label={provider.apiKeyFieldLabel ?? "API Key"}>
+                                        <SettingsField label={provider.apiKeyFieldLabel ?? t("settings.image.apiKeyLabel")}>
                                             <div className="relative">
                                                 <input
                                                     type={showApiKey ? 'text' : 'password'}
-                                                    placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
+                                                    placeholder={t("settings.text.apiKeyPlaceholder", { label: provider.apiKeyFieldLabel ?? t("settings.image.apiKeyLabel") })}
                                                     className={`${settingsControlClassName} pr-10`}
                                                     value={getFieldValue(provider.apiKeyField)}
                                                     onChange={(e) =>
@@ -230,14 +232,14 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                     <>
                         <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
                             <p className="text-sm text-yellow-800">
-                                No models found. Please make sure your provider credentials are valid and the selected provider is reachable.
+                                {t("settings.common.noModelsFound")}
                             </p>
                         </div>
                         <div className={settingsFormColumnClassName}>
-                            <SettingsField label="Image model id">
+                            <SettingsField label={t("settings.image.imageModelId")}>
                                 <input
                                     type="text"
-                                    placeholder="e.g. gpt-image-1.5"
+                                    placeholder={t("settings.image.imageModelPlaceholder")}
                                     className={settingsControlClassName}
                                     value={llmConfig.OPENAI_COMPAT_IMAGE_MODEL || ""}
                                     onChange={(e) => {

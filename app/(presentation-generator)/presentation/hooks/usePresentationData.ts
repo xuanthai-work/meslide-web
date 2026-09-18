@@ -6,8 +6,9 @@ import { setPresentationData } from "@/store/slices/presentationGeneration";
 import { clearHistory } from "@/store/slices/undoRedoSlice";
 import { applyPresentationThemeToElement } from "../utils/applyPresentationThemeDom";
 import { normalizeBackendAssetUrls } from "@/utils/api";
-import { useFontLoader } from "../../hooks/useFontLoad";
+import { loadPresentationFonts } from "../../hooks/useFontLoad";
 import { DashboardApi } from "../../services/api/dashboard";
+import { useT } from "@/i18n/provider";
 
 
 export const usePresentationData = (
@@ -17,6 +18,7 @@ export const usePresentationData = (
 ) => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const t = useT();
 
   const fetchUserSlides = useCallback(async (options?: { clearHistory?: boolean }) => {
     try {
@@ -26,8 +28,8 @@ export const usePresentationData = (
 
       if (data?.version === "v1-standard") {
         notify.warning(
-          "Unsupported presentation",
-          "This deck was created in an older Presenton version. Downgrade to a compatible version to open it."
+          t("presentation.data.unsupportedTitle"),
+          t("presentation.data.unsupportedDescription")
         );
         setLoading(false);
         router.replace("/dashboard");
@@ -45,7 +47,7 @@ export const usePresentationData = (
         setLoading(false);
       }
       if (normalizedData.fonts) {
-        useFontLoader(normalizedData.fonts);
+        loadPresentationFonts(normalizedData.fonts);
       }
       if (normalizedData?.theme) {
         const el = document.getElementById("presentation-slides-wrapper");
@@ -54,12 +56,15 @@ export const usePresentationData = (
       return normalizedData;
     } catch (error) {
       setError(true);
-      notify.error("Failed to load presentation", "The presentation could not be loaded. Please try again.");
+      notify.error(
+        t("presentation.data.loadFailedTitle"),
+        t("presentation.data.loadFailedDescription")
+      );
       console.error("Error fetching user slides:", error);
       setLoading(false);
       return undefined;
     }
-  }, [presentationId, dispatch, router, setLoading, setError]);
+  }, [presentationId, dispatch, router, setLoading, setError, t]);
 
   return {
     fetchUserSlides,

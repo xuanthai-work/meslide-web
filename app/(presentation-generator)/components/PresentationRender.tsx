@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { V1ContentRender } from "../../(presentation-generator)/components/V1ContentRender";
 import SmartHtmlEditor from "./SmartHtmlEditor";

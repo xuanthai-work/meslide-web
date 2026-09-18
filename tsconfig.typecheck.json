@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": [
+    "typecheck-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "next-env.d.ts",
+    "node_modules",
+    ".next/**",
+    ".next-build/**",
+    "**/*.cy.ts",
+    "**/*.cy.tsx"
+  ]
+}

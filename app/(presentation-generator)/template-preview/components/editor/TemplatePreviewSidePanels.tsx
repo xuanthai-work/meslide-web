@@ -32,6 +32,7 @@ import {
   type PaletteItem,
   type TemplateBlock,
 } from "../../../presentation/components/PresentationActions";
+import { useT } from "@/i18n/provider";
 
 type RailIcon = React.ComponentType<{ className?: string }>;
 
@@ -62,24 +63,18 @@ function BlocksIcon({ className }: { className?: string }) {
 
 const insertNavItems: Array<{
   id: PanelMode;
-  label: string;
   Icon: RailIcon;
 }> = [
-  { id: "blocks", label: "Blocks", Icon: BlocksIcon },
-  { id: "texts", label: "Texts", Icon: Type },
-  { id: "charts", label: "Charts", Icon: BarChart3 },
-  { id: "tables", label: "Tables", Icon: Rows3 },
-  { id: "images", label: "Images", Icon: ImageIcon },
-  { id: "elements", label: "Elements", Icon: Shapes },
+  { id: "blocks", Icon: BlocksIcon }, { id: "texts", Icon: Type },
+  { id: "charts", Icon: BarChart3 }, { id: "tables", Icon: Rows3 },
+  { id: "images", Icon: ImageIcon }, { id: "elements", Icon: Shapes },
 ];
 
 const templateNavItems: Array<{
   id: PanelMode;
-  label: string;
   Icon: RailIcon;
 }> = [
-  { id: "schema", label: "Schema", Icon: Edit3 },
-  { id: "layouts", label: "Layouts", Icon: List },
+  { id: "schema", Icon: Edit3 }, { id: "layouts", Icon: List },
 ];
 
 function ToolRailButton({
@@ -126,10 +121,16 @@ export function ToolRail({
   activePanel: PanelMode;
   onPanelChange: (panel: PanelMode) => void;
 }) {
+  const t = useT();
+  const panelLabels: Record<PanelMode, string> = {
+    blocks: t("templateStudio.panels.blocks"), texts: t("templateStudio.panels.texts"), charts: t("templateStudio.panels.charts"),
+    tables: t("templateStudio.panels.tables"), images: t("templateStudio.panels.images"), elements: t("templateStudio.panels.elements"),
+    schema: t("templateStudio.panels.schema"), layouts: t("templateStudio.panels.layouts"),
+  };
   return (
     <div className="hide-scrollbar hidden w-[70px] shrink-0 flex-col items-center overflow-y-auto bg-[#FEFEFF] px-[6px] py-2 lg:flex">
       <div className="flex w-full shrink-0 flex-col items-center gap-1 rounded-[10px] bg-[rgba(244,243,255,0.6)] py-3">
-        {templateNavItems.map(({ id, label, Icon }, index) => (
+        {templateNavItems.map(({ id, Icon }, index) => (
           <React.Fragment key={id}>
             {index > 0 ? (
               <div className="h-px w-[30px] shrink-0 bg-[#EDEEEF]" />
@@ -137,7 +138,7 @@ export function ToolRail({
             <ToolRailButton
               active={activePanel === id}
               Icon={Icon}
-              label={label}
+              label={panelLabels[id]}
               onClick={() => onPanelChange(id)}
             />
           </React.Fragment>
@@ -147,12 +148,12 @@ export function ToolRail({
       <div className="my-3 h-px w-[30px] shrink-0 bg-[#EDEEEF]" />
 
       <nav className="flex w-full shrink-0 flex-col items-center gap-1">
-        {insertNavItems.map(({ id, label, Icon }, index) => (
+        {insertNavItems.map(({ id, Icon }, index) => (
           <React.Fragment key={id}>
             <ToolRailButton
               active={activePanel === id}
               Icon={Icon}
-              label={label}
+              label={panelLabels[id]}
               onClick={() => onPanelChange(id)}
             />
             {index < insertNavItems.length - 1 ? (
@@ -186,6 +187,7 @@ export function TemplateInsertPanel({
   template: unknown;
   templateId: string;
 }) {
+  const t = useT();
   return (
     <aside className="hidden w-[299px] shrink-0 overflow-hidden bg-[#FEFEFF] lg:block">
       {activePanel === "blocks" ? (
@@ -196,34 +198,34 @@ export function TemplateInsertPanel({
         />
       ) : activePanel === "texts" ? (
         <InsertPanel
-          title="Texts"
-          groups={[{ label: "Add", items: textItems }]}
+          title={t("templateStudio.panels.texts")}
+          groups={[{ label: t("templateStudio.panels.add"), items: textItems }]}
           onItemSelect={onTextItemSelect}
         />
       ) : activePanel === "charts" ? (
         <InsertPanel
-          title="Charts"
+          title={t("templateStudio.panels.charts")}
           groups={[
-            { label: "Chart Type", items: chartTypeItems },
-            { label: "Infographics", items: infographicItems },
+            { label: t("templateStudio.panels.chartType"), items: chartTypeItems },
+            { label: t("templateStudio.panels.infographics"), items: infographicItems },
           ]}
           onItemSelect={onChartItemSelect}
         />
       ) : activePanel === "tables" ? (
         <InsertPanel
-          title="Tables"
-          groups={[{ label: "Table Type", items: tableTypeItems }]}
+          title={t("templateStudio.panels.tables")}
+          groups={[{ label: t("templateStudio.panels.tableType"), items: tableTypeItems }]}
           onItemSelect={onTableItemSelect}
         />
       ) : activePanel === "images" ? (
         <InsertPanel
-          title="Images"
-          groups={[{ label: "Add", items: imageItems }]}
+          title={t("templateStudio.panels.images")}
+          groups={[{ label: t("templateStudio.panels.add"), items: imageItems }]}
           onItemSelect={onImageItemSelect}
         />
       ) : activePanel === "elements" ? (
         <InsertPanel
-          title="Elements"
+          title={t("templateStudio.panels.elements")}
           groups={elementItemGroups}
           onItemSelect={onElementItemSelect}
         />
@@ -241,7 +243,8 @@ export function AiPanel({
   onPromptChange: (prompt: string) => void;
   onSubmit: () => void;
 }) {
-  const quickPrompts = ["Make it shorter", "Make it more engaging"];
+  const t = useT();
+  const quickPrompts = [t("templateStudio.panels.shorter"), t("templateStudio.panels.engaging")];
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -255,9 +258,7 @@ export function AiPanel({
       <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-6 pt-[132px]">
         <div className="flex flex-1 items-start justify-center pt-[58px] text-center">
           <p className="text-[22.68px] font-normal leading-[24.3px] tracking-[-0.4536px] text-[#4C4C4C]">
-            What can I do
-            <br />
-            for your deck today?
+            {t("templateStudio.panels.aiQuestion")}
           </p>
         </div>
 
@@ -266,7 +267,7 @@ export function AiPanel({
             <Textarea
               value={prompt}
               onChange={(event) => onPromptChange(event.target.value)}
-              placeholder={"Ask anything.\nType / to get Quick prompts."}
+              placeholder={t("templateStudio.panels.aiPlaceholder")}
               className="min-h-[79px] resize-none border-0 bg-transparent p-0 text-[14px] font-normal leading-[18px] text-[#191919] shadow-none placeholder:text-[#999999] focus-visible:ring-0"
             />
             <div className="mt-2 flex h-[28px] items-center justify-between">
@@ -274,14 +275,14 @@ export function AiPanel({
                 <button
                   type="button"
                   className="flex h-[28px] w-[28px] items-center justify-center rounded-full border border-[#EDEEEF] text-[#191919]"
-                  title="Add"
+                  title={t("templateStudio.panels.add")}
                 >
                   <Plus className="h-[14px] w-[14px]" />
                 </button>
                 <button
                   type="button"
                   className="flex h-[28px] w-[28px] items-center justify-center rounded-full border border-[#EDEEEF] text-[#191919]"
-                  title="AI options"
+                  title={t("templateStudio.panels.aiOptions")}
                 >
                   <Sparkles className="h-[13px] w-[13px] text-[#1D6FE8]" />
                 </button>
@@ -290,14 +291,14 @@ export function AiPanel({
                   className="flex h-[28px] items-center gap-[6px] rounded-full border border-[#EDEEEF] px-[10px] text-[12px] font-medium text-[#191919]"
                 >
                   <Sparkles className="h-[13px] w-[13px] text-[#1D6FE8]" />
-                  Prompt
+                  {t("templateStudio.panels.prompt")}
                 </button>
               </div>
               <button
                 type="submit"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFEFF2] text-[#191919] disabled:text-[#9A9A9A]"
                 disabled={!prompt.trim()}
-                title="Send"
+                title={t("templateStudio.panels.send")}
               >
                 <ArrowUp className="h-4 w-4" />
               </button>
@@ -329,6 +330,7 @@ function DensitySelector({
   density: Density;
   onDensityChange: (density: Density) => void;
 }) {
+  const t = useT();
   const options: Exclude<Density, "">[] = ["Low", "Medium", "High"];
 
   return (
@@ -346,12 +348,12 @@ function DensitySelector({
           onClick={() => onDensityChange(option)}
           title={
             density === option
-              ? `${option} content density selected`
-              : `Preview ${option.toLowerCase()} content density`
+              ? t("templateStudio.panels.densitySelected", { density: t(`templateStudio.panels.${option.toLowerCase()}` as "templateStudio.panels.low" | "templateStudio.panels.medium" | "templateStudio.panels.high") })
+              : t("templateStudio.panels.densityPreview", { density: t(`templateStudio.panels.${option.toLowerCase()}` as "templateStudio.panels.low" | "templateStudio.panels.medium" | "templateStudio.panels.high") })
           }
           type="button"
         >
-          {option}
+          {option === "Low" ? t("templateStudio.panels.low") : option === "Medium" ? t("templateStudio.panels.medium") : t("templateStudio.panels.high")}
         </button>
       ))}
 
@@ -386,15 +388,16 @@ export function SchemaPanel({
   onFieldChange: (field: SchemaField, value: string) => void;
   onOpenFieldChange: (fieldId: string) => void;
 }) {
+  const t = useT();
   const fieldGroups = [
     {
       id: "non-decorative",
-      label: "Content",
+      label: t("templateStudio.panels.content"),
       fields: fields.filter((field) => !field.decorative),
     },
     {
       id: "decorative",
-      label: "Decorative",
+      label: t("templateStudio.panels.decorative"),
       fields: fields.filter((field) => field.decorative),
     },
   ];
@@ -403,30 +406,29 @@ export function SchemaPanel({
     <aside className="hidden w-[299px] shrink-0 bg-[#FEFEFF] lg:flex lg:flex-col">
       <div className="px-3 pt-[33px]">
         <h2 className="text-[18px] font-medium text-[#101323]">
-          Schema Editor
+          {t("templateStudio.panels.schemaEditor")}
         </h2>
         <div className="mt-[18px] flex items-center justify-between gap-3">
           <p className="text-[14px] font-normal text-[#191919]">
-            Content Density
+            {t("templateStudio.panels.contentDensity")}
           </p>
           <button
-            aria-label="Reset content density preview"
+            aria-label={t("templateStudio.panels.resetDensity")}
             className="flex h-7 items-center gap-1.5 rounded-[6px] border border-[#EDEEEF] bg-white px-2 text-[11px] font-medium text-[#667085] transition-colors hover:border-[#BFDBFE] hover:bg-[#DBEAFE] hover:text-[#1D6FE8] disabled:cursor-not-allowed disabled:opacity-40"
             disabled={!canResetDensity}
             onClick={onDensityReset}
-            title="Restore the original slide content"
+            title={t("templateStudio.panels.restoreOriginal")}
             type="button"
           >
             <RotateCcw className="h-3 w-3" />
-            Reset
+            {t("templateStudio.panels.reset")}
           </button>
         </div>
         <DensitySelector density={density} onDensityChange={onDensityChange} />
         <div className="mt-[10px] flex min-h-[62px] gap-[10px] rounded-[6px] bg-[#F3F6FB] px-[16px] py-[10px] text-[12px] leading-[14px] text-[#5F6470]">
           <Info className="mt-[2px] h-[14px] w-[14px] shrink-0 text-[#1F5FBF]" />
           <p>
-            Preview realistic content lengths without changing your saved
-            template. Reset restores the original content.
+            {t("templateStudio.panels.densityHint")}
           </p>
         </div>
       </div>
@@ -434,7 +436,7 @@ export function SchemaPanel({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-[40px]">
         {fields.length === 0 ? (
           <div className="rounded-[6px] border border-dashed border-[#DCDCE1] px-4 py-8 text-center text-[13px] text-[#808080]">
-            No schema elements were found for this layout.
+            {t("templateStudio.panels.noSchema")}
           </div>
         ) : (
           <div className="space-y-6">
@@ -450,7 +452,7 @@ export function SchemaPanel({
                 </div>
                 {group.fields.length === 0 ? (
                   <div className="rounded-[6px] border border-dashed border-[#E4E7EC] px-3 py-4 text-center text-[11px] text-[#98A2B3]">
-                    No {group.label.toLowerCase()} elements.
+                    {t("templateStudio.panels.noGroupElements", { group: group.label.toLowerCase() })}
                   </div>
                 ) : (
                   <div className="space-y-[8px]">
@@ -499,6 +501,7 @@ function SchemaFieldRow({
   onDecorativeChange: (decorative: boolean) => void;
   onToggle: () => void;
 }) {
+  const t = useT();
   const Icon =
     field.type === "image"
       ? ImageIcon
@@ -507,16 +510,16 @@ function SchemaFieldRow({
         : Type;
   const typeLabel =
     field.type === "text-list"
-      ? "List"
+      ? t("templateStudio.panels.list")
       : field.type === "image"
         ? field.elementType === "icon"
-          ? "Icon"
-          : "Image"
+          ? t("templateStudio.panels.icon")
+          : t("templateStudio.panels.image")
         : field.type === "element"
           ? field.elementType
               .replace(/[_-]+/g, " ")
               .replace(/\b\w/g, (letter) => letter.toUpperCase())
-          : "String";
+          : t("templateStudio.panels.string");
 
   return (
     <div className="space-y-[3px]">
@@ -550,9 +553,9 @@ function SchemaFieldRow({
           {field.maxChars ? (
             <span
               className="shrink-0 text-[12px] font-normal tracking-[0.48px] text-[#808080]"
-              style={{ fontFamily: "Outfit, var(--font-syne), sans-serif" }}
+              style={{ fontFamily: "var(--gslide-font-ui)" }}
             >
-              ({field.maxChars} Characters)
+              ({t("templateStudio.panels.characters", { count: field.maxChars })})
             </span>
           ) : null}
         </button>
@@ -562,13 +565,13 @@ function SchemaFieldRow({
         <div className="ml-[28.5px] flex flex-col gap-[2px]">
           <div className="flex h-[30px] items-center gap-[8px] rounded-[4px] border border-[#E7E8EC] bg-[#FEFEFF] px-[10px] text-[14px] font-normal tracking-[0.56px] text-[#17181E]">
             <span className="text-[16px] leading-none text-[#808080]">#</span>
-            <span>Type</span>
+            <span>{t("templateStudio.panels.type")}</span>
             <span className="ml-auto text-[#191919]">{typeLabel}</span>
           </div>
           <div className="flex h-[36px] items-center rounded-[4px] border border-[#E7E8EC] bg-[#FEFEFF] px-[10px] text-[14px] font-normal tracking-[0.56px] text-[#17181E]">
-            <span>Decorative</span>
+            <span>{t("templateStudio.panels.decorative")}</span>
             <Switch
-              aria-label={`Set ${field.label} decorative`}
+              aria-label={t("templateStudio.panels.setDecorative", { field: field.label })}
               checked={field.decorative}
               className="ml-auto data-[state=checked]:bg-[#1D6FE8] data-[state=unchecked]:bg-[#D0D5DD]"
               onCheckedChange={onDecorativeChange}
@@ -576,14 +579,13 @@ function SchemaFieldRow({
           </div>
           {field.decorative ? (
             <div className="rounded-[4px] border border-[#E7E8EC] bg-[#F8F8FA] px-[10px] py-[8px] text-[11px] leading-4 tracking-normal text-[#667085]">
-              Decorative elements are read-only. Turn off Decorative to edit
-              their content or constraints.
+              {t("templateStudio.panels.decorativeHint")}
             </div>
           ) : null}
           {field.type === "text" || field.type === "text-list" ? (
             <>
               <label className="flex h-[30px] items-center rounded-[4px] border border-[#E7E8EC] bg-[#FEFEFF] px-[10px] text-[14px] font-normal tracking-[0.56px] text-[#17181E]">
-                <span>Min Chars</span>
+                <span>{t("templateStudio.panels.minChars")}</span>
                 <input
                   className={cn(
                     "ml-auto h-[24px] w-[76px] rounded-[4px] border border-transparent bg-transparent text-right text-[#191919] outline-none transition-colors focus:border-[#BFDBFE] focus:bg-[#DBEAFE]",
@@ -600,7 +602,7 @@ function SchemaFieldRow({
                 />
               </label>
               <label className="flex h-[30px] items-center rounded-[4px] border border-[#E7E8EC] bg-[#FEFEFF] px-[10px] text-[14px] font-normal tracking-[0.56px] text-[#17181E]">
-                <span>Max Chars</span>
+                <span>{t("templateStudio.panels.maxChars")}</span>
                 <input
                   className={cn(
                     "ml-auto h-[24px] w-[76px] rounded-[4px] border border-transparent bg-transparent text-right text-[#191919] outline-none transition-colors focus:border-[#BFDBFE] focus:bg-[#DBEAFE]",
@@ -620,7 +622,7 @@ function SchemaFieldRow({
           ) : null}
           {field.type !== "element" ? (
             <label className="flex flex-col gap-[6px] rounded-[4px] border border-[#E7E8EC] bg-[#FEFEFF] px-[10px] py-[8px] text-[14px] font-normal tracking-[0.56px] text-[#17181E]">
-              <span>{field.type === "image" ? "Prompt" : "Content"}</span>
+              <span>{field.type === "image" ? t("templateStudio.panels.prompt") : t("templateStudio.panels.content")}</span>
               {field.type === "image" ? (
                 <input
                   className={cn(
@@ -647,8 +649,7 @@ function SchemaFieldRow({
             </label>
           ) : (
             <p className="rounded-[4px] border border-[#E7E8EC] bg-[#F8F8FA] px-[10px] py-[8px] text-[11px] leading-4 tracking-normal text-[#667085]">
-              This element has no editable content. Its decorative role can
-              still be changed.
+              {t("templateStudio.panels.noEditableElement")}
             </p>
           )}
         </div>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,6 +33,7 @@ import {
   isTemplateFreePresentation,
 } from "../../_shared/blank-slide";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
+import { useT } from "@/i18n/provider";
 
 interface SidePanelProps {
   selectedSlide: number;
@@ -55,6 +56,7 @@ const SidePanel = ({
 
   loading,
 }: SidePanelProps) => {
+  const t = useT();
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -76,21 +78,22 @@ const SidePanel = ({
     ? lastSlideLayoutGroup
     : lastSlideLayoutGroup || lastSlideLayoutTemplateId;
   const isTemplateFree = isTemplateFreePresentation(presentationData);
-  const isSmartPresentation =
-    presentationData?.type === "smart" ||
-    presentationData?.generation_mode === "smart" ||
-    presentationData?.slides?.some(
-      (slide: any) =>
-        typeof slide?.html_content === "string" && slide.html_content.trim()
-    );
+  const persistedGenerationMode =
+    presentationData?.generation_mode ?? presentationData?.type;
+  const isSmartPresentation = persistedGenerationMode
+    ? persistedGenerationMode === "smart"
+    : presentationData?.slides?.some(
+        (slide: any) =>
+          typeof slide?.html_content === "string" && slide.html_content.trim()
+      );
 
   const handleAddSlideClick = () => {
     if (!presentationData?.slides?.length || isStreaming) return;
 
     if (presentationData.slides.length >= MAX_NUMBER_OF_SLIDES) {
       notify.warning(
-        "Slide limit reached",
-        `You can have up to ${MAX_NUMBER_OF_SLIDES} slides.`
+        t("presentation.slideLimit"),
+        t("presentation.slideLimitDescription", { max: MAX_NUMBER_OF_SLIDES })
       );
       return;
     }
@@ -218,7 +221,7 @@ const SidePanel = ({
   return (
     <aside
       className="relative h-full w-[150px] bg-white px-4 py-5"
-      aria-label="Presentation slides"
+      aria-label={t("presentation.slidesAria")}
     >
       <div
         className={`

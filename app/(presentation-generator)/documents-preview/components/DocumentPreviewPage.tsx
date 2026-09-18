@@ -28,6 +28,7 @@ import { ChevronRight, PanelRightOpen, X } from "lucide-react";
 import ToolTip from "@/components/ToolTip";
 import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/components/Header";
 import { parseLimitedSlideCount } from "@/utils/presentationLimits";
+import { useT } from "@/i18n/provider";
 
 // Types
 interface LoadingState {
@@ -47,6 +48,7 @@ interface FileItem {
 }
 
 const DocumentsPreviewPage: React.FC = () => {
+  const t = useT();
   // Hooks
   const dispatch = useDispatch();
   const router = useRouter();
@@ -126,16 +128,16 @@ const DocumentsPreviewPage: React.FC = () => {
         });
       } catch (error) {
         console.error("Error reading files:", error);
-        notify.error("Could not read document", "Failed to read document content.");
+        notify.error(t("documentsPreview.toast.readFailed.title"), t("documentsPreview.toast.readFailed.description"));
       }
       setDownloadingDocuments([]);
     }
-  }, [documentKeys, fileItems, readFile, textContents]);
+  }, [documentKeys, fileItems, readFile, t, textContents]);
 
   const handleCreatePresentation = async () => {
     try {
       setShowLoading({
-        message: "Generating presentation outline...",
+        message: t("documentsPreview.loading.generatingOutline"),
         show: true,
         duration: 40,
         progress: true,
@@ -150,24 +152,27 @@ const DocumentsPreviewPage: React.FC = () => {
           version: "v2-standard",
           n_slides: parseLimitedSlideCount(config?.slides),
           file_paths: documentPaths,
-          language: config?.language ?? "",
+          language: config?.language ?? null,
           tone: config?.tone,
           verbosity: config?.verbosity,
           instructions: config?.instructions || null,
-          include_table_of_contents: !!config?.includeTableOfContents,
-          include_title_slide: !!config?.includeTitleSlide,
           web_search: !!config?.webSearch,
+          generation_mode: "standard",
         }
       );
 
       dispatch(clearOutlines());
       dispatch(setPresentationId(createResponse.id));
-      router.replace("/outline");
+      const params = new URLSearchParams({
+        id: createResponse.id,
+        auto: "1",
+      });
+      router.replace(`/outline?${params.toString()}`);
     } catch (error: any) {
       console.error("Error in radar presentation creation:", error);
-      notify.error("Creation failed", error.message || "Something went wrong while creating the presentation.");
+      notify.error(t("documentsPreview.toast.creationFailed.title"), error.message || t("documentsPreview.toast.creationFailed.fallbackDescription"));
       setShowLoading({
-        message: "Error in radar presentation creation.",
+        message: t("documentsPreview.loading.creationError"),
         show: true,
         duration: 10,
         progress: false,
@@ -202,7 +207,7 @@ const DocumentsPreviewPage: React.FC = () => {
       <div className="h-full mr-4">
         <div className="overflow-y-auto custom_scrollbar h-full">
           <div className="h-full w-full max-w-full flex flex-col mb-5">
-            <h1 className="text-2xl font-medium mb-5">Content:</h1>
+            <h1 className="text-2xl font-medium mb-5">{t("documentsPreview.content.heading")}</h1>
             {downloadingDocuments.includes(selectedDocument) ? (
               <Skeleton className="w-full h-full" />
             ) : (
@@ -230,7 +235,7 @@ const DocumentsPreviewPage: React.FC = () => {
 
         {documentKeys.length > 0 && (
           <div className="mt-8">
-            <p className="text-xs mt-2 text-[#2E2E2E] opacity-70">DOCUMENTS</p>
+            <p className="text-xs mt-2 text-[#2E2E2E] opacity-70">{t("documentsPreview.sidebar.label.documents")}</p>
             <div className="flex flex-col gap-2 mt-6">
               {documentKeys.map((key: string) => (
                 <div
@@ -242,10 +247,10 @@ const DocumentsPreviewPage: React.FC = () => {
                   <img
                     className="h-6 w-6 border border-gray-200"
                     src={getIconFromFile(key)}
-                    alt="Document icon"
+                    alt={t("documentsPreview.sidebar.aria.documentIcon")}
                   />
                   <span className="text-sm h-6 text-[#2E2E2E] overflow-hidden">
-                    {key.split("/").pop() ?? "file.txt"}
+                    {key.split("/").pop() ?? t("documentsPreview.sidebar.fallbackFilename")}
                   </span>
                 </div>
               ))}
@@ -268,7 +273,7 @@ const DocumentsPreviewPage: React.FC = () => {
       <div className="flex mt-6 gap-4 font-instrument_sans">
         {!isOpen && (
           <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50">
-            <ToolTip content="Open Panel">
+            <ToolTip content={t("documentsPreview.tooltip.openPanel")}>
               <Button
                 onClick={() => setIsOpen(true)}
                 className="bg-[var(--gslide-accent)] text-white p-3 shadow-lg"
@@ -290,7 +295,7 @@ const DocumentsPreviewPage: React.FC = () => {
             onClick={handleCreatePresentation}
             className="flex items-center gap-2 px-8 py-6 rounded-sm text-md bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)]"
           >
-            <span className="text-white font-semibold">Next</span>
+            <span className="text-white font-semibold">{t("documentsPreview.button.next")}</span>
             <ChevronRight />
           </Button>
         </div>

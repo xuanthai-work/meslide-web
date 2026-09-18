@@ -32,7 +32,11 @@ test("blank-slide event and clipboard write GSlide names", async () => {
 });
 
 test("persisted runtime identifiers are GSlide without Presenton leftovers", async () => {
-  const html = await readNext("lib/template-v2-json-to-html.ts");
+  const html = [
+    await readNext("lib/template-v2-json-to-html.ts"),
+    await readNext("lib/template-v2-html-shared.ts"),
+    await readNext("lib/template-v2-html-chart.ts"),
+  ].join("\n");
   assert.match(html, /\.gslide-math/);
   assert.match(html, /data-gslide-chart/);
   assert.match(html, /data-gslide-math/);

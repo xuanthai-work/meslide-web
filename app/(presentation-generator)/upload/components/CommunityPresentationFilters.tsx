@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/provider";
 
 type CountComparison = "any" | "exact" | "gt" | "lt";
 
@@ -42,58 +43,6 @@ type SortOption = {
 
 const DEFAULT_SORT_VALUE = "default";
 
-const SORT_OPTIONS: SortOption[] = [
-  { value: DEFAULT_SORT_VALUE, label: "Default" },
-  {
-    value: "created_at:desc",
-    label: "Newest",
-    orderBy: "created_at",
-    order: "desc",
-  },
-  {
-    value: "created_at:asc",
-    label: "Oldest",
-    orderBy: "created_at",
-    order: "asc",
-  },
-  {
-    value: "views:desc",
-    label: "Most viewed",
-    orderBy: "views",
-    order: "desc",
-  },
-  {
-    value: "views:asc",
-    label: "Least viewed",
-    orderBy: "views",
-    order: "asc",
-  },
-  {
-    value: "likes:desc",
-    label: "Most liked",
-    orderBy: "likes",
-    order: "desc",
-  },
-  {
-    value: "likes:asc",
-    label: "Least liked",
-    orderBy: "likes",
-    order: "asc",
-  },
-  {
-    value: "priority:desc",
-    label: "Featured first",
-    orderBy: "priority",
-    order: "desc",
-  },
-  {
-    value: "priority:asc",
-    label: "Featured last",
-    orderBy: "priority",
-    order: "asc",
-  },
-];
-
 const EMPTY_DRAFT: FilterDraft = {
   createdAfter: "",
   createdBefore: "",
@@ -112,6 +61,18 @@ export default function CommunityPresentationFilters({
   onChange: (filters: CommunityPresentationListFilters) => void;
   disabled?: boolean;
 }) {
+  const t = useT();
+  const sortOptions: SortOption[] = [
+    { value: DEFAULT_SORT_VALUE, label: t("upload.community.filters.sort.default") },
+    { value: "created_at:desc", label: t("upload.community.filters.sort.newest"), orderBy: "created_at", order: "desc" },
+    { value: "created_at:asc", label: t("upload.community.filters.sort.oldest"), orderBy: "created_at", order: "asc" },
+    { value: "views:desc", label: t("upload.community.filters.sort.mostViewed"), orderBy: "views", order: "desc" },
+    { value: "views:asc", label: t("upload.community.filters.sort.leastViewed"), orderBy: "views", order: "asc" },
+    { value: "likes:desc", label: t("upload.community.filters.sort.mostLiked"), orderBy: "likes", order: "desc" },
+    { value: "likes:asc", label: t("upload.community.filters.sort.leastLiked"), orderBy: "likes", order: "asc" },
+    { value: "priority:desc", label: t("upload.community.filters.sort.featuredFirst"), orderBy: "priority", order: "desc" },
+    { value: "priority:asc", label: t("upload.community.filters.sort.featuredLast"), orderBy: "priority", order: "asc" },
+  ];
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<FilterDraft>(() => createDraft(value));
   const sortValue =
@@ -121,7 +82,7 @@ export default function CommunityPresentationFilters({
   const activeFilterCount = getActiveFilterCount(value);
 
   const handleSortChange = (nextValue: string) => {
-    const option = SORT_OPTIONS.find((item) => item.value === nextValue);
+    const option = sortOptions.find((item) => item.value === nextValue);
     if (!option) return;
 
     if (!option.orderBy || !option.order) {
@@ -158,12 +119,12 @@ export default function CommunityPresentationFilters({
       >
         <SelectTrigger
           className="h-10 w-[148px] rounded-full border-[#DBDBDB99] bg-white px-3 font-manrope text-xs shadow-none focus:ring-[var(--gslide-accent)]/20"
-          aria-label="Sort community presentations"
+          aria-label={t("upload.community.filters.sortAria")}
         >
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="font-manrope">
-          {SORT_OPTIONS.map((option) => (
+          {sortOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
             </SelectItem>
@@ -190,7 +151,7 @@ export default function CommunityPresentationFilters({
             )}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filters
+            {t("upload.community.filters.button")}
             {activeFilterCount > 0 && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--gslide-accent)] px-1 text-[10px] text-white">
                 {activeFilterCount}
@@ -207,17 +168,17 @@ export default function CommunityPresentationFilters({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-[#191919]">
-                Community filters
+                {t("upload.community.filters.title")}
               </h3>
               <p className="mt-0.5 text-[11px] text-[#808080]">
-                Narrow presentations by date and engagement.
+                {t("upload.community.filters.description")}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="flex h-7 w-7 items-center justify-center rounded-full text-[#666666] hover:bg-[#F6F6F9]"
-              aria-label="Close filters"
+              aria-label={t("upload.community.filters.closeAria")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -226,14 +187,14 @@ export default function CommunityPresentationFilters({
           <div className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <DateFilter
-                label="Created after"
+                label={t("upload.community.filters.createdAfter")}
                 value={draft.createdAfter}
                 onChange={(createdAfter) =>
                   setDraft((current) => ({ ...current, createdAfter }))
                 }
               />
               <DateFilter
-                label="Created before"
+                label={t("upload.community.filters.createdBefore")}
                 value={draft.createdBefore}
                 onChange={(createdBefore) =>
                   setDraft((current) => ({ ...current, createdBefore }))
@@ -241,7 +202,7 @@ export default function CommunityPresentationFilters({
               />
             </div>
             <CountFilter
-              label="Views"
+              label={t("upload.community.filters.views")}
               comparison={draft.viewsComparison}
               value={draft.viewsValue}
               onComparisonChange={(viewsComparison) =>
@@ -252,7 +213,7 @@ export default function CommunityPresentationFilters({
               }
             />
             <CountFilter
-              label="Likes"
+              label={t("upload.community.filters.likes")}
               comparison={draft.likesComparison}
               value={draft.likesValue}
               onComparisonChange={(likesComparison) =>
@@ -275,14 +236,14 @@ export default function CommunityPresentationFilters({
               disabled={activeFilterCount === 0}
               className="text-xs font-medium text-[#666666] hover:text-[#191919] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Clear filters
+              {t("upload.community.filters.clear")}
             </button>
             <button
               type="button"
               onClick={applyFilters}
               className="h-9 rounded-full bg-[var(--gslide-accent)] px-5 text-xs font-medium text-white transition hover:bg-[var(--gslide-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30"
             >
-              Apply
+              {t("upload.community.filters.apply")}
             </button>
           </div>
         </PopoverContent>
@@ -328,6 +289,7 @@ function CountFilter({
   onComparisonChange: (comparison: CountComparison) => void;
   onValueChange: (value: string) => void;
 }) {
+  const t = useT();
   return (
     <div>
       <span className="mb-1.5 block text-xs font-medium text-[#333333]">
@@ -344,10 +306,10 @@ function CountFilter({
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="font-manrope">
-            <SelectItem value="any">Any</SelectItem>
-            <SelectItem value="exact">Exactly</SelectItem>
-            <SelectItem value="gt">More than</SelectItem>
-            <SelectItem value="lt">Fewer than</SelectItem>
+            <SelectItem value="any">{t("upload.community.filters.comparison.any")}</SelectItem>
+            <SelectItem value="exact">{t("upload.community.filters.comparison.exact")}</SelectItem>
+            <SelectItem value="gt">{t("upload.community.filters.comparison.gt")}</SelectItem>
+            <SelectItem value="lt">{t("upload.community.filters.comparison.lt")}</SelectItem>
           </SelectContent>
         </Select>
         <input
@@ -358,7 +320,7 @@ function CountFilter({
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           disabled={comparison === "any"}
-          placeholder="Count"
+          placeholder={t("upload.community.filters.count")}
           className="h-9 w-full rounded-lg border border-[#E0E0E3] bg-white px-3 text-xs text-[#191919] outline-none transition placeholder:text-[#A0A0A0] focus:border-[var(--gslide-input-focus)] focus:ring-2 focus:ring-[var(--gslide-accent)]/10 disabled:bg-[#F7F7F9] disabled:text-[#A0A0A0]"
         />
       </div>

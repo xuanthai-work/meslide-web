@@ -11,6 +11,7 @@ import {
   MAX_NUMBER_OF_SLIDES,
 } from "@/utils/presentationLimits";
 import { store } from "@/store/store";
+import { useT } from "@/i18n/provider";
 
 const DEFAULT_LOADING_STATE: LoadingState = {
   message: "",
@@ -25,6 +26,7 @@ export const usePresentationGeneration = (
 ) => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const t = useT();
   const [loadingState, setLoadingState] = useState<LoadingState>(
     DEFAULT_LOADING_STATE
   );
@@ -33,31 +35,33 @@ export const usePresentationGeneration = (
     (currentOutlines: { content: string }[] | null) => {
       if (!currentOutlines || currentOutlines.length === 0) {
         notify.warning(
-          "Outlines not ready",
-          "Please wait for your outlines to finish generating before continuing."
+          t("outline.toast.outlinesNotReady.title"),
+          t("outline.toast.outlinesNotReady.description")
         );
         return false;
       }
 
       if (!selectedTemplateId) {
         notify.warning(
-          "Template not selected",
-          "Choose a template before generating your presentation."
+          t("outline.toast.templateNotSelected.title"),
+          t("outline.toast.templateNotSelected.description")
         );
         return false;
       }
 
       if (currentOutlines.length > MAX_NUMBER_OF_SLIDES) {
         notify.warning(
-          "Slide limit reached",
-          `Use ${MAX_NUMBER_OF_SLIDES} or fewer outline slides before generating.`
+          t("outline.toast.slideLimitReached.title"),
+          t("outline.toast.slideLimitReached.generateDescription", {
+            max: MAX_NUMBER_OF_SLIDES,
+          })
         );
         return false;
       }
 
       return true;
     },
-    [selectedTemplateId]
+    [selectedTemplateId, t]
   );
 
   const clearTheme = () => {
@@ -87,7 +91,7 @@ export const usePresentationGeneration = (
     const preparedOutlines = limitOutlines(latestOutlines);
 
     setLoadingState({
-      message: "Generating presentation data...",
+      message: t("outline.loading.generatingPresentationData"),
       isLoading: true,
       showProgress: true,
       duration: 30,
@@ -110,8 +114,8 @@ export const usePresentationGeneration = (
     } catch (error: any) {
       console.error("Error In Presentation Generation(prepare).", error);
       notify.error(
-        "Generation error",
-        error.message || "Error in presentation generation."
+        t("outline.toast.generationError.title"),
+        error.message || t("outline.toast.generationError.fallbackDescription")
       );
     } finally {
       setLoadingState(DEFAULT_LOADING_STATE);
@@ -122,6 +126,7 @@ export const usePresentationGeneration = (
     dispatch,
     router,
     selectedTemplateId,
+    t,
   ]);
 
   return { loadingState, handleSubmit };

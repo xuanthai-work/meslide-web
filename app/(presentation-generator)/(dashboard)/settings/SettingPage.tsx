@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { notify } from "@/components/ui/sonner";
 import { GSlideButton, GSlideHeader } from "@/components/gslide";
@@ -16,10 +16,9 @@ import TextProvider from "./TextProvider";
 import ImageProvider from "./ImageProvider";
 import WebSearchProvider from "./WebSearchProvider";
 import {
-  IMAGE_PROVIDERS,
   LLM_PROVIDERS,
-  WEB_SEARCH_PROVIDERS,
 } from "@/utils/providerConstants";
+import { useT } from "@/i18n/provider";
 
 // Button state interface
 interface ButtonState {
@@ -32,6 +31,7 @@ interface ButtonState {
 }
 
 const SettingsPage = () => {
+  const t = useT();
   const pathname = usePathname();
   const [selectedProvider, setSelectedProvider] = useState<SettingsSection>("text-provider");
   const userConfigState = useSelector((state: RootState) => state.userConfig);
@@ -41,7 +41,7 @@ const SettingsPage = () => {
   const [buttonState, setButtonState] = useState<ButtonState>({
     isLoading: false,
     isDisabled: false,
-    text: "Save",
+    text: t("settings.actions.save"),
     showProgress: false,
   });
 
@@ -67,7 +67,7 @@ const SettingsPage = () => {
 
     const validationError = getLLMConfigValidationError(llmConfig);
     if (validationError) {
-      notify.warning("Cannot save settings", validationError);
+      notify.warning(t("settings.actions.cannotSave"), validationError);
       if (
         selectedProvider === "image-provider" &&
         ((llmConfig.LLM === "openai" && !String(llmConfig.OPENAI_MODEL || "").trim()))
@@ -82,30 +82,30 @@ const SettingsPage = () => {
         ...prev,
         isLoading: true,
         isDisabled: true,
-        text: "Saving...",
+        text: t("settings.actions.saving"),
       }));
       await handleSaveLLMConfig(llmConfig);
       notify.success(
-        "Settings saved",
-        "Your configuration was saved successfully."
+        t("settings.actions.savedTitle"),
+        t("settings.actions.savedDescription")
       );
       setButtonState((prev) => ({
         ...prev,
         isLoading: false,
         isDisabled: false,
-        text: "Save",
+        text: t("settings.actions.save"),
       }));
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Something went wrong while saving.";
-      notify.error("Could not save settings", message);
+          : t("settings.actions.saveErrorFallback");
+      notify.error(t("settings.actions.saveErrorTitle"), message);
       setButtonState((prev) => ({
         ...prev,
         isLoading: false,
         isDisabled: false,
-        text: "Save",
+        text: t("settings.actions.save"),
       }));
     }
   };
@@ -125,16 +125,7 @@ const SettingsPage = () => {
     ? `${textProviderLabel} (${selectedTextModel})`
     : textProviderLabel;
 
-  const imageSummary = llmConfig.DISABLE_IMAGE_GENERATION
-      ? "Image generation disabled"
-      : llmConfig.IMAGE_PROVIDER
-        ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label ||
-        llmConfig.IMAGE_PROVIDER
-        : "No image provider";
-  const webSearchProviderKey = (llmConfig.WEB_SEARCH_PROVIDER || "").toLowerCase();
-  const webSearchSummary = llmConfig.WEB_GROUNDING
-      ? `Web: ${WEB_SEARCH_PROVIDERS[webSearchProviderKey]?.label || "No provider"}`
-      : "Web search disabled";
+  const webSearchSummary = `${t("upload.config.web")}: ${llmConfig.WEB_SEARCH_MAX_RESULTS || "5"}`;
 
 
   useEffect(() => {
@@ -198,9 +189,9 @@ const SettingsPage = () => {
   }, [llmConfig, pathname]);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col font-syne">
+    <div className="flex min-h-[100dvh] flex-col bg-[var(--gslide-bg)]">
       <GSlideHeader
-        title="Settings"
+        title={t("settings.header.title")}
         actions={
           <GSlideButton
             className="inline-flex items-center"
@@ -225,7 +216,7 @@ const SettingsPage = () => {
           setSelectedProvider={selectSettingsSection}
         />
         <p className="mt-4 text-xs text-[var(--gslide-muted)]">
-          {textSummary}, {imageSummary}, {webSearchSummary}
+          {textSummary}, {webSearchSummary}
         </p>
 
         <div className="mt-8 max-w-3xl">

@@ -9,6 +9,7 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/provider";
 import { withHash } from "@/components/slide-editor/utils/color";
 import { elementBox } from "@/components/slide-editor/model/element-model";
 import type { ShapeSlideElement } from "@/components/slide-editor/state/state";
@@ -89,6 +90,7 @@ export function ShapeToolbar({
   componentActions?: ComponentActionsMenuActions | null;
   onChange: (index: number, element: ShapeSlideElement) => void;
 }) {
+  const t = useT();
   const [openPanel, setOpenPanel] = useState<ShapePanel>(null);
   const rawBox = elementBox(element);
   const box = anchorBox
@@ -228,9 +230,9 @@ export function ShapeToolbar({
       <div className="relative">
         <button
           type="button"
-          aria-label="Shape fill"
+          aria-label={t("slideEditor.layout.shapeFill")}
           aria-expanded={openPanel === "fill"}
-          title="Shape fill"
+          title={t("slideEditor.layout.shapeFill")}
           onClick={() => togglePanel("fill")}
           className={cn(
             "grid h-[22px] w-[22px] place-items-center rounded-[999px] border border-[#D7DAE3] hover:bg-[#F8F8FA]",
@@ -249,19 +251,19 @@ export function ShapeToolbar({
         {openPanel === "fill" ? (
           <Panel className="w-[220px] space-y-3 p-3">
             <ToggleRow
-              label="Fill"
+              label={t("slideEditor.common.fill")}
               enabled={fillEnabled}
               onToggle={() => setFillEnabled(!fillEnabled)}
             />
             {fillEnabled ? (
               <>
                 <ColorField
-                  label="Fill color"
+                  label={t("slideEditor.layout.fillColor")}
                   color={fill.color}
                   onCommit={(color) => update({ fill: { ...fill, color } })}
                 />
                 <SliderField
-                  label="Fill opacity"
+                  label={t("slideEditor.layout.fillOpacity")}
                   value={fill.opacity ?? 1}
                   min={0}
                   max={1}
@@ -279,7 +281,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title="Shape border"
+          title={t("slideEditor.layout.shapeBorder")}
           pressed={openPanel === "stroke" || strokeEnabled}
           onClick={() => togglePanel("stroke")}
         >
@@ -288,19 +290,19 @@ export function ShapeToolbar({
         {openPanel === "stroke" ? (
           <Panel className="w-[220px] space-y-3 p-3">
             <ToggleRow
-              label="Stroke"
+              label={t("slideEditor.common.stroke")}
               enabled={strokeEnabled}
               onToggle={() => setStrokeEnabled(!strokeEnabled)}
             />
             {strokeEnabled ? (
               <>
                 <ColorField
-                  label="Border color"
+                  label={t("slideEditor.layout.borderColor")}
                   color={stroke.color}
                   onCommit={(color) => update({ stroke: { ...stroke, color } })}
                 />
                 <SliderField
-                  label="Border width"
+                  label={t("slideEditor.layout.borderWidth")}
                   value={stroke.width ?? DEFAULT_SHAPE_STROKE.width}
                   min={0}
                   max={16}
@@ -309,7 +311,7 @@ export function ShapeToolbar({
                   onCommit={(width) => update({ stroke: { ...stroke, width } })}
                 />
                 <SliderField
-                  label="Border opacity"
+                  label={t("slideEditor.layout.borderOpacity")}
                   value={stroke.opacity ?? 1}
                   min={0}
                   max={1}
@@ -328,7 +330,7 @@ export function ShapeToolbar({
       {canRoundCorners ? (
         <div className="relative">
           <ToolbarButton
-            title="Border radius"
+            title={t("slideEditor.layout.borderRadius")}
             pressed={openPanel === "radius"}
             onClick={() => togglePanel("radius")}
           >
@@ -337,7 +339,7 @@ export function ShapeToolbar({
           {openPanel === "radius" ? (
             <Panel className="w-[252px] space-y-3 p-3">
               <SliderField
-                label="Border radius"
+                label={t("slideEditor.layout.borderRadius")}
                 value={radius}
                 min={0}
                 max={maxRadius}
@@ -369,7 +371,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title="Vector path"
+          title={t("slideEditor.layout.vectorPath")}
           pressed={openPanel === "vector"}
           onClick={() => togglePanel("vector")}
         >
@@ -408,14 +410,14 @@ export function ShapeToolbar({
                     onClick={() => updateVector({ closed: !vectorClosed })}
                     className="flex w-full items-center justify-between rounded-md border border-[#EDEEEF] px-3 py-2 text-left text-xs text-[#4B5563] hover:bg-[#F8F8FA]"
                   >
-                    <span className="font-medium text-[#191919]">Closed path</span>
+                    <span className="font-medium text-[#191919]">{t("slideEditor.layout.closedPath")}</span>
                     <span className="flex items-center gap-1 text-[var(--gslide-accent)]">
                       {vectorClosed ? (
                         <ToggleRight size={17} aria-hidden="true" />
                       ) : (
                         <ToggleLeft size={17} aria-hidden="true" />
                       )}
-                      {vectorClosed ? "On" : "Off"}
+                      {vectorClosed ? t("slideEditor.common.on") : t("slideEditor.common.off")}
                     </span>
                   </button>
 
@@ -436,7 +438,7 @@ export function ShapeToolbar({
                               "bg-white text-[var(--gslide-accent)] shadow-sm",
                           )}
                         >
-                          {mode === "none" ? "Straight" : mode}
+                          {mode === "none" ? t("slideEditor.layout.straight") : mode}
                         </button>
                       ))}
                     </div>
@@ -445,7 +447,7 @@ export function ShapeToolbar({
                   {vectorCurveMode === "smooth" ? (
                     <div className="space-y-3">
                       <SliderField
-                        label="Tension"
+                        label={t("slideEditor.layout.tension")}
                         value={vectorTension}
                         min={0}
                         max={1}
@@ -454,7 +456,7 @@ export function ShapeToolbar({
                         onCommit={(tension) => updateCurve({ tension })}
                       />
                       <SliderField
-                        label="Smoothness"
+                        label={t("slideEditor.layout.smoothness")}
                         value={vectorSegments}
                         min={1}
                         max={96}
@@ -477,7 +479,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title="Shape shadow"
+          title={t("slideEditor.layout.shapeShadow")}
           pressed={openPanel === "shadow" || shadowEnabled}
           onClick={() => togglePanel("shadow")}
         >
@@ -496,7 +498,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title="Shape opacity"
+          title={t("slideEditor.layout.shapeOpacity")}
           pressed={openPanel === "opacity"}
           onClick={() => togglePanel("opacity")}
         >
@@ -505,7 +507,7 @@ export function ShapeToolbar({
         {openPanel === "opacity" ? (
           <Panel className="left-auto right-0 w-[220px] translate-x-0 p-3">
             <SliderField
-              label="Shape opacity"
+              label={t("slideEditor.layout.shapeOpacity")}
               value={element.opacity ?? 1}
               min={0}
               max={1}
@@ -589,6 +591,7 @@ export function ToggleRow({
   label: string;
   onToggle: () => void;
 }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -603,7 +606,7 @@ export function ToggleRow({
         ) : (
           <ToggleLeft size={17} aria-hidden="true" />
         )}
-        {enabled ? "On" : "Off"}
+        {enabled ? t("slideEditor.common.on") : t("slideEditor.common.off")}
       </span>
     </button>
   );
@@ -622,16 +625,17 @@ export function ShadowPanel({
   shadow: ShadowValue;
   onChange: (changes: Partial<ShadowValue>) => void;
 }) {
+  const t = useT();
   return (
     <Panel className="left-auto right-0 w-[282px] translate-x-0 space-y-4 p-4">
       {onToggle ? (
-        <ToggleRow label="Shadow" enabled={enabled} onToggle={onToggle} />
+        <ToggleRow label={t("slideEditor.common.shadow")} enabled={enabled} onToggle={onToggle} />
       ) : null}
 
       {enabled ? (
         <>
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-[#4B5563]">Position</div>
+            <div className="text-[12px] font-medium text-[#4B5563]">{t("slideEditor.common.position")}</div>
             <div className="grid grid-cols-2 gap-2">
               <NumberField
                 label="X"
@@ -655,9 +659,9 @@ export function ShadowPanel({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-[#4B5563]">Blur</div>
+            <div className="text-[12px] font-medium text-[#4B5563]">{t("slideEditor.common.blur")}</div>
             <NumberField
-              label="Amount"
+              label={t("slideEditor.common.amount")}
               value={shadow.blur ?? fallback.blur}
               min={0}
               max={100}
@@ -667,16 +671,16 @@ export function ShadowPanel({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-[#4B5563]">Color</div>
+            <div className="text-[12px] font-medium text-[#4B5563]">{t("slideEditor.common.color")}</div>
             <ColorField
-              label="Color"
+              label={t("slideEditor.common.color")}
               color={shadow.color ?? fallback.color}
               onCommit={(color) => onChange({ color })}
             />
           </div>
 
           <SliderField
-            label="Opacity"
+            label={t("slideEditor.common.opacity")}
             value={shadow.opacity ?? fallback.opacity}
             min={0}
             max={1}

@@ -8,7 +8,7 @@ export function GSlideCard({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-[var(--gslide-border)] bg-[var(--gslide-card)] p-7 shadow-sm sm:p-9",
+        "rounded-xl border border-[var(--gslide-border)] bg-[var(--gslide-card)] p-7 shadow-none sm:p-9",
         className,
       )}
       {...props}

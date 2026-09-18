@@ -1,4 +1,5 @@
 import { resolveBackendAssetUrl } from "@/utils/api";
+import { translate } from "@/i18n/translate";
 import { chartDataFromSeriesWithColors } from "@/components/slide-editor/charts/chart-data";
 import { renderMarkdownTextRuns } from "@/components/slide-editor/text/markdown-text";
 import {
@@ -1542,7 +1543,7 @@ function adaptChartCategories(value: unknown[]): string[] {
   return value
     .map((item, index) =>
       truncateString(readString(item) ?? readString(asRecord(item)?.label) ?? "", 40) ||
-      `Item ${index + 1}`,
+      translate("slideEditor.chart.item", { number: index + 1 }),
     )
     .filter(Boolean)
     .slice(0, 24);

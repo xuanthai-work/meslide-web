@@ -1,7 +1,8 @@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PencilIcon, X } from "lucide-react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
+import { useT } from "@/i18n/provider";
 
 interface PromptReference {
   id: string;
@@ -14,9 +15,7 @@ interface PromptInputProps {
   references?: PromptReference[];
   onRemoveReference?: (id: string) => void;
   variant?: "smart" | "standard";
-  footer?: ReactNode;
   onSubmit?: () => void;
-  hasAttachments?: boolean;
 }
 
 export function PromptInput({
@@ -25,12 +24,18 @@ export function PromptInput({
   references = [],
   onRemoveReference,
   variant = "standard",
-  footer,
   onSubmit,
-  hasAttachments = false,
 }: PromptInputProps) {
+  const t = useT();
   const isCommunityStart =
     variant === "smart" && references.length === 0 && !value.trim();
+
+  const label = isCommunityStart
+    ? t("upload.prompt.community")
+    : t("upload.prompt.sourceLabel");
+  const placeholder = isCommunityStart
+    ? t("upload.prompt.communityPlaceholder")
+    : t("upload.prompt.sourcePlaceholder");
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -42,8 +47,7 @@ export function PromptInput({
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-2.5 rounded-lg border border-[#DBDBDB99] bg-white px-[10px] py-3 font-syne shadow-[0_4px_7px_rgba(0,0,0,0.04)]",
-        hasAttachments ? "min-h-[215px]" : "min-h-[180px]",
+        "relative flex min-h-[180px] flex-col gap-2.5 rounded-[18px] border border-[var(--gslide-border)] bg-white px-[10px] py-3 shadow-none",
       )}
     >
       {references.length > 0 && (
@@ -60,7 +64,7 @@ export function PromptInput({
                   type="button"
                   onClick={() => onRemoveReference(reference.id)}
                   className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[#666666] hover:bg-[#E4E4E7] hover:text-[#191919]"
-                  aria-label={`Remove ${reference.label}`}
+                  aria-label={t("upload.files.removeAria", { name: reference.label })}
                 >
                   <X className="h-2.5 w-2.5" />
                 </button>
@@ -76,7 +80,7 @@ export function PromptInput({
         </span>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1">
           <p className="text-sm font-normal leading-normal text-[#333333]">
-            {isCommunityStart ? "Create from community" : "Write prompt"}
+            {label}
           </p>
           <Textarea
             value={value}
@@ -84,21 +88,16 @@ export function PromptInput({
             rows={variant === "smart" ? 3 : 6}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              isCommunityStart
-                ? "Choose a design, then tell AI how to turn it into your deck."
-                : "Start with your idea... we'll handle the slides"
-            }
+            placeholder={placeholder}
+            aria-label={label}
             data-testid="prompt-input"
             className={cn(
-              "custom_scrollbar max-h-[400px] min-h-[57px] resize-y overflow-y-auto rounded-none border-none bg-transparent p-0 text-base font-normal leading-normal text-[#191919] shadow-none placeholder:text-[#999999] focus-visible:ring-0 focus-visible:ring-offset-0",
+              "custom_scrollbar max-h-[400px] min-h-[57px] resize-y overflow-y-auto rounded-none border-none bg-transparent p-0 text-base font-normal leading-normal text-[var(--gslide-ink)] shadow-none placeholder:text-[var(--gslide-muted)] focus-visible:ring-0 focus-visible:ring-offset-0",
               references.length === 0 && "min-h-[79px]",
             )}
           />
         </div>
       </div>
-
-      {footer}
     </div>
   );
 }

@@ -114,6 +114,7 @@ export default function SmartHtmlEditor({
         .slice(2)}`
   );
   const [activeMedia, setActiveMedia] = useState<ActiveMedia | null>(null);
+  const activeMediaRef = useRef<ActiveMedia | null>(null);
   const hoveredElementRef = useRef<HTMLElement | null>(null);
   const selectedElementRef = useRef<HTMLElement | null>(null);
   const [hoverRect, setHoverRect] = useState<SmartSelectionRect | null>(null);
@@ -508,12 +509,18 @@ export default function SmartHtmlEditor({
     containerRef,
   });
 
+  useEffect(() => {
+    activeMediaRef.current = activeMedia;
+  }, [activeMedia]);
+
   const replaceMedia = (url: string, query?: string) => {
-    if (!activeMedia) return;
-    activeMedia.element.src = url;
+    const media = activeMediaRef.current;
+    if (!media) return;
+    const element = media.element;
+    element.src = url;
     if (query) {
-      activeMedia.element.setAttribute(
-        activeMedia.kind === "icon" ? "query" : "prompt",
+      element.setAttribute(
+        media.kind === "icon" ? "query" : "prompt",
         query
       );
     }

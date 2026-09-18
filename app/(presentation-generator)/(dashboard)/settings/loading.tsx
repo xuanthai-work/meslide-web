@@ -1,4 +1,5 @@
 import { GSlideHeader, GSlideSkeleton } from "@/components/gslide";
+import { translate } from "@/i18n/translate";
 
 function Shimmer({ className }: { className?: string }) {
   return <GSlideSkeleton className={className} aria-hidden />;
@@ -8,7 +9,7 @@ export default function LoadingSettings() {
   return (
     <div className="flex min-h-[100dvh] flex-col font-syne">
       <GSlideHeader
-        title="Settings"
+        title={translate("settings.header.title")}
         actions={
           <div className="flex items-center gap-2">
             <Shimmer className="h-11 w-[108px] rounded-full" />

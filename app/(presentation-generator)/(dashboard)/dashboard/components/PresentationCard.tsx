@@ -26,6 +26,7 @@ import {
   TemplateV2HtmlSlidePreview,
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import MarkdownRenderer from "@/components/MarkDownRender";
+import { useI18n, useT } from "@/i18n/provider";
 
 export const PresentationCard = ({
   id,
@@ -43,12 +44,16 @@ export const PresentationCard = ({
   onDuplicated?: (presentation: any) => void;
 }) => {
   const router = useRouter();
+  const t = useT();
+  const { locale } = useI18n();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showActions, setShowActions] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);
   const isUnsupported = presentation?.version === "v1-standard";
-  const presentationType =
+  // Keep this only for opening legacy smart decks with the correct editor.
+  // Generation mode is no longer a user-facing deck classification.
+  const presentationModeForRouting =
     presentation?.type === "smart" || presentation?.generation_mode === "smart"
       ? "smart"
       : "standard";
@@ -57,12 +62,12 @@ export const PresentationCard = ({
     e.preventDefault();
     if (isUnsupported) {
       notify.warning(
-        "Unsupported presentation",
-        "This deck was created in an older Presenton version. Downgrade to a compatible version to open it."
+        t("dashboard.card.unsupported.title"),
+        t("dashboard.card.unsupported.description")
       );
       return;
     }
-    router.push(`/presentation?id=${id}&type=${presentationType}`);
+    router.push(`/presentation?id=${id}&type=${presentationModeForRouting}`);
   };
 
 
@@ -72,13 +77,13 @@ export const PresentationCard = ({
     const response = await DashboardApi.deletePresentation(id);
 
     if (response?.success) {
-      notify.success("Presentation deleted", "The presentation was removed from your dashboard.");
+      notify.success(t("dashboard.card.deleted.title"), t("dashboard.card.deleted.description"));
       setShowDeleteDialog(false);
       if (onDeleted) {
         onDeleted(id);
       }
     } else {
-      notify.error("Could not delete presentation", response?.message || "Something went wrong while deleting the presentation.");
+      notify.error(t("dashboard.card.deleteError.title"), response?.message || t("dashboard.card.deleteError.fallback"));
     }
     setIsDeleting(false);
   };
@@ -88,12 +93,12 @@ export const PresentationCard = ({
     setIsDuplicating(true);
     try {
       const duplicated = await DashboardApi.duplicatePresentation(id);
-      notify.success("Presentation duplicated", "A copy was added to your dashboard.");
+      notify.success(t("dashboard.card.duplicated.title"), t("dashboard.card.duplicated.description"));
       onDuplicated?.(duplicated);
     } catch (error) {
       notify.error(
-        "Could not duplicate presentation",
-        error instanceof Error ? error.message : "Something went wrong while duplicating the presentation."
+        t("dashboard.card.duplicateError.title"),
+        error instanceof Error ? error.message : t("dashboard.card.duplicateError.fallback")
       );
     } finally {
       setIsDuplicating(false);
@@ -110,8 +115,8 @@ export const PresentationCard = ({
         suppressHydrationWarning={true}
         onClick={handlePreview}
         aria-disabled={isUnsupported}
-        title={isUnsupported ? "Unsupported in this version of Presenton" : undefined}
-        className={`bg-[#F8FBFB] font-syne relative shadow-none sm:shadow-none presentation-card rounded-[12px] p-0 group transition-all duration-500 slide-theme overflow-hidden flex flex-col ${
+        title={isUnsupported ? t("dashboard.card.unsupportedTitle") : undefined}
+        className={`relative flex flex-col overflow-hidden rounded-xl border-[var(--gslide-border)] bg-white p-0 shadow-none transition-all duration-500 sm:shadow-none presentation-card group slide-theme ${
           isUnsupported
             ? "cursor-not-allowed border-[#EDEEEF]"
             : "cursor-pointer hover:shadow-md"
@@ -123,11 +128,6 @@ export const PresentationCard = ({
         suppressHydrationWarning={true}
         className={`relative z-40 flex flex-1 ${viewMode === "list" ? "min-h-[122px] flex-row" : "flex-col"}`}
       >
-        {/* <p className=" text-xs font-syne absolute top-2 flex gap-1 capitalize  items-center left-2 rounded-[100px]  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
-
-          {presentation.type}
-        </p> */}
-
         <img src="/card_bg.svg" alt="" className="absolute top-0 left-0 w-full h-full object-cover" />
         <div className={isUnsupported
           ? `relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-[#EDEEEF] bg-white/90 ${viewMode === "list" ? "m-3 w-[170px] shrink-0" : "mx-5 mt-4"}`
@@ -139,7 +139,7 @@ export const PresentationCard = ({
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]">
                 <Archive className="h-[18px] w-[18px]" aria-hidden="true" />
               </span>
-              <p className="text-xs font-medium">Preview unavailable</p>
+              <p className="text-xs font-medium">{t("dashboard.card.previewUnavailable")}</p>
             </div>
           ) : useTemplateV2HtmlPreview ? (
             <TemplateV2HtmlSlidePreview
@@ -155,15 +155,6 @@ export const PresentationCard = ({
             />
           )}
         </div>
-        <p
-          className={`absolute left-2 top-2 z-40 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize shadow-sm backdrop-blur-sm ${
-            presentationType === "smart"
-              ? "bg-[#F4F0FF]/95 text-[#6941C6]"
-              : "bg-white/90 text-[#475467]"
-          }`}
-        >
-          {presentationType}
-        </p>
         <p className="absolute right-2 top-2 z-40 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-[#191919] shadow-sm backdrop-blur-sm">
           {presentation.n_slides ?? presentation?.slides?.length ?? 0}
         </p>
@@ -171,10 +162,10 @@ export const PresentationCard = ({
           <div className="flex items-center justify-between gap-7 w-full">
             <div className="flex flex-col items-start gap-1">
               <div className="text-sm text-[#191919] font-semibold  overflow-hidden line-clamp-1">
-                <MarkdownRenderer content={title} className="text-sm mb-0  font-syne text-[#191919] font-semibold  overflow-hidden line-clamp-1" />
+                <MarkdownRenderer content={title} className="mb-0 line-clamp-1 overflow-hidden text-sm font-semibold text-[var(--gslide-ink)]" />
               </div>
-              <p className="text-[#808080] text-sm font-syne">
-                {new Date(presentation?.created_at).toLocaleDateString()}
+              <p className="text-sm text-[var(--gslide-muted)]">
+                {new Date(presentation?.created_at).toLocaleDateString(locale)}
               </p>
 
             </div>
@@ -194,7 +185,7 @@ export const PresentationCard = ({
                       void handleDuplicate();
                     }}
                   >
-                    <p>{isDuplicating ? "Duplicating..." : "Duplicate"}</p>
+                    <p>{isDuplicating ? t("common.status.duplicating") : t("common.actions.duplicate")}</p>
                     {isDuplicating ? (
                       <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                     ) : (
@@ -211,7 +202,7 @@ export const PresentationCard = ({
                     setShowDeleteDialog(true);
                   }}
                 >
-                  <p>Delete</p>
+                  <p>{t("common.actions.delete")}</p>
                   <Trash className="h-4 w-4 text-red-500" />
                 </button>
               </PopoverContent>
@@ -232,7 +223,7 @@ export const PresentationCard = ({
         <DialogContent
           hideDefaultClose
           overlayClassName="z-[100] bg-[#101828]/55 backdrop-blur-[3px]"
-          className="z-[101] w-[calc(100vw-32px)] max-w-[420px] gap-0 overflow-hidden rounded-[24px] border-0 bg-white p-0 font-syne shadow-[0_28px_90px_rgba(15,23,42,0.24)] sm:max-w-[420px]"
+          className="z-[101] w-[calc(100vw-32px)] max-w-[420px] gap-0 overflow-hidden rounded-[24px] border-0 bg-white p-0 shadow-[0_28px_90px_rgba(15,23,42,0.24)] sm:max-w-[420px]"
         >
           <DialogHeader className="items-center px-7 pb-6 pt-8 text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)] ring-8 ring-[#FAF9FF]">
@@ -243,21 +234,21 @@ export const PresentationCard = ({
               />
             </div>
             <DialogTitle className="text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#191919]">
-              Delete presentation?
+              {t("dashboard.card.deleteDialog.title")}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="w-full pt-2 text-sm leading-6 text-[#667085]">
-                <p>This will permanently delete the presentation below.</p>
+                <p>{t("dashboard.card.deleteDialog.body")}</p>
                 <div
                   className="mt-4 rounded-[12px] border border-[#EAECF0] bg-[#F9FAFB] px-4 py-3 text-left"
-                  title={title || "Untitled presentation"}
+                  title={title || t("common.untitledPresentation")}
                 >
                   <p className="line-clamp-2 break-words text-sm font-medium leading-5 text-[#344054]">
-                    {title || "Untitled presentation"}
+                    {title || t("common.untitledPresentation")}
                   </p>
                 </div>
                 <p className="mt-3 text-[13px] text-[#98A2B3]">
-                  This action cannot be undone.
+                  {t("dashboard.card.deleteDialog.disclaimer")}
                 </p>
               </div>
             </DialogDescription>
@@ -270,7 +261,7 @@ export const PresentationCard = ({
               disabled={isDeleting}
               className="h-11 rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-medium text-[#344054] shadow-sm transition-colors hover:bg-[#F9FAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Cancel
+              {t("common.actions.cancel")}
             </button>
             <button
               type="button"
@@ -281,12 +272,12 @@ export const PresentationCard = ({
               {isDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  Deleting...
+                  {t("common.status.deleting")}
                 </>
               ) : (
                 <>
                   <Trash className="h-4 w-4" aria-hidden="true" />
-                  Delete
+                  {t("common.actions.delete")}
                 </>
               )}
             </button>

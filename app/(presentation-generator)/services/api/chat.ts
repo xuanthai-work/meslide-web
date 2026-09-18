@@ -1,6 +1,8 @@
 import { buildAbsoluteApiRequestUrl, getApiUrl } from "@/utils/api";
 import { ApiResponseHandler } from "./api-error-handler";
 import { getHeader } from "./header";
+import { translateBackendError } from "@/i18n/backend-messages";
+import { translateRaw } from "@/i18n/translate";
 
 export interface ChatAttachment {
   type: "document";
@@ -42,6 +44,8 @@ export interface ChatConversationSummary {
 }
 
 export interface ChatStreamTrace {
+  code?: string;
+  params?: Record<string, unknown>;
   kind?: string;
   round?: number;
   tool?: string;
@@ -56,9 +60,15 @@ export interface ChatStreamTrace {
   elementPath?: string;
 }
 
+export interface ChatStreamStatus {
+  status: string;
+  status_code?: string;
+  status_params?: Record<string, unknown>;
+}
+
 export interface ChatStreamHandlers {
   onChunk?: (chunk: string) => void;
-  onStatus?: (status: string) => void;
+  onStatus?: (status: string, payload: ChatStreamStatus) => void;
   onTrace?: (trace: ChatStreamTrace) => void;
   onComplete?: (response: ChatMessageResponse) => void;
 }
@@ -76,11 +86,15 @@ interface ChatStreamDataComplete {
 interface ChatStreamDataError {
   type: "error";
   detail?: unknown;
+  error_code?: unknown;
+  error_params?: unknown;
 }
 
 interface ChatStreamDataStatus {
   type: "status";
   status?: unknown;
+  status_code?: unknown;
+  status_params?: unknown;
 }
 
 interface ChatStreamDataTrace {
@@ -195,18 +209,41 @@ async function streamChatMessage(
     }
 
     if (payloadType === "error") {
-      const detail = (parsedData as ChatStreamDataError).detail;
+      const errorPayload = parsedData as ChatStreamDataError;
+      const detail = errorPayload.detail;
       const message =
-        typeof detail === "string" && detail.trim().length > 0
+        translateBackendError(
+          (key, params) => translateRaw(key, params),
+          {
+            detail,
+            error_code: errorPayload.error_code,
+            error_params:
+              errorPayload.error_params && typeof errorPayload.error_params === "object"
+                ? errorPayload.error_params as Record<string, unknown>
+                : undefined,
+          },
+        ) ||
+        (typeof detail === "string" && detail.trim().length > 0
           ? detail
-          : "Chat stream failed";
+          : "Chat stream failed");
       throw new Error(message);
     }
 
     if (payloadType === "status") {
-      const status = (parsedData as ChatStreamDataStatus).status;
+      const statusPayload = parsedData as ChatStreamDataStatus;
+      const status = statusPayload.status;
       if (typeof status === "string" && status.trim().length > 0) {
-        handlers.onStatus?.(status);
+        handlers.onStatus?.(status, {
+          status,
+          status_code:
+            typeof statusPayload.status_code === "string"
+              ? statusPayload.status_code
+              : undefined,
+          status_params:
+            statusPayload.status_params && typeof statusPayload.status_params === "object"
+              ? statusPayload.status_params as Record<string, unknown>
+              : undefined,
+        });
       }
       return;
     }
@@ -216,6 +253,12 @@ async function streamChatMessage(
       if (trace && typeof trace === "object") {
         const typedTrace = trace as Record<string, unknown>;
         handlers.onTrace?.({
+          code:
+            typeof typedTrace.code === "string" ? typedTrace.code : undefined,
+          params:
+            typedTrace.params && typeof typedTrace.params === "object"
+              ? typedTrace.params as Record<string, unknown>
+              : undefined,
           kind:
             typeof typedTrace.kind === "string" ? typedTrace.kind : undefined,
           round:

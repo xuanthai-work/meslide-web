@@ -1,20 +1,22 @@
 'use client'
-import React from "react";
 import PresentationPage from "./components/PresentationPage";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import "../utils/prism-languages";
-const page = () => {
-
+import { useT } from "@/i18n/provider";
+const Page = () => {
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const queryId = params.get("id");
   if (!queryId) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen font-syne">
-        <h1 className="text-2xl font-bold">No presentation id found</h1>
-        <p className="text-gray-500 pb-4">Please try again</p>
-        <Button onClick={() => router.push("/dashboard")}>Go to home</Button>
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[var(--gslide-bg)]">
+        <h1 className="text-2xl font-bold">{t("presentation.page.missingId")}</h1>
+        <p className="text-gray-500 pb-4">{t("presentation.page.tryAgain")}</p>
+        <Button onClick={() => router.push("/dashboard")}>
+          {t("presentation.page.goHome")}
+        </Button>
       </div>
     );
   }
@@ -24,4 +26,4 @@ const page = () => {
 
   );
 };
-export default page;
+export default Page;

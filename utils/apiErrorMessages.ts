@@ -2,7 +2,12 @@ export interface ApiErrorResponse {
   detail?: unknown;
   message?: string;
   error?: unknown;
+  error_code?: string;
+  error_params?: Record<string, unknown>;
 }
+
+import { BACKEND_ERROR_KEYS, translateBackendError, type BackendErrorCode } from "@/i18n/backend-messages";
+import { translateRaw } from "@/i18n/translate";
 
 const INVALID_API_KEY_MESSAGE =
   "Invalid API key. Please verify your API key and try again.";
@@ -131,6 +136,19 @@ export function extractApiErrorMessage(
 
   if (isRecord(errorData)) {
     const apiError = errorData as ApiErrorResponse;
+    if (
+      typeof apiError.error_code === "string" &&
+      apiError.error_code in BACKEND_ERROR_KEYS
+    ) {
+      return translateBackendError(
+        (key, params) => translateRaw(key, params),
+        {
+          detail: normalizeApiErrorDetail(apiError.detail) ?? undefined,
+          error_code: apiError.error_code as BackendErrorCode,
+          error_params: apiError.error_params,
+        },
+      );
+    }
     message =
       normalizeApiErrorDetail(apiError.detail) ||
       (typeof apiError.message === "string" ? apiError.message : null) ||

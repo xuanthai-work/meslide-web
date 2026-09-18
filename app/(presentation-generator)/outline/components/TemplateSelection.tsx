@@ -9,6 +9,7 @@ import {
   TemplateListEmptyState,
   TemplateListSection,
 } from "../../components/TemplateListUi";
+import { useT } from "@/i18n/provider";
 
 interface TemplateSelectionProps {
   presentationId: string | null;
@@ -40,6 +41,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
     onSelectTemplate,
     onCreateTemplate,
   }) {
+    const t = useT();
     const { defaultTemplates, customTemplates, loading, error } =
       useTemplateSummaries();
 
@@ -89,7 +91,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
     if (error) {
       return (
         <TemplateListEmptyState
-          message={`Templates could not be loaded: ${error}`}
+          message={t("outline.template.error.loadFailed", { error })}
         />
       );
     }
@@ -127,9 +129,11 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
     };
 
     const suggestionNotice = suggestedTemplate && selectedTemplateId && (
-      <div className="mb-5 rounded-xl border border-[#E4E0FF] bg-[#F7F5FF] px-4 py-3 font-syne text-xs font-medium text-[#5141E5]">
-        <strong className="font-semibold">Suggested template selected.</strong>{" "}
-        Click the highlighted template to continue.
+      <div className="mb-5 rounded-xl border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] px-4 py-3 text-xs font-medium text-[var(--gslide-accent)]">
+        <strong className="font-semibold">
+          {t("outline.template.suggestion.selected")}
+        </strong>{" "}
+        {t("outline.template.suggestion.continueHint")}
       </div>
     );
 
@@ -137,7 +141,10 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
       return (
         <div className="mb-8">
           {suggestionNotice}
-          <TemplateListSection label="Templates" selectionPage>
+          <TemplateListSection
+            label={t("outline.template.section.templates")}
+            selectionPage
+          >
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <CreateCustomTemplate
                   selectionPage
@@ -155,7 +162,10 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
     return (
       <div className="mb-8 space-y-[30px]">
         {suggestionNotice}
-        <TemplateListSection label="Custom" selectionPage>
+        <TemplateListSection
+          label={t("outline.template.section.custom")}
+          selectionPage
+        >
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <CreateCustomTemplate
               selectionPage
@@ -167,9 +177,14 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(
           </div>
         </TemplateListSection>
 
-        <TemplateListSection label="Built-In" selectionPage>
+        <TemplateListSection
+          label={t("outline.template.section.builtin")}
+          selectionPage
+        >
           {defaultTemplates.length === 0 ? (
-            <TemplateListEmptyState message="No built-in templates available." />
+            <TemplateListEmptyState
+              message={t("outline.template.empty.noBuiltin")}
+            />
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {defaultTemplates.map((template, index) =>

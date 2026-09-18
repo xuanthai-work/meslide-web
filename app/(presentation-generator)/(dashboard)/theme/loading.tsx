@@ -1,4 +1,6 @@
+import { GSlideHeader } from '@/components/gslide'
 import { Skeleton } from '@/components/ui/skeleton'
+import { translate } from '@/i18n/translate'
 
 const ThemeCardSkeleton = () => (
     <div className="rounded-xl px-6 border border-[#EDEEEF] w-[305px] bg-white overflow-hidden">
@@ -32,19 +34,26 @@ const ThemeCardSkeleton = () => (
 
 const Loading = () => {
     return (
-        <div className="space-y-6">
-            {/* Tabs skeleton */}
-            <div className="p-1 rounded-[40px] bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center">
-                <Skeleton className="h-8 w-20 rounded-[70px]" />
-                <div className="mx-1 w-[2px] h-[17px] bg-[#EDECEC]" />
-                <Skeleton className="h-8 w-20 rounded-[70px]" />
-            </div>
+        <div className="min-h-[100dvh] bg-[var(--gslide-bg)]">
+            <GSlideHeader
+                title={translate('themes.page.title')}
+                actions={<Skeleton className="h-10 w-36 rounded-full" />}
+            />
 
-            {/* Theme cards grid */}
-            <div className="flex flex-wrap gap-6">
-                {Array.from({ length: 4 }).map((_, idx) => (
-                    <ThemeCardSkeleton key={idx} />
-                ))}
+            <div className="space-y-6 px-6 py-8">
+                {/* Tabs skeleton */}
+                <div className="p-1 rounded-[40px] bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center">
+                    <Skeleton className="h-8 w-20 rounded-[70px]" />
+                    <div className="mx-1 w-[2px] h-[17px] bg-[#EDECEC]" />
+                    <Skeleton className="h-8 w-20 rounded-[70px]" />
+                </div>
+
+                {/* Theme cards grid */}
+                <div className="flex flex-wrap gap-6">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                        <ThemeCardSkeleton key={idx} />
+                    ))}
+                </div>
             </div>
         </div>
     )

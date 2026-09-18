@@ -1,5 +1,9 @@
 import { getHeader, getHeaderForFormData } from "./header";
-import { IconSearch, ImageGenerate, PreviousGeneratedImagesResponse } from "./params";
+import type {
+  IconSearch,
+  ImageGenerate,
+  PreviousGeneratedImagesResponse,
+} from "./params";
 import { ApiResponseHandler } from "./api-error-handler";
 import { getApiUrl, resolveBackendAssetUrl } from "@/utils/api";
 import {
@@ -8,6 +12,8 @@ import {
 } from "@/utils/presentationLimits";
 import type { PresentationVersion } from "./dashboard";
 import type { Slide } from "../../types/slide";
+import { LanguageType } from "../../upload/type";
+import { toLegacyLanguageValue } from "../../upload/language";
 
 export type BlankPresentationResponse = {
   id: string;
@@ -20,8 +26,25 @@ export type BlankPresentationResponse = {
   slides: Array<Record<string, unknown>>;
 };
 
+export type DecomposedDocument = {
+  name: string;
+  file_path: string;
+};
+
+export type RewritePromptRequest = {
+  prompt: string;
+  language?: LanguageType | null;
+  nSlides?: number | null;
+  filePaths?: string[];
+  signal?: AbortSignal;
+};
+
+export type RewritePromptResponse = {
+  rewritten_prompt: string;
+};
+
 export class PresentationGenerationApi {
-  static async uploadDoc(documents: File[]) {
+  static async uploadDoc(documents: File[], signal?: AbortSignal) {
     const formData = new FormData();
 
     documents.forEach((document) => {
@@ -36,6 +59,7 @@ export class PresentationGenerationApi {
           headers: getHeaderForFormData(),
           body: formData,
           cache: "no-cache",
+          signal,
         }
       );
 
@@ -48,8 +72,9 @@ export class PresentationGenerationApi {
 
   static async decomposeDocuments(
     documentKeys: string[],
-    language?: string | null
-  ) {
+    language?: LanguageType | null,
+    signal?: AbortSignal
+  ): Promise<DecomposedDocument[]> {
     try {
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/files/decompose`),
@@ -58,9 +83,10 @@ export class PresentationGenerationApi {
           headers: getHeader(),
           body: JSON.stringify({
             file_paths: documentKeys,
-            language: language ?? null,
+            language: toLegacyLanguageValue(language),
           }),
           cache: "no-cache",
+          signal,
         }
       );
 
@@ -80,8 +106,6 @@ export class PresentationGenerationApi {
     tone,
     verbosity,
     instructions,
-    include_table_of_contents,
-    include_title_slide,
     web_search,
     generation_mode = "standard",
     community_design_ids,
@@ -90,12 +114,10 @@ export class PresentationGenerationApi {
     version?: PresentationVersion;
     n_slides: number | null;
     file_paths?: string[];
-    language: string | null;
+    language: LanguageType | null;
     tone?: string | null;
     verbosity?: string | null;
     instructions?: string | null;
-    include_table_of_contents?: boolean;
-    include_title_slide?: boolean;
     web_search?: boolean;
     generation_mode?: "standard" | "smart";
     community_design_ids?: number[];
@@ -115,12 +137,12 @@ export class PresentationGenerationApi {
             version,
             n_slides: limitedSlideCount,
             file_paths,
-            language,
+            language: toLegacyLanguageValue(language),
             tone,
             verbosity,
             instructions,
-            include_table_of_contents,
-            include_title_slide,
+            include_table_of_contents: true,
+            include_title_slide: true,
             web_search,
             generation_mode,
             community_design_ids,
@@ -139,6 +161,53 @@ export class PresentationGenerationApi {
       };
     } catch (error) {
       console.error("error in presentation creation", error);
+      throw error;
+    }
+  }
+
+  static async rewritePrompt({
+    prompt,
+    language = null,
+    nSlides = null,
+    filePaths,
+    signal,
+  }: RewritePromptRequest): Promise<string> {
+    try {
+      const limitedSlideCount =
+        typeof nSlides === "number"
+          ? Math.min(Math.max(nSlides, 1), MAX_NUMBER_OF_SLIDES)
+          : null;
+      const response = await fetch(
+        getApiUrl(`/api/v1/ppt/prompt/rewrite`),
+        {
+          method: "POST",
+          headers: getHeader(),
+          body: JSON.stringify({
+            prompt,
+            language: toLegacyLanguageValue(language),
+            n_slides: limitedSlideCount,
+            file_paths: filePaths,
+          }),
+          cache: "no-cache",
+          signal,
+        }
+      );
+
+      const result = (await ApiResponseHandler.handleResponse(
+        response,
+        "Failed to rewrite prompt"
+      )) as RewritePromptResponse;
+
+      const rewrittenPrompt = result?.rewritten_prompt;
+      if (typeof rewrittenPrompt !== "string" || !rewrittenPrompt.trim()) {
+        throw new Error(
+          "Prompt rewrite response did not include a rewritten prompt"
+        );
+      }
+
+      return rewrittenPrompt;
+    } catch (error) {
+      console.error("error in prompt rewrite", error);
       throw error;
     }
   }
@@ -209,6 +278,31 @@ export class PresentationGenerationApi {
       return await ApiResponseHandler.handleResponse(response, "Failed to update presentation content");
     } catch (error) {
       console.error("error in presentation content update", error);
+      throw error;
+    }
+  }
+
+  static async switchPresentationMode(
+    presentationId: string,
+    generationMode: "standard" | "smart"
+  ) {
+    try {
+      const response = await fetch(
+        getApiUrl(`/api/v1/ppt/presentation/${presentationId}/mode`),
+        {
+          method: "PATCH",
+          headers: getHeader(),
+          body: JSON.stringify({ generation_mode: generationMode }),
+          cache: "no-cache",
+        }
+      );
+
+      return await ApiResponseHandler.handleResponse(
+        response,
+        "Failed to switch presentation mode"
+      );
+    } catch (error) {
+      console.error("error switching presentation mode", error);
       throw error;
     }
   }

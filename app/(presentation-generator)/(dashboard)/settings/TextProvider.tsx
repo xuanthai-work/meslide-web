@@ -24,7 +24,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { notify } from "@/components/ui/sonner";
 import Image from "next/image";
 import {
@@ -33,6 +33,7 @@ import {
   settingsDropdownClassName,
   settingsFormColumnClassName,
 } from "./SettingsField";
+import { useT } from "@/i18n/provider";
 
 interface OpenAIConfigProps {
   onInputChange: (value: string | boolean, field: string) => void;
@@ -47,6 +48,7 @@ interface ModelOption {
 }
 
 const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
+  const t = useT();
   const [openProviderSelect, setOpenProviderSelect] = useState(false);
   const [openModelSelect, setOpenModelSelect] = useState(false);
   const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
@@ -106,8 +108,8 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
   }, [availableModels, currentModel]);
   const providerApiKeyLabel =
     selectedProvider === "custom"
-      ? "Custom LLM API Key"
-      : `${selectedProvider} API Key`;
+      ? t("settings.text.customApiKeyLabel")
+      : t("settings.text.apiKeyLabel", { provider: selectedProvider });
 
   useEffect(() => {
     setAvailableModels([]);
@@ -212,20 +214,20 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
       } else {
         const message = await getApiErrorMessage(
           response,
-          `The server could not list ${modelLabel} models. Check your API key or endpoint and try again.`
+          t("settings.text.fetchModelsServerError", { provider: modelLabel })
         );
         console.error("Failed to fetch models");
         setAvailableModels([]);
         setModelsChecked(true);
-        notify.error("Could not load models", message);
+        notify.error(t("settings.text.loadModelsError"), message);
       }
     } catch (error) {
       console.error("Error fetching models:", error);
       notify.error(
-        "Could not load models",
+        t("settings.text.loadModelsError"),
         error instanceof Error
           ? error.message
-          : "Something went wrong while contacting the provider. Check your network and try again."
+          : t("settings.text.loadModelsFallback")
       );
       setAvailableModels([]);
       setModelsChecked(true);
@@ -277,14 +279,14 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
             </svg>
           </div>
           <h3 className="py-2.5 text-xl font-normal text-[#191919]">
-            Text Generation Settings
+            {t("settings.text.title")}
           </h3>
           <p className="text-sm text-gray-500">
-            Choosing where text content comes from
+            {t("settings.text.subtitle")}
           </p>
         </div>
         <div className={settingsFormColumnClassName}>
-          <SettingsField label="Select Text Provider">
+          <SettingsField label={t("settings.text.selectProvider")}>
             <Popover
               open={openProviderSelect}
               onOpenChange={setOpenProviderSelect}
@@ -309,7 +311,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                     <span className="truncate text-sm font-medium text-gray-900">
                       {llmConfig.LLM
                         ? LLM_PROVIDERS[llmConfig.LLM]?.label || llmConfig.LLM
-                        : "Select text provider"}
+                        : t("settings.text.providerPlaceholder")}
                     </span>
                   </div>
                   {openProviderSelect ? (
@@ -325,9 +327,9 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                 style={{ width: "var(--radix-popover-trigger-width)" }}
               >
                 <Command>
-                  <CommandInput placeholder="Search provider..." />
+                  <CommandInput placeholder={t("settings.text.searchProvider")} />
                   <CommandList>
-                    <CommandEmpty>No provider found.</CommandEmpty>
+                    <CommandEmpty>{t("settings.text.noProvider")}</CommandEmpty>
                     <CommandGroup>
                       {Object.values(LLM_PROVIDERS).map((provider, index) => (
                         <CommandItem
@@ -372,7 +374,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                   onApiKeyChange(selectedProvider, e.target.value)
                 }
                 className={`${settingsControlClassName} pr-10`}
-                placeholder={`Enter your ${providerApiKeyLabel}`}
+                placeholder={t("settings.text.apiKeyPlaceholder", { label: providerApiKeyLabel })}
               />
               <button
                 type="button"
@@ -389,7 +391,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
           </SettingsField>
 
           {selectedProvider === "custom" && (
-            <SettingsField label="OpenAI-compatible URL">
+            <SettingsField label={t("settings.text.customUrl")}>
               <input
                 type="text"
                 value={currentCustomUrl}
@@ -403,7 +405,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
           )}
 
           {(currentModel || (modelsChecked && modelOptions.length > 0)) ? (
-            <SettingsField label={`Select ${modelLabel} Model`}>
+            <SettingsField label={t("settings.text.selectModel", { provider: modelLabel })}>
               <Popover
                 open={openModelSelect}
                 onOpenChange={handleModelSelectOpenChange}
@@ -417,7 +419,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                   >
                     <span className="truncate text-sm font-medium text-gray-900">
                       {(() => {
-                        if (!currentModel) return "Select a model";
+                        if (!currentModel) return t("settings.text.modelPlaceholder");
                         const selectedModel = modelOptions.find(
                           (model) => model.value === currentModel
                         );
@@ -438,14 +440,14 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
                   style={{ width: "var(--radix-popover-trigger-width)" }}
                 >
                   <Command>
-                    <CommandInput placeholder="Search models..." />
+                    <CommandInput placeholder={t("settings.text.searchModels")} />
                     <CommandList>
-                      <CommandEmpty>No model found.</CommandEmpty>
+                      <CommandEmpty>{t("settings.text.noModel")}</CommandEmpty>
                       <CommandGroup>
                         {modelsLoading ? (
                           <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-600">
                             <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                            Fetching models...
+                            {t("settings.text.fetchingModels")}
                           </div>
                         ) : null}
                         {modelOptions.map((model) => (
@@ -499,10 +501,10 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
               {modelsLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Checking for models...
+                  {t("settings.text.checkingModels")}
                 </span>
               ) : (
-                "Check models"
+                t("settings.text.checkModels")
               )}
             </button>
           )}
@@ -512,8 +514,7 @@ const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
       {modelsChecked && availableModels.length === 0 && (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            No models found. Please make sure your provider credentials are
-            valid and the selected provider is reachable.
+            {t("settings.common.noModelsFound")}
           </p>
         </div>
       )}

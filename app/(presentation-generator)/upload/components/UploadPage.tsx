@@ -10,32 +10,43 @@
  */
 
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { clearOutlines, setPresentationId } from "@/store/slices/presentationGeneration";
 import { PromptInput } from "./PromptInput";
+import { RewrittenPrompt, type RewritePhase } from "./RewrittenPrompt";
 import { LanguageType, PresentationConfig, ToneType, VerbosityType } from "../type";
 import SupportingDoc from "./SupportingDoc";
 import { notify } from "@/components/ui/sonner";
+import { ApiError } from "../../services/api/api-error-handler";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
+import {
+  type PreparedDocumentSet,
+  decompositionKeyFor,
+  documentPathsOf,
+  fileFingerprint,
+} from "../services/document-preparation";
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { setPptGenUploadState } from "@/store/slices/presentationGenUpload";
 import { ConfigurationSelects } from "./ConfigurationSelects";
-import { RootState } from "@/store/store";
-import CurrentConfig from "./CurrentConfig";
 import {
   clampSlideCountValue,
   parseLimitedSlideCount,
 } from "@/utils/presentationLimits";
+import { useT } from "@/i18n/provider";
 import CommunityReferencePicker from "./CommunityReferencePicker";
 import {
   CommunityPresentationApi,
   type CommunityPresentation,
 } from "../../services/api/community";
-
-type GenerationMode = "smart" | "standard";
+import {
+  DEFAULT_GENERATION_MODE,
+  type GenerationMode,
+} from "../generation-mode";
+import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
+import { GSlideButton, GSlideDropCard, GSlideStudioTitle } from "@/components/gslide";
 
 // Types for loading state
 interface LoadingState {
@@ -46,40 +57,45 @@ interface LoadingState {
   extra_info?: string;
 }
 
-const getDocumentPaths = (files: unknown): string[] => {
-  if (!Array.isArray(files)) {
-    return [];
-  }
+// Coded server errors meaning "the prepared documents expired server-side".
+// On these the same local files are re-prepared once through the normal
+// upload/decompose path instead of failing hard.
+const STALE_DOCUMENT_ERROR_CODES = new Set([
+  "error.prompt_rewrite.document_not_found",
+  "error.prompt_rewrite.document_invalid",
+  "error.document_profile.document_not_found",
+  "error.document_profile.document_invalid",
+]);
 
-  return files
-    .flat()
-    .map((file) =>
-      file && typeof file === "object" && "file_path" in file
-        ? (file as { file_path?: unknown }).file_path
-        : null
-    )
-    .filter((filePath): filePath is string => typeof filePath === "string");
+const isStaleDocumentError = (error: unknown): boolean => {
+  return (
+    error instanceof ApiError &&
+    error.code !== undefined &&
+    STALE_DOCUMENT_ERROR_CODES.has(error.code)
+  );
 };
 
 const UploadPage = () => {
+  const t = useT();
+  const { smartModeEnabled, communityEnabled, documentAwareRewrite } =
+    useFeatureFlags();
   const router = useRouter();
   const dispatch = useDispatch();
-  const llmConfig = useSelector((state: RootState) => state.userConfig.llm_config);
 
   const [files, setFiles] = useState<File[]>([]);
-  const [generationMode, setGenerationMode] = useState<GenerationMode>("standard");
+  const [generationMode, setGenerationMode] = useState<GenerationMode>(
+    DEFAULT_GENERATION_MODE,
+  );
   const [communityReference, setCommunityReference] =
     useState<CommunityPresentation | null>(null);
   const [config, setConfig] = useState<PresentationConfig>({
     slides: null,
-    language: LanguageType.Auto,
+    language: LanguageType.Vietnamese,
     prompt: "",
     tone: ToneType.Default,
     verbosity: VerbosityType.Standard,
     instructions: "",
-    includeTableOfContents: false,
-    includeTitleSlide: false,
-    webSearch: false,
+    webSearch: true,
   });
 
   useEffect(() => {
@@ -88,23 +104,33 @@ const UploadPage = () => {
     const requestedCommunityId = Number(params.get("communityId"));
     let active = true;
 
-    if (params.get("mode") === "smart") {
+    if (
+      smartModeEnabled &&
+      params.get("mode") === "smart"
+    ) {
       setGenerationMode("smart");
     }
     if (requestedPrompt) {
       setConfig((current) => ({ ...current, prompt: requestedPrompt }));
     }
-    if (Number.isSafeInteger(requestedCommunityId) && requestedCommunityId > 0) {
+
+    if (
+      smartModeEnabled &&
+      communityEnabled &&
+      Number.isSafeInteger(requestedCommunityId) &&
+      requestedCommunityId > 0
+    ) {
       CommunityPresentationApi.getById(requestedCommunityId)
         .then((presentation) => {
           if (!active) return;
+          setGenerationMode("smart");
           setCommunityReference(presentation);
         })
-        .catch((loadError) => {
+        .catch((error: unknown) => {
           if (!active) return;
           notify.error(
-            "Could not select the community design",
-            loadError instanceof Error ? loadError.message : undefined
+            t("upload.error.communitySelection"),
+            error instanceof Error ? error.message : undefined,
           );
         });
     }
@@ -112,16 +138,7 @@ const UploadPage = () => {
     return () => {
       active = false;
     };
-  }, []);
-
-  useEffect(() => {
-    if (llmConfig?.WEB_GROUNDING !== undefined) {
-      setConfig((current) => ({
-        ...current,
-        webSearch: !!llmConfig.WEB_GROUNDING,
-      }));
-    }
-  }, [llmConfig?.WEB_GROUNDING]);
+  }, [communityEnabled, smartModeEnabled, t]);
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
     isLoading: false,
@@ -131,6 +148,159 @@ const UploadPage = () => {
     extra_info: "",
   });
 
+  // --- AI prompt rewrite orchestration ---------------------------------
+  // `config.prompt` stays the single editable source; the rewrite result is
+  // a read-only derivative and never writes back into it. Freshness is
+  // derived from a deterministic context key covering every input the
+  // rewrite consumes — normalized prompt, language, parsed slide count, and
+  // the selected file fingerprint. Tone, verbosity, theme, and other
+  // settings that are not inputs to the rewrite never invalidate it.
+  const [rewrittenPrompt, setRewrittenPrompt] = useState("");
+  const [rewrittenFromContextKey, setRewrittenFromContextKey] = useState("");
+  const [isRewriting, setIsRewriting] = useState(false);
+  const [rewritePhase, setRewritePhase] = useState<RewritePhase | null>(null);
+  const [rewriteError, setRewriteError] = useState<string | null>(null);
+
+  // One AbortController for the latest in-flight request plus a
+  // monotonically increasing request ID. Starting a newer rewrite (or
+  // leaving the page) aborts the previous request, and the ID check below
+  // discards its response even when the abort arrives too late for the
+  // fetch to reject. The same controller covers the document preparation
+  // (upload + decompose) that a document-aware rewrite performs first.
+  const rewriteAbortRef = useRef<AbortController | null>(null);
+  const rewriteRequestIdRef = useRef(0);
+
+  // --- Document preparation cache ---------------------------------------
+  // `preparedDocuments` holds the decomposed set for the current file
+  // fingerprint and language; `uploadedOriginalsRef` holds the uploaded
+  // originals per fingerprint so a language change re-decomposes without
+  // re-uploading. Both keys are derived, never stored as flags.
+  const [preparedDocuments, setPreparedDocuments] =
+    useState<PreparedDocumentSet | null>(null);
+  // Mirror ref: async flows (including the stale-document retry) must read
+  // the latest prepared set without waiting for a re-render.
+  const preparedDocumentsRef = useRef<PreparedDocumentSet | null>(null);
+  const uploadedOriginalsRef = useRef<{
+    fileFingerprint: string;
+    paths: string[];
+  } | null>(null);
+
+  const setPreparedDocumentsThroughRef = (prepared: PreparedDocumentSet) => {
+    preparedDocumentsRef.current = prepared;
+    setPreparedDocuments(prepared);
+  };
+
+  const invalidatePreparedDocuments = () => {
+    preparedDocumentsRef.current = null;
+    uploadedOriginalsRef.current = null;
+    setPreparedDocuments(null);
+  };
+
+  /**
+   * Uploads and decomposes the selected files only on a cache miss and
+   * returns the prepared document set. Uploads are cached per ordered file
+   * fingerprint; decomposition is cached per fingerprint plus the
+   * normalized presentation language, so switching language reuses the
+   * uploaded originals while regenerating the extracted text. `onPhase`
+   * reports each step that actually runs — cache hits report nothing.
+   */
+  const ensureDocumentsPrepared = async (
+    signal: AbortSignal,
+    onPhase?: (phase: "uploading_documents" | "reading_documents") => void
+  ): Promise<PreparedDocumentSet> => {
+    const fingerprint = fileFingerprint(files);
+    const decompositionKeyValue = decompositionKeyFor(fingerprint, config.language);
+
+    const cached = preparedDocumentsRef.current;
+    if (cached && cached.decompositionKey === decompositionKeyValue) {
+      return cached;
+    }
+
+    if (uploadedOriginalsRef.current?.fileFingerprint !== fingerprint) {
+      onPhase?.("uploading_documents");
+      const uploadedPaths = (await PresentationGenerationApi.uploadDoc(
+        files,
+        signal
+      )) as string[];
+      uploadedOriginalsRef.current = {
+        fileFingerprint: fingerprint,
+        paths: uploadedPaths,
+      };
+    }
+
+    onPhase?.("reading_documents");
+    const documents = await PresentationGenerationApi.decomposeDocuments(
+      uploadedOriginalsRef.current?.paths ?? [],
+      config.language,
+      signal
+    );
+    const prepared: PreparedDocumentSet = {
+      fileFingerprint: fingerprint,
+      decompositionKey: decompositionKeyValue,
+      uploadedPaths: uploadedOriginalsRef.current?.paths ?? [],
+      documents,
+    };
+    setPreparedDocumentsThroughRef(prepared);
+    return prepared;
+  };
+
+  const sourcePrompt = config.prompt.trim();
+  const hasRewriteResult = rewrittenPrompt.trim().length > 0;
+  // Deterministic context key over every input the rewrite consumes. Any
+  // change to one of these inputs makes the stored result stale by
+  // comparison; settings that are not rewrite inputs (tone, verbosity,
+  // theme, generation mode) are deliberately excluded so they never
+  // invalidate an otherwise valid result.
+  const rewriteContextKey = [
+    sourcePrompt,
+    (config.language ?? "").trim().toLowerCase(),
+    parseLimitedSlideCount(config.slides) ?? "auto",
+    documentAwareRewrite ? fileFingerprint(files) : "prompt-only",
+  ].join("::");
+  const isRewriteFresh =
+    hasRewriteResult && rewrittenFromContextKey === rewriteContextKey;
+  const isRewriteStale = hasRewriteResult && !isRewriteFresh;
+  const promptRequiresRewrite = sourcePrompt.length > 0;
+  const hasCommunityReference =
+    generationMode === "smart" && communityReference !== null;
+  const hasPromptlessGenerationInput = files.length > 0 || hasCommunityReference;
+  // Only a document-aware rewrite requires a prepared set before Create. If
+  // the flag is off, the rewrite is prompt-only and document preparation is
+  // deferred to the normal generation path.
+  const preparedDocumentsMatchSelection =
+    !documentAwareRewrite ||
+    files.length === 0 ||
+    (preparedDocuments !== null &&
+      preparedDocuments.decompositionKey ===
+        decompositionKeyFor(fileFingerprint(files), config.language));
+  const isCreateDisabled =
+    isRewriting ||
+    (promptRequiresRewrite
+      ? !isRewriteFresh || !preparedDocumentsMatchSelection
+      : !hasPromptlessGenerationInput);
+
+  // The action label follows the active preparation phase so the user can
+  // tell what is actually happening before the rewrite itself runs.
+  const rewriteActionLabel = isRewriting
+    ? rewritePhase === "uploading_documents"
+      ? t("upload.prompt.rewrite.phaseUploading")
+      : rewritePhase === "reading_documents"
+        ? t("upload.prompt.rewrite.phaseReading")
+        : t("upload.prompt.rewrite.loading")
+    : rewriteError
+      ? t("upload.prompt.rewrite.retryAction")
+      : isRewriteStale
+        ? t("upload.prompt.rewrite.updateAction")
+        : t("upload.prompt.rewrite.action");
+
+  // Abort the in-flight rewrite when the component unmounts.
+  useEffect(() => {
+    return () => {
+      rewriteRequestIdRef.current += 1;
+      rewriteAbortRef.current?.abort();
+    };
+  }, []);
+
   const handleConfigChange = (key: keyof PresentationConfig, value: unknown) => {
     const nextValue =
       key === "slides" && typeof value === "string"
@@ -139,24 +309,171 @@ const UploadPage = () => {
     setConfig((prev) => ({ ...prev, [key]: nextValue } as PresentationConfig));
   };
 
+  const handleSourcePromptChange = (value: string) => {
+    const nextSource = value.trim();
+
+    // A response for text that is no longer current must never become usable.
+    // Abort eagerly on edit and invalidate the request ID as a fallback for
+    // providers that cannot cancel an already-completed response.
+    if (isRewriting && nextSource !== sourcePrompt) {
+      rewriteRequestIdRef.current += 1;
+      rewriteAbortRef.current?.abort();
+      rewriteAbortRef.current = null;
+      setIsRewriting(false);
+      setRewritePhase(null);
+    }
+
+    if (nextSource !== sourcePrompt) {
+      setRewriteError(null);
+    }
+    handleConfigChange("prompt", value);
+  };
+
   const handleGenerationModeChange = (mode: GenerationMode) => {
-    if (mode === generationMode) return;
+    if (!smartModeEnabled || mode === generationMode) return;
     setGenerationMode(mode);
+    if (mode === "standard") {
+      setCommunityReference(null);
+    }
+  };
+
+  /**
+   * A changed file set invalidates any in-flight rewrite: the active work
+   * was grounded in files that are no longer selected, so it is aborted and
+   * its request ID retired before the new selection lands. Preparation
+   * caches invalidate themselves through their derived keys.
+   */
+  const handleFilesChange = (nextFiles: File[]) => {
+    if (isRewriting) {
+      rewriteRequestIdRef.current += 1;
+      rewriteAbortRef.current?.abort();
+      rewriteAbortRef.current = null;
+      setIsRewriting(false);
+      setRewritePhase(null);
+    }
+    setFiles(nextFiles);
+  };
+
+  /**
+   * Rewrites the current source prompt with AI. When documents are selected,
+   * they are prepared (upload + decompose) first and the decomposed texts
+   * ground the rewrite. The response only fills the read-only result panel
+   * below the source field — the source prompt itself is never overwritten.
+   * A previous result stays visible if a refresh fails; the user then sees a
+   * localized fallback, never the raw API error.
+   */
+  const handleRewritePrompt = async () => {
+    // Capture the context key at the START of the request: it covers the
+    // exact inputs this response is computed from, and freshness compares
+    // it against the live key once it is stored after success.
+    const source = config.prompt.trim();
+    const contextKey = rewriteContextKey;
+    if (!source || isRewriting) return;
+
+    // Supersede any older request: abort it, and bump the ID so its late
+    // response is discarded even if the abort arrives too late.
+    rewriteAbortRef.current?.abort();
+    const controller = new AbortController();
+    rewriteAbortRef.current = controller;
+    const requestId = ++rewriteRequestIdRef.current;
+
+    setIsRewriting(true);
+    setRewriteError(null);
+    // The active phase drives the loading label, the live-region
+    // announcement, and — on failure — which localized fallback the user
+    // sees: a failed preparation is reported differently from a failed
+    // rewrite.
+    let phase: RewritePhase = "rewriting";
+    const applyPhase = (next: RewritePhase) => {
+      phase = next;
+      setRewritePhase(next);
+    };
+    const hadDocuments = files.length > 0;
+
+    try {
+      // Prepare the selected documents once per file set and language; the
+      // decomposed text paths ground the rewrite on the server. When the
+      // document-aware flag is off, preparation is skipped and the
+      // request falls back to the prompt-only body that the API has
+      // always supported.
+      let filePaths: string[] | undefined;
+      if (hadDocuments && documentAwareRewrite) {
+        const prepared = await ensureDocumentsPrepared(
+          controller.signal,
+          applyPhase
+        );
+        if (requestId !== rewriteRequestIdRef.current) return;
+        filePaths = documentPathsOf(prepared);
+      }
+
+      let result: string;
+      try {
+        applyPhase("rewriting");
+        result = await PresentationGenerationApi.rewritePrompt({
+          prompt: source,
+          language: config.language,
+          nSlides: parseLimitedSlideCount(config.slides),
+          filePaths,
+          signal: controller.signal,
+        });
+      } catch (error) {
+        // An expired server-side document is healed once through the
+        // normal safe path: drop the caches, re-prepare the same local
+        // files, and retry the rewrite.
+        if (!filePaths || !isStaleDocumentError(error)) throw error;
+        invalidatePreparedDocuments();
+        const prepared = await ensureDocumentsPrepared(
+          controller.signal,
+          applyPhase
+        );
+        if (requestId !== rewriteRequestIdRef.current) return;
+        applyPhase("rewriting");
+        result = await PresentationGenerationApi.rewritePrompt({
+          prompt: source,
+          language: config.language,
+          nSlides: parseLimitedSlideCount(config.slides),
+          filePaths: documentPathsOf(prepared),
+          signal: controller.signal,
+        });
+      }
+
+      if (requestId !== rewriteRequestIdRef.current) return;
+      setRewrittenPrompt(result);
+      // Store the captured context key only after success so freshness
+      // stays derived from what the current inputs actually are.
+      setRewrittenFromContextKey(contextKey);
+    } catch (error: unknown) {
+      if (requestId !== rewriteRequestIdRef.current) return;
+      // Raw error text is for the console only; the UI gets the localized
+      // fallback and keeps any previous result visible. Preparation
+      // failures (upload/decompose) get their own message.
+      console.error("Error rewriting prompt", error);
+      setRewriteError(
+        t(
+          phase === "rewriting"
+            ? "upload.prompt.rewrite.errorFallback"
+            : "upload.prompt.rewrite.preparationErrorFallback"
+        )
+      );
+    } finally {
+      // Only the latest request may flip the loading flag off, so a slow
+      // superseded request cannot re-enable the button mid-flight.
+      if (requestId === rewriteRequestIdRef.current) {
+        setIsRewriting(false);
+        setRewritePhase(null);
+      }
+    }
   };
 
   const getGenerationDestination = (presentationId: string) => {
     if (generationMode === "smart") {
       return `/presentation?id=${presentationId}&stream=true&type=smart`;
     }
-
-    const params = new URLSearchParams({ id: presentationId });
+    const params = new URLSearchParams({
+      id: presentationId,
+      auto: "1",
+    });
     return `/outline?${params.toString()}`;
-  };
-
-  const handleCommunityReferenceChange = (
-    presentation: CommunityPresentation | null,
-  ) => {
-    setCommunityReference(presentation);
   };
 
   /**
@@ -165,23 +482,34 @@ const UploadPage = () => {
    */
   const validateConfiguration = (): boolean => {
     if (!config.language) {
-      notify.warning("Language required", "Please select a language.");
+      notify.warning(t("upload.validation.languageRequiredTitle"), t("upload.validation.selectLanguage"));
       return false;
     }
 
     if (files.length > 0 && config.language === LanguageType.Auto) {
-      notify.warning("Language required", "Please choose a language before processing uploaded documents.");
+      notify.warning(t("upload.validation.languageRequiredTitle"), t("upload.validation.selectLanguageForDocuments"));
       return false;
     }
 
     if (
-      !config.prompt.trim() &&
+      !sourcePrompt &&
       files.length === 0 &&
-      !(generationMode === "smart" && communityReference)
+      !hasCommunityReference
     ) {
       notify.warning(
-        "Input required",
-        "Provide a prompt, upload a document, or select a community reference."
+        t("upload.validation.inputRequiredTitle"),
+        t("upload.validation.inputRequiredDescription")
+      );
+      return false;
+    }
+
+    if (
+      promptRequiresRewrite &&
+      (!isRewriteFresh || !preparedDocumentsMatchSelection)
+    ) {
+      notify.warning(
+        t("upload.prompt.rewrite.requiredTitle"),
+        t("upload.prompt.rewrite.requiredDescription"),
       );
       return false;
     }
@@ -192,15 +520,26 @@ const UploadPage = () => {
    * Handles the presentation generation process
    */
   const handleGeneratePresentation = async () => {
+    // Keyboard submissions run the same eligibility checks as the button:
+    // never start a Create while a rewrite or a previous Create is active.
+    if (isRewriting || loadingState.isLoading) return;
     if (!validateConfiguration()) return;
+
+    // Capture the exact configuration being submitted. From this point on,
+    // neither a source edit nor another settings change can alter the prompt
+    // used by the in-flight document/direct generation request.
+    const generationConfig: PresentationConfig = {
+      ...config,
+      prompt: promptRequiresRewrite ? rewrittenPrompt.trim() : "",
+    };
 
     try {
       const hasUploadedAssets = files.length > 0;
 
       if (hasUploadedAssets) {
-        await handleDocumentProcessing();
+        await handleDocumentProcessing(generationConfig);
       } else {
-        await handleDirectPresentationGeneration();
+        await handleDirectPresentationGeneration(generationConfig);
       }
     } catch (error) {
       handleGenerationError(error);
@@ -208,108 +547,104 @@ const UploadPage = () => {
   };
 
   /**
-   * Handles document processing
+   * Handles document processing: reuses the prepared document set (or
+   * prepares it now for document-only creation) instead of uploading and
+   * decomposing again, then creates the presentation.
    */
-  const handleDocumentProcessing = async () => {
+  const handleDocumentProcessing = async (
+    generationConfig: PresentationConfig,
+  ) => {
     setLoadingState({
       isLoading: true,
-      message: "Processing documents...",
+      message: t("upload.status.processingDocuments"),
       showProgress: true,
       duration: 90,
-      extra_info: files.length > 0 ? "It might take a few minutes for large documents." : "",
+      extra_info: files.length > 0 ? t("upload.status.largeDocumentsHint") : "",
     });
 
-    let documents = [];
+    const selectedLanguage = generationConfig.language ?? null;
+    const preparationController = new AbortController();
 
-    if (files.length > 0) {
-      const uploadResponse = await PresentationGenerationApi.uploadDoc(files);
-      documents = uploadResponse;
-    }
-
-    const selectedLanguage = config?.language ?? "";
-
-    const promises: Promise<any>[] = [];
-
-    if (documents.length > 0) {
-      promises.push(
-        PresentationGenerationApi.decomposeDocuments(
-          documents,
-          selectedLanguage
-        )
+    try {
+      // Generation always consumes selected documents. The feature flag only
+      // controls whether those documents also ground the earlier rewrite.
+      const prepared = await ensureDocumentsPrepared(
+        preparationController.signal,
       );
+      const documentPaths = documentPathsOf(prepared);
+
+      setLoadingState({
+        isLoading: true,
+        message:
+          generationMode === "smart"
+            ? t("upload.status.startingSmart")
+            : t("upload.status.generatingOutline"),
+        showProgress: true,
+        duration: 40,
+        extra_info: "",
+      });
+
+      const createResponse = await PresentationGenerationApi.createPresentation({
+        content: generationConfig.prompt,
+        version: "v2-standard",
+        n_slides: parseLimitedSlideCount(generationConfig.slides),
+        file_paths: documentPaths,
+        language: selectedLanguage,
+        tone: generationConfig.tone,
+        verbosity: generationConfig.verbosity,
+        instructions: generationConfig.instructions || null,
+        web_search: !!generationConfig.webSearch,
+        generation_mode: generationMode,
+        community_design_ids:
+          generationMode === "smart" && communityReference
+            ? [communityReference.id]
+            : undefined,
+      });
+
+      dispatch(setPptGenUploadState({
+        config: generationConfig,
+        files: prepared?.documents ?? [],
+      }));
+      dispatch(clearOutlines());
+      dispatch(setPresentationId(createResponse.id));
+      const destination = getGenerationDestination(createResponse.id);
+      router.push(destination);
+    } catch (error) {
+      // The prepared server-side files may be stale; drop the caches so the
+      // next attempt re-prepares from the still-selected local files.
+      invalidatePreparedDocuments();
+      throw error;
     }
-    const responses = await Promise.all(promises);
-    const documentPaths = getDocumentPaths(responses);
-
-    setLoadingState({
-      isLoading: true,
-      message:
-        generationMode === "smart"
-          ? "Starting Smart presentation..."
-          : "Generating presentation outline...",
-      showProgress: true,
-      duration: 40,
-      extra_info: "",
-    });
-
-    const createResponse = await PresentationGenerationApi.createPresentation({
-      content: config?.prompt ?? "",
-      version: "v2-standard",
-      n_slides: parseLimitedSlideCount(config?.slides),
-      file_paths: documentPaths,
-      language: selectedLanguage,
-      tone: config?.tone,
-      verbosity: config?.verbosity,
-      instructions: config?.instructions || null,
-      include_table_of_contents: !!config?.includeTableOfContents,
-      include_title_slide: !!config?.includeTitleSlide,
-      web_search: !!config?.webSearch,
-      generation_mode: generationMode,
-      community_design_ids:
-        generationMode === "smart" && communityReference
-          ? [communityReference.id]
-          : undefined,
-    });
-
-    dispatch(setPptGenUploadState({
-      config,
-      files: responses,
-    }));
-    dispatch(clearOutlines());
-    dispatch(setPresentationId(createResponse.id));
-    const destination = getGenerationDestination(createResponse.id);
-    router.push(destination);
   };
 
   /**
    * Handles direct presentation generation without documents
    */
-  const handleDirectPresentationGeneration = async () => {
+  const handleDirectPresentationGeneration = async (
+    generationConfig: PresentationConfig,
+  ) => {
     setLoadingState({
       isLoading: true,
       message:
         generationMode === "smart"
-          ? "Starting Smart presentation..."
-          : "Preparing outline generation...",
+          ? t("upload.status.startingSmart")
+          : t("upload.status.preparingOutline"),
       showProgress: true,
       duration: 30,
     });
 
-    const selectedLanguage = config?.language ?? "";
+    const selectedLanguage = generationConfig.language ?? null;
 
-    // Standard mode continues to outline review; Smart mode streams the deck directly.
     const createResponse = await PresentationGenerationApi.createPresentation({
-      content: config?.prompt ?? "",
+      content: generationConfig.prompt,
 
-      n_slides: parseLimitedSlideCount(config?.slides),
+      n_slides: parseLimitedSlideCount(generationConfig.slides),
       file_paths: [],
       language: selectedLanguage,
-      tone: config?.tone,
-      verbosity: config?.verbosity,
-      instructions: config?.instructions || null,
-      include_table_of_contents: !!config?.includeTableOfContents,
-      include_title_slide: !!config?.includeTitleSlide,
-      web_search: !!config?.webSearch,
+      tone: generationConfig.tone,
+      verbosity: generationConfig.verbosity,
+      instructions: generationConfig.instructions || null,
+      web_search: !!generationConfig.webSearch,
       generation_mode: generationMode,
       community_design_ids:
         generationMode === "smart" && communityReference
@@ -318,7 +653,7 @@ const UploadPage = () => {
     });
 
     dispatch(setPptGenUploadState({
-      config,
+      config: generationConfig,
       files: [],
     }));
     dispatch(clearOutlines());
@@ -339,13 +674,13 @@ const UploadPage = () => {
       showProgress: false,
     });
     notify.error(
-      "Generation failed",
-      error.message || "Something went wrong while starting your presentation."
+      t("upload.error.generationTitle"),
+      error.message || t("upload.error.generationFallback")
     );
   };
 
   return (
-    <Wrapper className="w-full pb-10">
+    <Wrapper className="w-full">
       <OverlayLoader
         show={loadingState.isLoading}
         text={loadingState.message}
@@ -353,15 +688,14 @@ const UploadPage = () => {
         duration={loadingState.duration}
         extra_info={loadingState.extra_info}
       />
-      <div
-        className={`mx-auto max-w-[760px] space-y-[18px] px-4 lg:max-w-[780px] xl:max-w-[900px] min-[1600px]:max-w-[1050px] min-[1920px]:max-w-[1280px] ${
-          generationMode === "smart" ? "mb-[75px]" : "mb-8"
-        }`}
-      >
-        <div className="flex min-h-[34px] w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <CurrentConfig webSearchEnabled={config.webSearch} />
-          </div>
+      <div className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[780px] xl:max-w-[900px]">
+        <GSlideStudioTitle
+          title={t("upload.hero.title")}
+          description={t("upload.hero.subtitle")}
+          compact
+          className="pt-10 sm:pt-12 2xl:pt-14"
+        />
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
           <ConfigurationSelects
             compact
             mode={generationMode}
@@ -371,42 +705,98 @@ const UploadPage = () => {
           />
         </div>
 
-        <PromptInput
-          value={config.prompt}
-          variant={generationMode}
-          references={
-            generationMode === "smart" && communityReference
-              ? [{ id: String(communityReference.id), label: communityReference.title || "Community design" }]
-              : []
-          }
-          onRemoveReference={() =>
-            handleCommunityReferenceChange(null)
-          }
-          onChange={(value) => handleConfigChange("prompt", value)}
-          onSubmit={handleGeneratePresentation}
-          hasAttachments={files.length > 0}
-          footer={
+        <GSlideDropCard className="mt-8">
+          <div className="flex flex-col gap-2.5">
+            <PromptInput
+              value={config.prompt}
+              variant={generationMode}
+              references={
+                generationMode === "smart" && communityReference
+                  ? [
+                      {
+                        id: String(communityReference.id),
+                        label:
+                          communityReference.title || t("upload.communityDesign"),
+                      },
+                    ]
+                  : []
+              }
+              onRemoveReference={() => setCommunityReference(null)}
+              onChange={handleSourcePromptChange}
+              onSubmit={handleGeneratePresentation}
+            />
             <SupportingDoc
               files={files}
-              onFilesChange={setFiles}
-              onSubmit={handleGeneratePresentation}
+              onFilesChange={handleFilesChange}
               disabled={loadingState.isLoading}
+              usageMode={
+                files.length === 0
+                  ? "none"
+                  : documentAwareRewrite
+                    ? "doc_aware"
+                    : "presentation_only"
+              }
             />
-          }
-        />
+            {/* Rewrite action sits between the source and result fields.
+                The label follows the rewrite state machine (plan §5.2):
+                loading while in flight, retry after an error, update when a
+                stale result exists, and the base action otherwise. */}
+            <div className="flex justify-center">
+              <GSlideButton
+                type="button"
+                disabled={!promptRequiresRewrite || isRewriting}
+                aria-busy={isRewriting}
+                onClick={handleRewritePrompt}
+                data-testid="rewrite-action-button"
+                className="px-4 py-2"
+              >
+                {rewriteActionLabel}
+              </GSlideButton>
+            </div>
+            <RewrittenPrompt
+              value={rewrittenPrompt}
+              isLoading={isRewriting}
+              phase={rewritePhase}
+              isStale={isRewriteStale}
+              error={rewriteError}
+              onRetry={handleRewritePrompt}
+              groundedDocumentCount={
+                documentAwareRewrite && !isRewriteStale
+                  ? files.length
+                  : 0
+              }
+            />
+            {/* Explicit, visible Create action — replaces the previous
+                icon-only button inside the attachment panel. The keyboard
+                shortcut still calls handleGeneratePresentation, so all
+                existing guards remain in effect. Full width on mobile, right
+                aligned on wider screens. */}
+            <div className="flex w-full justify-stretch sm:justify-end">
+              <GSlideButton
+                type="button"
+                disabled={isCreateDisabled || loadingState.isLoading}
+                aria-busy={loadingState.isLoading}
+                aria-label={t("upload.create.ariaLabel")}
+                onClick={handleGeneratePresentation}
+                data-testid="generate-presentation-button"
+                fullWidth
+                className="whitespace-nowrap px-5 py-3 sm:w-auto"
+              >
+                {t("upload.create.label")}
+              </GSlideButton>
+            </div>
+          </div>
+        </GSlideDropCard>
 
+        {smartModeEnabled && communityEnabled && generationMode === "smart" ? (
+          <div className="mt-8">
+            <CommunityReferencePicker
+              selectedId={communityReference?.id ?? null}
+              onSelect={setCommunityReference}
+            />
+          </div>
+        ) : null}
       </div>
-
-      {generationMode === "smart" && (
-        <div className="px-4 sm:px-6">
-          <CommunityReferencePicker
-            selectedId={communityReference?.id ?? null}
-            onSelect={(presentation) =>
-              handleCommunityReferenceChange(presentation)
-            }
-          />
-        </div>
-      )}
     </Wrapper>
   );
 };

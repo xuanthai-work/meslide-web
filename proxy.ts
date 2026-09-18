@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthDisabled } from "@/utils/auth";
 
 /**
- * API-only: session required for all /api/* except auth, public
- * image transforms, and the authenticated export-runtime bridge.
- * Page routes are protected in server layouts (unknown URLs still 404; login uses relative redirects).
- *
  * This proxy is the single browser-routing layer now that the bundled
  * nginx proxy has been removed. The browser stays same-origin against the web
  * service; FastAPI paths (`/api/v1`, `/api/v2`, `/app_data`, `/static`) and the
  * `/pdf-maker` export bridge are rewritten/proxied here to the FastAPI service.
+ * FastAPI resolves cookieless requests to the embedded demo user, so this
+ * layer must not turn an unavailable auth-status probe into a false 401.
  */
 function getFastApiBaseUrl(): string {
   const internal = process.env.FAST_API_INTERNAL_URL?.trim();
@@ -58,44 +55,8 @@ function continueRequest(request: NextRequest): NextResponse {
     : NextResponse.next();
 }
 
-type AuthStatus = {
-  configured: boolean;
-  authenticated: boolean;
-};
-
 const SESSION_COOKIE_NAME = "gslide_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
-
-async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {
-  const cookieHeader = request.headers.get("cookie");
-  const authStatusUrl = `${getFastApiBaseUrl()}/api/v1/auth/status`;
-  try {
-    const response = await fetch(authStatusUrl, {
-      method: "GET",
-      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      return { configured: true, authenticated: false };
-    }
-    const payload = (await response.json()) as Partial<AuthStatus>;
-    return {
-      configured: Boolean(payload.configured),
-      authenticated: Boolean(payload.authenticated),
-    };
-  } catch {
-    return { configured: true, authenticated: false };
-  }
-}
-
-function isApiAuthExempt(pathname: string): boolean {
-  return (
-    pathname.startsWith("/api/v1/auth/") ||
-    /** Public image transform used as a browser/Konva image source. */
-    pathname === "/api/update-svg" ||
-    pathname.startsWith("/api/export-presentation-data/")
-  );
-}
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -132,11 +93,7 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isAuthDisabled()) {
-    return continueRequest(request);
-  }
-
-  if (request.method === "OPTIONS" || isApiAuthExempt(pathname)) {
+  if (request.method === "OPTIONS") {
     return continueRequest(request);
   }
 
@@ -158,20 +115,7 @@ export default async function proxy(request: NextRequest) {
         );
   }
 
-  const authStatus = await getAuthStatus(request);
-  if (authStatus.authenticated) {
-    return continueRequest(request);
-  }
-  if (!authStatus.configured) {
-    return NextResponse.json(
-      { detail: "No accounts yet" },
-      { status: 428, headers: { "Cache-Control": "no-store" } }
-    );
-  }
-  return NextResponse.json(
-    { detail: "Unauthorized" },
-    { status: 401, headers: { "Cache-Control": "no-store" } }
-  );
+  return continueRequest(request);
 }
 
 export const config = {

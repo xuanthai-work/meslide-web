@@ -12,15 +12,15 @@ async function readNext(relativePath) {
 }
 
 const TOKENS = {
-  "--gslide-bg": "#EFF6FF",
+  "--gslide-bg": "#FFFFFF",
   "--gslide-card": "#FFFFFF",
-  "--gslide-border": "#BFDBFE",
-  "--gslide-ink": "#1E3A5F",
-  "--gslide-muted": "#4B7AB5",
+  "--gslide-border": "#EDEEF4",
+  "--gslide-ink": "#101323",
+  "--gslide-muted": "#6B6D78",
   "--gslide-accent": "#1D6FE8",
   "--gslide-accent-hover": "#1558C0",
-  "--gslide-accent-soft": "#DBEAFE",
-  "--gslide-input-border": "#93C5FD",
+  "--gslide-accent-soft": "#EFF4FF",
+  "--gslide-input-border": "#DADDE6",
   "--gslide-input-focus": "#1D6FE8",
 };
 
@@ -124,8 +124,11 @@ test("GSlide sidebar and header use tokens and wordmark, not purple chrome", asy
 
   const header = await readNext("components/gslide/GSlideHeader.tsx");
   assert.match(header, /backdrop-blur/);
-  assert.match(header, /--gslide-border/);
+  assert.match(header, /bg-gradient-to-b/);
+  assert.match(header, /to-transparent/);
   assert.match(header, /font-unbounded|--gslide-ink/);
+  assert.match(header, /h-\[72px\]|h-\[80px\]|max-h-\[80px\]/);
+  assert.doesNotMatch(header, /h-\[105px\]/);
   assert.doesNotMatch(header, /#7C51F8/);
 });
 
@@ -141,17 +144,26 @@ test("global loading copy is GSlide not Presenton", async () => {
   assert.doesNotMatch(appLoading, /presenton-splash-loader/);
 
   const config = await readNext("app/ConfigurationInitializer.tsx");
-  assert.match(config, /Loading GSlide/);
+  assert.match(config, /loading\.configLoading/);
   assert.doesNotMatch(config, /Loading Presenton/);
   assert.doesNotMatch(config, /auth\/presenton/);
   assert.doesNotMatch(config, /hasPresentonCloud/);
   assert.doesNotMatch(config, /revalidatePresentonConnection/);
+
+  // Loading copy now lives in the catalog; the brand must still be GSlide.
+  const vi = await readNext("i18n/locales/vi.ts");
+  assert.match(vi, /GSlide/);
+  assert.doesNotMatch(vi, /Presenton/);
 });
 
 test("landing and metadata say GSlide", async () => {
   const layout = await readNext("app/layout.tsx");
-  assert.match(layout, /GSlide/);
+  assert.match(layout, /translate\("metadata\./);
   assert.doesNotMatch(layout, /title: "Presenton/);
+
+  const vi = await readNext("i18n/locales/vi.ts");
+  assert.match(vi, /GSlide/);
+  assert.doesNotMatch(vi, /Presenton/);
 });
 
 test("dashboard sidebar uses GSlideSidebar and accent active states", async () => {
@@ -184,7 +196,7 @@ test("dashboard and community chrome use GSlide surfaces", async () => {
   const dash = await readNext(
     "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
   );
-  assert.match(dash, /--gslide-bg|#EFF6FF/);
+  assert.match(dash, /--gslide-bg/);
   assert.doesNotMatch(dash, /#7A5AF8/);
 
   const community = await readNext(
@@ -237,7 +249,7 @@ test("editor chrome uses GSlide wordmark not Presenton PNG", async () => {
   );
   assert.doesNotMatch(presentation, /logo-with-bg\.png/);
   assert.match(presentation, /GSlideWordmark/);
-  assert.match(presentation, /aria-label="Go to dashboard"/);
+  assert.match(presentation, /presentation\.header\.dashboardAria/);
   assert.doesNotMatch(presentation, /className="w-10 h-10"/);
 
   const template = await readNext(
@@ -278,7 +290,6 @@ const CHROME_FILES = [
   "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
   "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
   "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
-  "app/(presentation-generator)/upload/components/GenerationModeDialog.tsx",
   "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
   "app/(presentation-generator)/upload/page.tsx",
 ];
@@ -361,15 +372,28 @@ test("chart slide palette is unchanged", async () => {
 });
 
 test("Konva surface nodes are not restyled as product chrome", async () => {
-  const nodes = await readNext("components/slide-editor/surface/nodes.tsx");
-  assert.doesNotMatch(nodes, /--gslide-accent/);
-  assert.doesNotMatch(nodes, /--gslide-bg/);
+  const nodeFiles = [
+    "components/slide-editor/surface/nodes.tsx",
+    "components/slide-editor/surface/nodes-image.tsx",
+    "components/slide-editor/surface/nodes-text.tsx",
+    "components/slide-editor/surface/nodes-vector.tsx",
+    "components/slide-editor/surface/nodes-infographic.tsx",
+  ];
+  for (const file of nodeFiles) {
+    const nodes = await readNext(file);
+    assert.doesNotMatch(nodes, /--gslide-accent/);
+    assert.doesNotMatch(nodes, /--gslide-bg/);
+  }
 });
 
 test("app metadata titles use GSlide", async () => {
   const notFound = await readNext("app/not-found.tsx");
-  assert.match(notFound, /GSlide/);
+  assert.match(notFound, /translate\("errors\.notFound/);
   assert.doesNotMatch(notFound, /Presenton/);
+
+  // The not-found title is localized via the catalog and must keep the brand.
+  const vi = await readNext("i18n/locales/vi.ts");
+  assert.match(vi, /Không tìm thấy trang \| GSlide/);
 });
 
 test("session cookie is GSlide and API keys retain Presenton fallback", async () => {
@@ -444,8 +468,8 @@ test("GenerationStatusBar uses stall copy and gslide tokens", async () => {
   const source = await readNext(
     "app/(presentation-generator)/components/GenerationStatusBar.tsx",
   );
-  assert.match(source, /This is taking longer than usual/);
-  assert.match(source, /Keep waiting/);
+  assert.match(source, /common\.generation\.takingLonger/);
+  assert.match(source, /common\.generation\.keepWaiting/);
   assert.match(source, /canKeepWaiting/);
   assert.match(source, /--gslide-accent/);
   assert.match(source, /aria-live/);
@@ -453,13 +477,18 @@ test("GenerationStatusBar uses stall copy and gslide tokens", async () => {
   assert.match(source, /max-w-\[min\(100%,22rem\)\]/);
 });
 
-test("create prompt config chip does not expose the text model name", async () => {
-  const source = await readNext(
-    "app/(presentation-generator)/upload/components/CurrentConfig.tsx",
+test("create prompt page no longer renders a provider config chip", async () => {
+  const uploadPage = await readNext(
+    "app/(presentation-generator)/upload/components/UploadPage.tsx",
   );
-  assert.match(source, /textProviderLabel/);
-  assert.doesNotMatch(source, /\$\{textProviderLabel\} \(\$\{selectedTextModel\}\)/);
-  assert.doesNotMatch(source, /textSummary = selectedTextModel/);
+  assert.doesNotMatch(uploadPage, /CurrentConfig/);
+  await assert.rejects(
+    () =>
+      readNext(
+        "app/(presentation-generator)/upload/components/CurrentConfig.tsx",
+      ),
+    (error) => error && error.code === "ENOENT",
+  );
 });
 
 test("community preview does not expose the text model name", async () => {
@@ -475,7 +504,7 @@ test("settings text fields use one labeled column", async () => {
   const source = await readNext(
     "app/(presentation-generator)/(dashboard)/settings/TextProvider.tsx",
   );
-  assert.match(source, /OpenAI-compatible URL/);
+  assert.match(source, /settings\.text\.customUrl/);
   assert.match(source, /settingsFormColumnClassName/);
   assert.match(source, /ChevronDown/);
   assert.doesNotMatch(source, /relative shrink-0 w-\[262px\]/);

@@ -24,29 +24,30 @@ export const usePresentationNavigation = (
     attempts = 2,
     behavior: ScrollBehavior = "auto",
   ) => {
-    const slideElement = document.getElementById(`slide-${index}`);
-    if (slideElement) {
-      const scrollContainer = slideElement.closest<HTMLElement>(
-        SLIDES_SCROLL_CONTAINER_SELECTOR
-      );
-      if (scrollContainer) {
-        const containerRect = scrollContainer.getBoundingClientRect();
-        const slideRect = slideElement.getBoundingClientRect();
-        const top =
-          slideRect.top - containerRect.top + scrollContainer.scrollTop;
+    const tryScroll = (remaining: number) => {
+      const slideElement = document.getElementById(`slide-${index}`);
+      if (slideElement) {
+        const scrollContainer = slideElement.closest<HTMLElement>(
+          SLIDES_SCROLL_CONTAINER_SELECTOR
+        );
+        if (scrollContainer) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const slideRect = slideElement.getBoundingClientRect();
+          const top =
+            slideRect.top - containerRect.top + scrollContainer.scrollTop;
 
-        scrollContainer.scrollTo({ top, behavior });
+          scrollContainer.scrollTo({ top, behavior });
+          return;
+        }
+
+        slideElement.scrollIntoView({ behavior, block: "start" });
         return;
       }
-
-      slideElement.scrollIntoView({ behavior, block: "start" });
-      return;
-    }
-    if (attempts > 0) {
-      window.requestAnimationFrame(() =>
-        scrollToSlide(index, attempts - 1, behavior)
-      );
-    }
+      if (remaining > 0) {
+        window.requestAnimationFrame(() => tryScroll(remaining - 1));
+      }
+    };
+    tryScroll(attempts);
   }, []);
 
   const handleSlideClick = useCallback((index: number) => {
