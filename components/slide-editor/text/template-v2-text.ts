@@ -7,7 +7,17 @@ import {
   textRunsContent,
 } from "@/components/slide-editor/text/text-runs";
 import type { TemplateV2TextEditStyle } from "@/components/slide-editor/text/template-v2-text-editing";
+import {
+  fitTextListToBox,
+  fitTextToBox,
+  measureTextByUnits,
+} from "./template-v2-text-fit.mjs";
 import { measureMathLatex, normalizeMathLatex } from "@/lib/math";
+
+export {
+  fitTextListToBox,
+  fitTextToBox,
+} from "./template-v2-text-fit.mjs";
 
 type UnknownRecord = Record<string, any>;
 
@@ -22,6 +32,7 @@ export type RenderTextRun = {
   type?: "latex";
   latex?: string;
   displayMode?: boolean;
+  width?: number;
   renderHeight?: number;
 };
 export type LaidToken = {
@@ -47,7 +58,61 @@ export type TemplateV2TextBox = {
   height: number;
 };
 
-const TEXT_AVERAGE_CHAR_EM = 0.5;
+function withMeasuredLatexRuns<T extends RenderTextRun | UnknownRecord>(
+  runs: T[] | undefined,
+  boxWidth: number,
+): T[] {
+  return (runs ?? []).map((run) => {
+    if (run?.type !== "latex") return run;
+    if (
+      typeof run.width === "number" &&
+      Number.isFinite(run.width) &&
+      typeof run.renderHeight === "number" &&
+      Number.isFinite(run.renderHeight)
+    ) {
+      return run;
+    }
+    const latex = normalizeMathLatex(run.latex ?? run.text);
+    if (!latex) return run;
+    const displayMode = Boolean(
+      run.displayMode ?? (run as UnknownRecord).display_mode,
+    );
+    const fontSize = Number(run.font?.size) > 0 ? run.font.size : 18;
+    const measured = measureMathLatex(latex, fontSize, displayMode);
+    return {
+      ...run,
+      text: latex,
+      latex,
+      displayMode,
+      width: Math.min(Math.max(1, measured.width), Math.max(1, boxWidth)),
+      renderHeight: measured.height,
+    };
+  });
+}
+
+export function fitRenderTextToBox(
+  runs: Array<RenderTextRun | UnknownRecord>,
+  box: { width: number; height: number },
+) {
+  return fitTextToBox(withMeasuredLatexRuns(runs, box.width), box, {
+    measure: measureRenderText,
+  });
+}
+
+export function fitRenderTextListToBox(
+  items: Array<TextListRenderItem | UnknownRecord>,
+  box: { width: number; height: number },
+) {
+  return fitTextListToBox(
+    (items ?? []).map((item) => ({
+      ...item,
+      runs: withMeasuredLatexRuns(item.runs, box.width),
+    })),
+    box,
+    { measure: measureRenderText },
+  );
+}
+
 const DEFAULT_FONT: RenderTextFont = {
   family: "Arial",
   size: 18,
@@ -1589,12 +1654,12 @@ function quotedFontFamily(family: string): string {
 }
 
 function measureRenderText(text: string, font: RenderTextFont) {
-  const fallbackWidth =
-    text.length * font.size * (font.bold ? 0.58 : TEXT_AVERAGE_CHAR_EM);
-  if (typeof document === "undefined") return fallbackWidth;
+  if (typeof document === "undefined") {
+    return measureTextByUnits(text, font);
+  }
   renderTextMeasureCanvas ??= document.createElement("canvas");
   const context = renderTextMeasureCanvas.getContext("2d");
-  if (!context) return fallbackWidth;
+  if (!context) return measureTextByUnits(text, font);
   context.font = richFontCss(font);
   return (
     context.measureText(text).width +

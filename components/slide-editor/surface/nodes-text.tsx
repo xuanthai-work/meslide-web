@@ -5,14 +5,16 @@ import { effectiveLineHeight } from "@/components/slide-editor/text/text-line-he
 import { textRunsContent } from "@/components/slide-editor/text/text-runs";
 import {
   displayText,
-  layoutTextListRenderItems,
-  layoutRenderTextRuns,
+  fitRenderTextListToBox as fitTextListToBox,
+  fitRenderTextToBox as fitTextToBox,
   lineRenderHeight,
   lineStartX,
   rawFont,
   rawRenderTextRuns,
   rawTextContent,
+  rawTextListRenderItems,
   renderKonvaTextSegment,
+  type LaidToken,
   type RenderTextRun,
 } from "@/components/slide-editor/text/template-v2-text";
 import { LatexRunNode } from "@/components/slide-editor/math/LatexRunNode";
@@ -59,7 +61,10 @@ export function RawRichTextElement({
 
   const layoutRuns =
     renderRuns.length > 0 ? renderRuns : [{ text: displayContent, font }];
-  const lines = layoutRenderTextRuns(layoutRuns, width, "word");
+  const fitted = fitTextToBox(layoutRuns, { width, height });
+  const lines = fitted.lines as Array<
+    Array<RenderTextRun & { width: number }>
+  >;
   const lineMetrics = lines.map((line) => ({
     height: lineRenderHeight(line, textLineHeight),
     width: line.reduce((sum, segment) => sum + segment.width, 0),
@@ -128,7 +133,13 @@ export function RawRichTextElement({
   }
 
   return (
-    <Group listening={interactive}>
+    <Group
+      listening={interactive}
+      clipX={0}
+      clipY={0}
+      clipWidth={width}
+      clipHeight={height}
+    >
       {laidOutSegments.map(
         ({ lineIndex, segmentIndex, segment, segmentX, lineY, lineHeight }) => {
           if (segment.type === "latex" && segment.latex) {
@@ -147,13 +158,12 @@ export function RawRichTextElement({
               />
             );
           }
-          // Keep width automatic. The custom layout owns the x advance; a fixed
-          // tight width lets Konva re-wrap and clip the final glyph.
           return (
             <Text
               key={`${lineIndex}:${segmentIndex}`}
               x={segmentX}
               y={lineY}
+              width={segment.width}
               height={lineHeight}
               text={renderKonvaTextSegment(segment.text)}
               fill={textFill(segment.font)}
@@ -190,10 +200,67 @@ export function RawTextListElement({
   height: number;
   interactive: boolean;
 }) {
-  const { tokens } = layoutTextListRenderItems(element, width, height);
+  const font = rawFont(element);
+  const items = rawTextListRenderItems(element);
+  const fitted = fitTextListToBox(items, { width, height });
+  const lines = fitted.lines as Array<
+    Array<RenderTextRun & { width: number }>
+  >;
+  const align = readString(element.alignment?.horizontal) ?? "left";
+  const verticalAlign = readString(element.alignment?.vertical) ?? "top";
+  const textLineHeight = effectiveLineHeight({
+    text: textRunsContent(items.flatMap((item) => item.runs)),
+    width,
+    fontSize: font.size,
+    lineHeight: font.lineHeight,
+    fallback: 1.15,
+    wrap: "word",
+  });
+  const lineMetrics = lines.map((line) => ({
+    height: lineRenderHeight(line, textLineHeight),
+    width: line.reduce((sum, segment) => sum + segment.width, 0),
+  }));
+  const contentHeight = lineMetrics.reduce(
+    (sum, metric) => sum + metric.height,
+    0,
+  );
+  let y =
+    verticalAlign === "middle"
+      ? Math.max(0, (height - contentHeight) / 2)
+      : verticalAlign === "bottom"
+        ? Math.max(0, height - contentHeight)
+        : 0;
+  const tokens: LaidToken[] = [];
+
+  lines.forEach((line, lineIndex) => {
+    const metric = lineMetrics[lineIndex] ?? { height: 1, width: 0 };
+    let x = lineStartX(align, width, metric.width, false);
+    line.forEach((segment) => {
+      const segmentHeight =
+        segment.renderHeight ??
+        segment.font.size * (segment.font.lineHeight ?? textLineHeight);
+      tokens.push({
+        ...segment,
+        text: segment.text,
+        font: segment.font,
+        x,
+        y: y + (metric.height - segmentHeight),
+        width: segment.width,
+        height: segmentHeight,
+      });
+      x += segment.width;
+    });
+    y += metric.height;
+  });
 
   return (
-    <Group listening={interactive}>
+    <Group
+      listening={interactive}
+      clipX={0}
+      clipY={0}
+      clipWidth={width}
+      clipHeight={height}
+    >
       {tokens.map((token, tokenIndex) => (
         token.type === "latex" && token.latex ? (
           <LatexRunNode
@@ -213,6 +280,7 @@ export function RawTextListElement({
             key={`${tokenIndex}:${token.x}:${token.y}`}
             x={token.x}
             y={token.y}
+            width={token.width}
             height={token.height}
             text={renderKonvaTextSegment(token.text)}
             fill={textFill(token.font)}
