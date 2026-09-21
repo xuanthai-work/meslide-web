@@ -1356,5 +1356,5 @@ function readListRuns(value: unknown): JsonRecord[] {
 }
 
 function textOverflowStyle(): string {
-  return "overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;";
+  return "overflow:hidden;white-space:pre-wrap;";
 }

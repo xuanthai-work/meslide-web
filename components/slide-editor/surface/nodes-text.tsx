@@ -26,6 +26,13 @@ import {
   type RawElement,
 } from "@/components/slide-editor/model/model";
 
+const KONVA_GLYPH_PAD_PX = 2;
+
+function konvaTextPaintWidth(width: number) {
+  if (!Number.isFinite(width) || width <= 0) return 0;
+  return Math.ceil(width) + KONVA_GLYPH_PAD_PX;
+}
+
 export function RawRichTextElement({
   element,
   width,
@@ -163,7 +170,7 @@ export function RawRichTextElement({
               key={`${lineIndex}:${segmentIndex}`}
               x={segmentX}
               y={lineY}
-              width={segment.width}
+              width={konvaTextPaintWidth(segment.width)}
               height={lineHeight}
               text={renderKonvaTextSegment(segment.text)}
               fill={textFill(segment.font)}
@@ -280,7 +287,7 @@ export function RawTextListElement({
             key={`${tokenIndex}:${token.x}:${token.y}`}
             x={token.x}
             y={token.y}
-            width={token.width}
+            width={konvaTextPaintWidth(token.width)}
             height={token.height}
             text={renderKonvaTextSegment(token.text)}
             fill={textFill(token.font)}

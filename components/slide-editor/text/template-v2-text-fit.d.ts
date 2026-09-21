@@ -10,6 +10,7 @@ export declare const BODY_MIN_PX: 12;
 export declare const TITLE_SIZE_THRESHOLD: 24;
 export declare const ELLIPSIS: "…";
 export declare const FIT_SCALE_EPSILON: 0.001;
+export declare const PAINT_SAFETY: 1.1;
 
 export declare function characterUnit(ch: string, bold?: boolean): number;
 export declare function textUnits(text: string, bold?: boolean): number;
@@ -40,6 +41,7 @@ export declare function layoutFitTextRuns(
   runs: Array<{ text?: string; font?: Record<string, unknown>; renderHeight?: number }>,
   width: number,
   measure: (text: string, font: Record<string, unknown>) => number,
+  options?: { allowCharSplit?: boolean },
 ): Array<Array<{ text?: string; font?: Record<string, unknown>; renderHeight?: number; width: number }>>;
 
 export declare function fitTextToBox(

@@ -31,9 +31,17 @@ test("SettingPage no longer imports LogoutButton", async () => {
   assert.doesNotMatch(source, /LogoutButton/);
 });
 
-test("proxy does not auth-gate the embedded default-user flow", async () => {
+test("proxy does not auth-gate browser requests", async () => {
   const source = await readNext("proxy.ts");
   assert.doesNotMatch(source, /getAuthStatus|isApiAuthExempt/);
   assert.doesNotMatch(source, /detail:\s*["']Unauthorized["']/);
+  assert.doesNotMatch(source, /embedded demo user/);
   assert.match(source, /return continueRequest\(request\)/);
+});
+
+test("server auth helper reads /api/v1/auth/status instead of a demo user", async () => {
+  const source = await readNext("lib/server-auth-role.ts");
+  assert.match(source, /\/api\/v1\/auth\/status/);
+  assert.doesNotMatch(source, /username:\s*["']demo["']/);
+  assert.doesNotMatch(source, /00000000-0000-0000-0000-000000000001/);
 });

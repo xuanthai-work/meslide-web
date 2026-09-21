@@ -98,6 +98,43 @@ test("oversized unspaced token never exceeds box width", () => {
   }
 });
 
+test("hyphenated compound shrinks instead of wrapping to a dangling hyphen", () => {
+  const result = fitTextToBox(
+    [{ text: "Vận-động", font }],
+    { width: 180, height: 90 },
+    { measure: wideCharMeasure },
+  );
+  const texts = result.lines.map((line) =>
+    line.map((segment) => segment.text).join(""),
+  );
+  assert.equal(texts.join(""), "Vận-động");
+  assert.equal(result.lines.length, 1);
+  assert.ok(!texts.some((text) => text === "Vận-" || text.endsWith("Vận-")));
+  for (const line of result.lines) {
+    const width = line.reduce((sum, segment) => sum + segment.width, 0);
+    assert.ok(width <= 180 + 0.5);
+  }
+});
+
+test("a word that can shrink stays whole instead of splitting mid-letter", () => {
+  const result = fitTextToBox(
+    [{ text: "Riêng", font }],
+    { width: 110, height: 80 },
+    { measure: wideCharMeasure },
+  );
+  const texts = result.lines.map((line) =>
+    line.map((segment) => segment.text).join(""),
+  );
+  assert.equal(texts.join(""), "Riêng");
+  assert.equal(result.lines.length, 1);
+  assert.ok(result.fontScale < 1);
+  assert.ok(!texts.some((text) => text === "n" || /Riê$/.test(text)));
+  for (const line of result.lines) {
+    const width = line.reduce((sum, segment) => sum + segment.width, 0);
+    assert.ok(width <= 110 + 0.5);
+  }
+});
+
 test("tall copy in a one-line box shrinks to the floor and stays inside", () => {
   const result = fitTextToBox(
     [{ text: "Phủ định của phủ định Người thuyết trình", font }],
@@ -334,14 +371,18 @@ const read = (relative) => readFile(path.resolve(relative), "utf8");
 
 test("html text overflow is hidden, not visible", async () => {
   const source = await read("lib/template-v2-json-to-html.ts");
-  assert.match(
-    source,
-    /function textOverflowStyle\(\)[\s\S]*overflow:hidden/,
+  const overflowFn = source.slice(
+    source.indexOf("function textOverflowStyle("),
+    source.indexOf("function textOverflowStyle(") + 220,
   );
-  assert.doesNotMatch(
-    source,
-    /function textOverflowStyle\(\)[\s\S]*overflow:visible/,
-  );
+  assert.match(overflowFn, /overflow:hidden/);
+  assert.doesNotMatch(overflowFn, /overflow:visible/);
+  assert.doesNotMatch(overflowFn, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(overflowFn, /word-break:break-word/);
+  assert.match(overflowFn, /overflow:hidden/);
+  assert.doesNotMatch(overflowFn, /overflow:visible/);
+  assert.doesNotMatch(overflowFn, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(overflowFn, /word-break:break-word/);
   assert.match(source, /fitTextToBox/);
   assert.match(source, /fitTextListToBox/);
   assert.match(
@@ -354,13 +395,15 @@ test("html text overflow is hidden, not visible", async () => {
   );
 });
 
-test("konva text segments set measured width and clip to the box", async () => {
+test("konva text segments pad paint width so wrap=none does not clip glyphs", async () => {
   const source = await read(
     "components/slide-editor/surface/nodes-text.tsx",
   );
   assert.match(source, /fitTextToBox/);
   assert.match(source, /fitTextListToBox/);
-  assert.match(source, /width=\{segment\.width\}/);
+  assert.match(source, /function konvaTextPaintWidth/);
+  assert.match(source, /width=\{konvaTextPaintWidth\(segment.width\)\}/);
+  assert.match(source, /width=\{konvaTextPaintWidth\(token.width\)\}/);
   assert.match(source, /clipWidth=\{width\}/);
   assert.match(source, /clipHeight=\{height\}/);
 });
@@ -398,4 +441,16 @@ test("renderers use canvas-aware fit wrappers and paint fitted lines", async () 
   assert.match(htmlSource, /fitted\.lines/);
   assert.doesNotMatch(htmlSource, /fitted\.runs\s*\.map/);
   assert.doesNotMatch(htmlSource, /fitted\.items\s*\.map/);
+});
+
+test("html preview refits after document fonts are ready", async () => {
+  const source = await read(
+    "app/(presentation-generator)/components/TemplateV2HtmlSlidePreview.tsx",
+  );
+  assert.match(source, /document\.fonts/);
+  assert.match(source, /fontsReady/);
+  assert.match(
+    source,
+    /templateV2UiToHtmlFragment[\s\S]*fontsReady/,
+  );
 });

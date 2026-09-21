@@ -246,6 +246,13 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
       notify.error(t("export.pdfMaker.error.toastTitle"), t("export.pdfMaker.error.toastDesc"));
       console.error("Error fetching user slides:", error);
     } finally {
+      if (typeof document !== "undefined" && document.fonts?.ready) {
+        try {
+          await document.fonts.ready;
+        } catch {
+          // Font load failures should not block export.
+        }
+      }
       setContentLoading(false);
     }
   };
