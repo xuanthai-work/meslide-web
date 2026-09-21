@@ -31,6 +31,7 @@ catch-all.
 | `/static/*` | `api:8000` | Bundled UI static assets (logos, fonts, icons). **Public, no auth.** Trailing slash required so `/static/` cannot be escaped (`/static../`). |
 | `/app_data/fonts/*`, `/app_data/templates/*` | `api:8000` | **Public, no auth** (fonts/templates are non-sensitive). |
 | `/app_data/images/*`, `/app_data/exports/*`, `/app_data/uploads/*`, `/app_data/pptx-to-html/*`, `/app_data/pptx-to-json/*` | `api:8000` | **Auth required.** FastAPI `SessionAuthMiddleware` enforces the session cookie and per-user path authorization; the Ingress must forward `Cookie` (and `Authorization`) headers. |
+| `/health/live`, `/health/ready` | `api:8000` (pod, not Ingress) | Process probes. **Not** under `/api/v1`. Kubelet/Compose curl the API container directly. Do not publish these on the public Ingress; do not use `/api/v1/auth/status` as a probe. |
 | `/pdf-maker` | `web:3000` | Export-runtime bridge. Chromium (in `api`) opens this with `?exportSession=…`. Not for end-user browsers. |
 | `/_next/*`, Next.js BFF routes under `/api/*` (everything not listed above as FastAPI), pages and all remaining paths | `web:3000` | Next.js app + BFF routes. |
 
