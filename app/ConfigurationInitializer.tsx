@@ -21,10 +21,14 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
   const t = useT();
 
   const route = usePathname();
-  const shouldShowStartupSplash = !route?.startsWith("/pdf-maker");
+  const shouldShowStartupSplash =
+    !route?.startsWith("/pdf-maker") &&
+    route !== "/login" &&
+    route !== "/auth";
   const isSettingsRoute =
     route === "/settings" || route?.startsWith("/settings/");
-  const isAuthRoute = route === "/" || route === "/auth";
+  const isLoginRoute = route === "/login" || route === "/auth";
+  const isAuthRoute = route === "/" || isLoginRoute;
   const [isLoading, setIsLoading] = useState(
     () => shouldShowStartupSplash
   );
@@ -90,6 +94,34 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
     }
 
     setIsLoading(true);
+
+    try {
+      const statusResponse = await fetch("/api/v1/auth/status", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const status = statusResponse.ok
+        ? ((await statusResponse.json()) as { authenticated?: boolean })
+        : { authenticated: false };
+      if (!status.authenticated) {
+        if (!isLoginRoute) {
+          router.replace("/login");
+        }
+        setIsLoading(false);
+        return;
+      }
+      if (isLoginRoute) {
+        router.replace("/dashboard");
+        setLoadingToFalseAfterNavigatingTo("/dashboard");
+        return;
+      }
+    } catch {
+      if (!isLoginRoute) {
+        router.replace("/login");
+      }
+      setIsLoading(false);
+      return;
+    }
 
     const localConfig = asLlmConfig(await fetchLocalProviderConfigJson());
     if (hasValidLLMConfig(localConfig)) {

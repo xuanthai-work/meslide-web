@@ -1,7 +1,7 @@
 "use client";
 
-import { LayoutDashboard, Settings, HelpCircle, UsersRound } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { LayoutDashboard, Settings, HelpCircle, UsersRound, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { GSlideSidebar, gslideNavActiveClass, gslideNavIdleClass } from "@/components/gslide";
@@ -13,8 +13,18 @@ const GSLIDE_HELP_MAILTO = "mailto:help@placeholder.example";
 
 const DashboardSidebar = () => {
     const pathname = usePathname();
+    const router = useRouter();
     const t = useT();
     const { communityEnabled } = useFeatureFlags();
+
+    const onLogout = async () => {
+        await fetch("/api/v1/auth/logout", {
+            method: "POST",
+            credentials: "include",
+        });
+        router.replace("/login");
+        router.refresh();
+    };
 
     return (
         <GSlideSidebar
@@ -36,6 +46,16 @@ const DashboardSidebar = () => {
                         <HelpCircle className={["h-4 w-4", gslideNavIdleClass].join(" ")} />
                         <span className={["text-[11px]", gslideNavIdleClass].join(" ")}>{t("nav.help")}</span>
                     </a>
+                    <div className="py-2" />
+                    <button
+                        type="button"
+                        onClick={onLogout}
+                        className="flex w-full flex-col items-center gap-2 transition-colors"
+                        aria-label={t("nav.logout")}
+                    >
+                        <LogOut className={`h-4 w-4 ${gslideNavIdleClass}`} />
+                        <span className={`text-[11px] ${gslideNavIdleClass}`}>{t("nav.logout")}</span>
+                    </button>
                 </div>
             }
         >

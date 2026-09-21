@@ -67,6 +67,17 @@ const vi = {
     templates: "Mẫu",
     help: "Trợ giúp",
     helpAria: "Gửi email hỗ trợ GSlide",
+    logout: "Đăng xuất",
+  },
+
+  auth: {
+    title: "Đăng nhập",
+    subtitle: "Đăng nhập để tiếp tục dùng GSlide",
+    username: "Tên đăng nhập",
+    password: "Mật khẩu",
+    submit: "Đăng nhập",
+    submitting: "Đang đăng nhập…",
+    invalid: "Tên đăng nhập hoặc mật khẩu không đúng",
   },
 
   sidebar: {

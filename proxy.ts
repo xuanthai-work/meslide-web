@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
  * nginx proxy has been removed. The browser stays same-origin against the web
  * service; FastAPI paths (`/api/v1`, `/api/v2`, `/app_data`, `/static`) and the
  * `/pdf-maker` export bridge are rewritten/proxied here to the FastAPI service.
- * FastAPI resolves cookieless requests to the embedded demo user, so this
- * layer must not turn an unavailable auth-status probe into a false 401.
+ * Session auth is enforced by FastAPI; this layer only rewrites paths.
  */
 function getFastApiBaseUrl(): string {
   const internal = process.env.FAST_API_INTERNAL_URL?.trim();

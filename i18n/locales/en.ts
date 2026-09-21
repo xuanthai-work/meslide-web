@@ -64,6 +64,17 @@ const en = {
     templates: "Templates",
     help: "Help",
     helpAria: "Email GSlide help",
+    logout: "Sign out",
+  },
+
+  auth: {
+    title: "Sign in",
+    subtitle: "Sign in to continue to GSlide",
+    username: "Username",
+    password: "Password",
+    submit: "Sign in",
+    submitting: "Signing in…",
+    invalid: "Invalid username or password",
   },
 
   sidebar: {
