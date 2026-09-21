@@ -255,6 +255,9 @@ export function TemplateV2HtmlSlidePreview({
     return templateV2UiToHtmlFragment((slide as Record<string, unknown>).ui, {
       fonts,
     });
+    // fontsReady is a generation counter from document.fonts.ready so fitted
+    // HTML is rebuilt after webfonts load; it is not read inside the memo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cache-bust after fonts
   }, [fonts, fontsReady, slide]);
   const htmlMarkup = useMemo(
     () => ({ __html: html ?? "" }),
