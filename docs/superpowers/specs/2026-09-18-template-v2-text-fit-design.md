@@ -107,7 +107,7 @@ Call this from:
 ### Konva
 
 - Keep custom wrap; keep `wrap="none"` on `Text`.
-- Set each segment’s Konva `width` to the measured segment width (the current auto-width path clips the last glyph).
+- Set each Konva `Text` `width` to `ceil(measured) + 2px` so `wrap="none"` does not clip the last glyph. Advance `x` by the unpadded measured width.
 - Clip the text `Group` to the authored box as a safety net only. After a correct fit, clip is a no-op.
 
 ### HTML / PDF
@@ -116,8 +116,8 @@ Change `textOverflowStyle()` for `text` and `text-list` only:
 
 - `overflow:hidden`
 - `white-space:pre-wrap`
-- `overflow-wrap:anywhere`
-- `word-break:break-word`
+
+Do **not** set `overflow-wrap:anywhere` or `word-break:break-word` on fitted text. Those re-break already-laid lines mid-word. Fitted line spans keep `white-space:pre`. Shrink the font before splitting a token mid-character; do not wrap at a hyphen if that leaves a dangling `Vận-` prefix — keep the compound and shrink instead.
 
 Emit the fitted font size on the box (and runs). Do not change `overflow:visible` on vectors, math, or positioned flex children.
 

@@ -231,14 +231,31 @@ export function TemplateV2HtmlSlidePreview({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [fontsReady, setFontsReady] = useState(0);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    let cancelled = false;
+    const markReady = () => {
+      if (!cancelled) setFontsReady((key) => key + 1);
+    };
+    const fontSet = document.fonts;
+    if (!fontSet?.ready) {
+      markReady();
+      return undefined;
+    }
+    void fontSet.ready.then(markReady);
+    return () => {
+      cancelled = true;
+    };
+  }, [fonts, slide]);
 
   const html = useMemo(() => {
     if (!slide || typeof slide !== "object") return null;
     return templateV2UiToHtmlFragment((slide as Record<string, unknown>).ui, {
       fonts,
     });
-  }, [fonts, slide]);
+  }, [fonts, fontsReady, slide]);
   const htmlMarkup = useMemo(
     () => ({ __html: html ?? "" }),
     [html]

@@ -10,6 +10,7 @@ export const BODY_MIN_PX = 12;
 export const TITLE_SIZE_THRESHOLD = 24;
 export const ELLIPSIS = "…";
 export const FIT_SCALE_EPSILON = 0.001;
+export const PAINT_SAFETY = 1.1;
 
 const VIETNAMESE_RE =
   /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/u;
@@ -124,7 +125,8 @@ function isFitWhitespace(text) {
   return text.length > 0 && /^\s+$/u.test(text);
 }
 
-export function layoutFitTextRuns(runs, width, measure) {
+export function layoutFitTextRuns(runs, width, measure, options = {}) {
+  const allowCharSplit = options.allowCharSplit !== false;
   const lines = [[]];
   let lineWidth = 0;
   const pushLine = () => {
@@ -171,7 +173,9 @@ export function layoutFitTextRuns(runs, width, measure) {
         lineWidth += piece.width;
         continue;
       }
-      const pieces = splitOversized(part, run.font, width, measure);
+      const pieces = allowCharSplit
+        ? splitOversized(part, run.font, width, measure)
+        : [{ text: part, width: measure(part, run.font), font: run.font }];
       for (const piece of pieces) {
         if (lineWidth > 0 && lineWidth + piece.width > width) {
           pushLine();
@@ -299,26 +303,21 @@ function designedSizeOf(runs) {
   return sizes.length ? Math.max(...sizes) : 18;
 }
 
-export function fitTextToBox(runs, box, options = {}) {
-  const measure = options.measure ?? measureTextByUnits;
-  const source = Array.isArray(runs) ? runs : [];
-  if (source.length === 0 || !(box?.width > 0) || !(box?.height > 0)) {
-    return { runs: source, fontScale: 1, lines: [], ellipsis: false, height: 0 };
-  }
-  const layout = (scale) =>
-    layoutFitTextRuns(scaleFitRuns(source, scale), box.width, measure);
-  const lines = layout(1);
-  if (layoutFits(lines, box)) {
-    return { runs: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
-  }
-  const minScale = floorScale(designedSizeOf(source));
+function paintSafeBox(box) {
+  return {
+    width: box.width / PAINT_SAFETY,
+    height: box.height,
+  };
+}
+
+function searchFitScale(layoutAt, box, minScale) {
   let low = minScale;
   let high = 1;
   let bestScale = minScale;
-  let bestLines = layout(minScale);
+  let bestLines = layoutAt(minScale);
   while (high - low > FIT_SCALE_EPSILON) {
     const mid = (low + high) / 2;
-    const probe = layout(mid);
+    const probe = layoutAt(mid);
     if (layoutFits(probe, box)) {
       bestScale = mid;
       bestLines = probe;
@@ -327,18 +326,56 @@ export function fitTextToBox(runs, box, options = {}) {
       high = mid;
     }
   }
-  let ellipsis = false;
-  if (!layoutFits(bestLines, box)) {
-    bestLines = applyEllipsis(bestLines, box, measure);
-    ellipsis = true;
-    bestScale = minScale;
+  return { bestScale, bestLines };
+}
+
+function finishOverflowFit(layoutAt, box, measure, minScale) {
+  const wordFit = searchFitScale(
+    (scale) => layoutAt(scale, false),
+    box,
+    minScale,
+  );
+  if (layoutFits(wordFit.bestLines, box)) {
+    return { ...wordFit, ellipsis: false };
+  }
+  const splitFit = searchFitScale(
+    (scale) => layoutAt(scale, true),
+    box,
+    minScale,
+  );
+  if (layoutFits(splitFit.bestLines, box)) {
+    return { ...splitFit, ellipsis: false };
   }
   return {
-    runs: scaleFitRuns(source, bestScale),
-    fontScale: bestScale,
-    lines: bestLines,
-    ellipsis,
-    height: layoutHeight(bestLines),
+    bestScale: minScale,
+    bestLines: applyEllipsis(splitFit.bestLines, box, measure),
+    ellipsis: true,
+  };
+}
+
+export function fitTextToBox(runs, box, options = {}) {
+  const measure = options.measure ?? measureTextByUnits;
+  const source = Array.isArray(runs) ? runs : [];
+  if (source.length === 0 || !(box?.width > 0) || !(box?.height > 0)) {
+    return { runs: source, fontScale: 1, lines: [], ellipsis: false, height: 0 };
+  }
+  const fitBox = paintSafeBox(box);
+  const layout = (scale, allowCharSplit) =>
+    layoutFitTextRuns(scaleFitRuns(source, scale), fitBox.width, measure, {
+      allowCharSplit,
+    });
+  const lines = layout(1, false);
+  if (layoutFits(lines, fitBox)) {
+    return { runs: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
+  }
+  const minScale = floorScale(designedSizeOf(source));
+  const fitted = finishOverflowFit(layout, fitBox, measure, minScale);
+  return {
+    runs: scaleFitRuns(source, fitted.bestScale),
+    fontScale: fitted.bestScale,
+    lines: fitted.bestLines,
+    ellipsis: fitted.ellipsis,
+    height: layoutHeight(fitted.bestLines),
   };
 }
 
@@ -348,7 +385,8 @@ export function fitTextListToBox(items, box, options = {}) {
   if (source.length === 0 || !(box?.width > 0) || !(box?.height > 0)) {
     return { items: source, fontScale: 1, lines: [], ellipsis: false, height: 0 };
   }
-  const asRuns = (scale) => {
+  const fitBox = paintSafeBox(box);
+  const asRuns = (scale, allowCharSplit = true) => {
     const lines = [];
     for (const item of source) {
       const markerFont = scaleFitFont(item.markerFont, scale);
@@ -362,8 +400,9 @@ export function fitTextListToBox(items, box, options = {}) {
       const indent = marker?.width ?? 0;
       const contentLines = layoutFitTextRuns(
         scaleFitRuns(item.runs, scale),
-        Math.max(1, box.width - indent),
+        Math.max(1, fitBox.width - indent),
         measure,
+        { allowCharSplit },
       );
       contentLines.forEach((line, index) => {
         if (index === 0 && marker) {
@@ -386,40 +425,20 @@ export function fitTextListToBox(items, box, options = {}) {
   const minScale = floorScale(
     designedSizeOf(dummyRuns.length ? dummyRuns : [{ font: { size: 18 } }]),
   );
-  const lines = asRuns(1);
-  if (layoutFits(lines, box)) {
+  const lines = asRuns(1, false);
+  if (layoutFits(lines, fitBox)) {
     return { items: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
   }
-  let low = minScale;
-  let high = 1;
-  let bestScale = minScale;
-  let bestLines = asRuns(minScale);
-  while (high - low > FIT_SCALE_EPSILON) {
-    const mid = (low + high) / 2;
-    const probe = asRuns(mid);
-    if (layoutFits(probe, box)) {
-      bestScale = mid;
-      bestLines = probe;
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  let ellipsis = false;
-  if (!layoutFits(bestLines, box)) {
-    bestLines = applyEllipsis(bestLines, box, measure);
-    ellipsis = true;
-    bestScale = minScale;
-  }
+  const fitted = finishOverflowFit(asRuns, fitBox, measure, minScale);
   return {
     items: source.map((item) => ({
       ...item,
-      markerFont: scaleFitFont(item.markerFont, bestScale),
-      runs: scaleFitRuns(item.runs, bestScale),
+      markerFont: scaleFitFont(item.markerFont, fitted.bestScale),
+      runs: scaleFitRuns(item.runs, fitted.bestScale),
     })),
-    fontScale: bestScale,
-    lines: bestLines,
-    ellipsis,
-    height: layoutHeight(bestLines),
+    fontScale: fitted.bestScale,
+    lines: fitted.bestLines,
+    ellipsis: fitted.ellipsis,
+    height: layoutHeight(fitted.bestLines),
   };
 }
