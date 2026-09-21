@@ -16,7 +16,8 @@ RUN npm run build \
 
 
 FROM node:20-bookworm-slim
-
+ARG CI_PROJECT_URL
+LABEL org.opencontainers.image.source=$CI_PROJECT_URL
 WORKDIR /app
 
 ENV NODE_ENV=production \
