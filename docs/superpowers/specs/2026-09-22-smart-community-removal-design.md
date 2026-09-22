@@ -185,7 +185,7 @@ For rolling infrastructure, scale the old API deployment to zero or use an equiv
 ### Repository audit
 
 - Search both runtime trees for Smart Mode and Community symbols after removal.
-- Permit matches only in immutable historical migrations, the approved design/implementation documents, and unrelated generic terminology verified case by case.
+- Permit matches only in immutable historical migrations, the new removal migration, legacy-schema inference in `migrations.py`, the approved design/implementation documents, absence assertions in tests, and unrelated generic terminology verified case by case.
 - Verify `gslide-inf` remains unchanged unless a real dependency is discovered.
 - Verify the backup manifest matches the archived file tree.
 
