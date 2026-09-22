@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 import { ConfigurationSelects } from "../../app/(presentation-generator)/upload/components/ConfigurationSelects";
 import UploadPage from "../../app/(presentation-generator)/upload/components/UploadPage";
-import WebSearchProvider from "../../app/(presentation-generator)/(dashboard)/settings/WebSearchProvider";
 import {
   LanguageType,
   ToneType,
@@ -66,8 +65,6 @@ const mountUploadPage = (llmConfig?: LLMConfig) => {
     <AppRouterContext.Provider value={router}>
       <FeatureFlagsProvider
         value={{
-          smartModeEnabled: false,
-          communityEnabled: false,
           documentAwareRewrite: false,
         }}
       >
@@ -139,31 +136,4 @@ describe("per-presentation web search toggle", () => {
     cy.wait("@createPresentation");
   });
 
-  it("keeps only max results on the settings search page", () => {
-    const Harness = () => {
-      const [llmConfig, setLlmConfig] = useState<LLMConfig>({
-        WEB_SEARCH_MAX_RESULTS: "5",
-        SEARXNG_BASE_URL: "http://searxng:8080",
-        WEB_GROUNDING: true,
-      });
-
-      return (
-        <I18nProvider locale="vi-VN">
-          <WebSearchProvider
-            llmConfig={llmConfig}
-            setLlmConfig={setLlmConfig}
-          />
-        </I18nProvider>
-      );
-    };
-
-    cy.mount(<Harness />);
-
-    cy.get('[data-testid="web-search-max-results"]')
-      .should("be.visible")
-      .and("have.value", "5");
-    cy.get('[role="switch"]').should("not.exist");
-    cy.contains("URL cơ sở SearXNG").should("not.exist");
-    cy.get('input[type="url"]').should("not.exist");
-  });
 });

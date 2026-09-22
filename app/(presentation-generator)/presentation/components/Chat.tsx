@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { notify } from "@/components/ui/sonner";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { ImagesApi } from "../../services/api/images";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import {
@@ -27,11 +27,9 @@ import {
   MAX_NUMBER_OF_SLIDES,
   MAX_OUTLINE_CONTENT_WORDS,
 } from "@/utils/presentationLimits";
-import type { AppDispatch, RootState } from "@/store/store";
+import type { AppDispatch } from "@/store/store";
 import {
-  clearChatHtmlSelection,
   setPresentationData,
-  type ChatHtmlSelection,
   type PresentationData,
 } from "@/store/slices/presentationGeneration";
 
@@ -81,11 +79,8 @@ import { useChatSession } from "./chat/useChatSession";
 
 export type { ChatApiAdapter } from "./chat/chat-types";
 
-const MAX_SELECTED_HTML_CONTEXT_CHARS = 3500;
-
 const Chat = ({
   presentationId,
-  presentationType = "standard",
   presentationData,
   resourceId,
   chatAdapter = presentationChatAdapter,
@@ -107,9 +102,6 @@ const Chat = ({
 }: ChatProps) => {
   const t = useT();
   const dispatch = useDispatch<AppDispatch>();
-  const chatHtmlSelection = useSelector(
-    (state: RootState) => state.presentationGeneration.chatHtmlSelection,
-  );
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isFollowAgentEnabled, setIsFollowAgentEnabled] = useState(true);
@@ -174,7 +166,6 @@ const Chat = ({
     activeResourceId,
     chatAdapter,
     conversationStorageScope,
-    presentationType,
     onSessionReset: () => {
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
@@ -380,7 +371,6 @@ const Chat = ({
     message: string,
     images = pastedImages,
     additionalContext?: string,
-    selectionContext: ChatHtmlSelection | null = chatHtmlSelection,
   ) => {
     const contextLines: string[] = [];
 
@@ -394,36 +384,6 @@ const Chat = ({
         "UI context: the user is editing a rendered TemplateV2 presentation with the v2 assistant. Use getTemplateSummary, getAvailableLayouts, getAvailableBlocks, searchSlide, getSlideAtIndex, getContentSchemaFromLayoutId, addNewSlide, addNewSlideLayout, saveSlide, updateSlide, deleteSlide, addElement, updateElement, deleteElement, addComponent, createComponent, updateComponent, deleteComponent, getPresentationTheme, setPresentationTheme, readSourceDocuments, and generateAssets. For visible edits inside an existing slide, inspect with getSlideAtIndex and use the returned componentId/elementPath exactly. Use updateElement for element toolbar-style properties and updateComponent for component move, resize, duplicate, layer order, group, and ungroup actions. When adding or creating rendered elements/components, prefer reusable template blocks over primitives: for custom new slides, search getAvailableBlocks for a title/header text block first, then requested chart/table/content blocks, adapt their component JSON, and include the final requested content instead of placeholder blocks. Keep new rendered elements/components strictly inside the 1280x720 visible slide window."
       );
     }
-    if (presentationType === "smart" && variant === "presentation") {
-      contextLines.push(
-        "UI context: the user is editing a Smart HTML presentation. Read the authoritative target HTML with getSlideAtIndex, preserve its design and scripts, and save a complete validated HTML fragment with saveSlide.",
-      );
-    }
-    if (presentationType === "smart" && selectionContext) {
-      const selectedHtml =
-        selectionContext.html.length > MAX_SELECTED_HTML_CONTEXT_CHARS
-          ? `${selectionContext.html.slice(0, MAX_SELECTED_HTML_CONTEXT_CHARS)}\n<!-- selected HTML truncated -->`
-          : selectionContext.html;
-      contextLines.push(
-        `UI context: the user selected one HTML element from slide ${selectionContext.slideNumber} (zero-based index ${selectionContext.slideIndex}). Edit this selected element within the authoritative full slide HTML; preserve unrelated elements.`,
-      );
-      if (selectionContext.elementTag) {
-        contextLines.push(
-          `Selected element tag: ${selectionContext.elementTag}.`,
-        );
-      }
-      if (selectionContext.selectedText) {
-        contextLines.push(
-          `Selected element text: ${selectionContext.selectedText}`,
-        );
-      }
-      contextLines.push(
-        "<selected_html>",
-        selectedHtml,
-        "</selected_html>",
-      );
-    }
-
     if (typeof currentSlide === "number") {
       contextLines.push(
         `UI context: the currently selected slide is slide ${currentSlide + 1
@@ -526,13 +486,11 @@ const Chat = ({
     setExpandedEditPreviewByMessage({});
     setSelectedEditVersionByMessage({});
     setApplyingEditPreviewMessageId(null);
-    dispatch(clearChatHtmlSelection());
     if (activeResourceId) {
       removeStoredConversationId(
         conversationStorageKey(
           conversationStorageScope,
           activeResourceId,
-          presentationType,
         ),
       );
     }
@@ -551,7 +509,7 @@ const Chat = ({
 
       try {
         const savedConversations =
-          await chatAdapter.listConversations(activeResourceId, presentationType);
+          await chatAdapter.listConversations(activeResourceId);
         savedConversations.forEach((savedConversation) => {
           conversationIdsToDelete.add(savedConversation.conversation_id);
         });
@@ -560,7 +518,6 @@ const Chat = ({
             chatAdapter.deleteConversation(
               activeResourceId,
               savedConversationId,
-              presentationType,
             )
           )
         );
@@ -953,8 +910,6 @@ const Chat = ({
       }
     }
 
-    const selectionContext = chatHtmlSelection;
-
     const userMessage: ChatMessage = {
       id: createMessageId(),
       role: "user",
@@ -992,7 +947,6 @@ const Chat = ({
       [assistantMessageId]: false,
     }));
     setInput("");
-    if (selectionContext) dispatch(clearChatHtmlSelection());
     setErrorMessage(null);
     setHasChatMutationStarted(false);
     setIsSending(true);
@@ -1007,12 +961,10 @@ const Chat = ({
       const response = await chatAdapter.streamMessage(
         {
           resourceId: activeResourceId,
-          presentationType,
           message: buildBackendMessage(
             outboundMessage,
             imagesForMessage,
             options.backendContext,
-            selectionContext,
           ),
           conversation_id: conversationId ?? undefined,
           attachments: buildChatDocumentAttachments(attachedDocuments),
@@ -1135,7 +1087,6 @@ const Chat = ({
             conversationStorageKey(
               conversationStorageScope,
               activeResourceId,
-              presentationType,
             ),
             next
           );
@@ -1445,16 +1396,8 @@ const Chat = ({
       selectedTemplateV2Target.elementType ||
       selectedTemplateV2Target.componentId ||
       selectedTemplateV2Target.kind
-    : chatHtmlSelection
-      ? `Slide ${chatHtmlSelection.slideNumber}: ${
-          chatHtmlSelection.selectedText ||
-          chatHtmlSelection.elementTag ||
-          t("chat.selectedElement")
-        }`
-      : "";
-  const clearChatTargetReference = chatHtmlSelection
-    ? () => dispatch(clearChatHtmlSelection())
-    : onClearChatTargetReference;
+    : "";
+  const clearChatTargetReference = onClearChatTargetReference;
 
   if (usesEditorLayout) {
     return (

@@ -7,7 +7,6 @@ import { fetchLocalProviderConfigJson, fetchUserConfigJsonWithRetries } from '@/
 import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { LLMConfig } from '@/types/llm_config';
-import { notify } from '@/components/ui/sonner';
 import { GSlideSplashLoader, GSLIDE_SPLASH_MIN_DURATION_MS } from '@/components/gslide';
 import { useT } from '@/i18n/provider';
 
@@ -18,15 +17,12 @@ function ConfigurationLoadingScreen() {
 
 export function ConfigurationInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
-  const t = useT();
 
   const route = usePathname();
   const shouldShowStartupSplash =
     !route?.startsWith("/pdf-maker") &&
     route !== "/login" &&
     route !== "/auth";
-  const isSettingsRoute =
-    route === "/settings" || route?.startsWith("/settings/");
   const isLoginRoute = route === "/login" || route === "/auth";
   const isAuthRoute = route === "/" || isLoginRoute;
   const [isLoading, setIsLoading] = useState(
@@ -59,32 +55,16 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
   const applyLoadedConfig = (llmConfig: LLMConfig) => {
     dispatch(setLLMConfig(llmConfig));
 
-    const isValid = hasValidLLMConfig(llmConfig);
     if (route.startsWith("/pdf-maker")) {
       setIsLoading(false);
       return;
     }
-    if (isValid) {
-      if (isAuthRoute) {
-        router.push("/dashboard");
-        setLoadingToFalseAfterNavigatingTo("/dashboard");
-      } else {
-        setIsLoading(false);
-      }
-    } else if (!isAuthRoute && !isSettingsRoute) {
-      notify.warning(
-        t("config.providerNotConfigured.title"),
-        t("config.providerNotConfigured.description"),
-        { id: "llm-config-required" }
-      );
-      router.push("/settings");
-      setLoadingToFalseAfterNavigatingTo("/settings");
-    } else if (isAuthRoute) {
+    if (isAuthRoute) {
       router.push("/dashboard");
       setLoadingToFalseAfterNavigatingTo("/dashboard");
-    } else {
-      setIsLoading(false);
+      return;
     }
+    setIsLoading(false);
   };
 
   const fetchUserConfigState = async () => {

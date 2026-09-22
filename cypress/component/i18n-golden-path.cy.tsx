@@ -1,6 +1,5 @@
 import React from "react";
 
-import SettingSideBar from "../../app/(presentation-generator)/(dashboard)/settings/SettingSideBar";
 import AdvanceSettings from "../../app/(presentation-generator)/upload/components/AdvanceSettings";
 import {
   LanguageType,
@@ -10,26 +9,6 @@ import {
 import { I18nProvider } from "../../i18n/provider";
 
 describe("Vietnamese golden-path controls", () => {
-  it("renders settings tabs in Vietnamese and emits stable section identifiers", () => {
-    const setSelectedProvider = cy.stub().as("setSelectedProvider");
-    cy.viewport(768, 700);
-    cy.mount(
-      <I18nProvider>
-        <SettingSideBar
-          selectedProvider="text-provider"
-          setSelectedProvider={setSelectedProvider}
-        />
-      </I18nProvider>,
-    );
-
-    cy.get('nav[aria-label="Các mục cài đặt"] [role="tablist"]').should("exist");
-    cy.get('[role="tab"]').eq(0).should("contain.text", "Văn bản").and("have.attr", "aria-selected", "true");
-    cy.get('[role="tab"]').should("have.length", 2);
-    cy.contains('[role="tab"]', "Hình ảnh").should("not.exist");
-    cy.get('[role="tab"]').eq(1).should("contain.text", "Tìm kiếm").click();
-    cy.get("@setSelectedProvider").should("have.been.calledOnceWith", "web-search-provider");
-  });
-
   it("shows localized tone and verbosity labels instead of API tokens", () => {
     cy.viewport(900, 800);
     cy.mount(

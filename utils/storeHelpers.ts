@@ -1,5 +1,3 @@
-import { setLLMConfig } from "@/store/slices/userConfig";
-import { store } from "@/store/store";
 import { LLMConfig } from "@/types/llm_config";
 
 function isProvided(value: unknown): boolean {
@@ -137,24 +135,6 @@ export const getLLMConfigValidationError = (
   }
 
   return null;
-};
-
-export const handleSaveLLMConfig = async (llmConfig: LLMConfig) => {
-  const normalizedConfig = normalizeLLMConfig(llmConfig);
-  const validationError = getLLMConfigValidationError(normalizedConfig);
-  if (validationError) {
-    throw new Error(validationError);
-  }
-
-  const response = await fetch("/api/user-config", {
-    method: "POST",
-    body: JSON.stringify(normalizedConfig),
-  });
-  if (!response.ok) {
-    throw new Error(`Unable to save user configuration (${response.status})`);
-  }
-
-  store.dispatch(setLLMConfig(normalizedConfig));
 };
 
 export const hasValidLLMConfig = (llmConfig: LLMConfig) =>

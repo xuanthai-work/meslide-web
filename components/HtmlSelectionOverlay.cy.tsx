@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 import "@/app/globals.css";
-import SmartHtmlSelectionOverlay, {
-  type SmartSelectionRect,
-} from "@/app/(presentation-generator)/components/SmartHtmlSelectionOverlay";
+import HtmlSelectionOverlay, {
+  type HtmlSelectionRect,
+} from "@/app/(presentation-generator)/components/HtmlSelectionOverlay";
 
-const INITIAL_RECT: SmartSelectionRect = {
+const INITIAL_RECT: HtmlSelectionRect = {
   left: 80,
   top: 90,
   width: 600,
@@ -35,7 +35,7 @@ function OverlayHarness() {
       >
         Move slide
       </button>
-      <SmartHtmlSelectionOverlay
+      <HtmlSelectionOverlay
         hoverRect={selected ? null : rect}
         selectionRect={selected ? rect : null}
       />
@@ -43,15 +43,15 @@ function OverlayHarness() {
   );
 }
 
-describe("SmartHtmlSelectionOverlay", () => {
+describe("HtmlSelectionOverlay", () => {
   it("stays simple and follows live selection bounds", () => {
     cy.mount(<OverlayHarness />);
 
-    cy.get('[data-smart-selection-overlay="hover"]').should("exist");
+    cy.get('[data-html-selection-overlay="hover"]').should("exist");
 
     cy.get('[data-cy="select"]').click();
-    cy.get('[data-smart-selection-overlay="hover"]').should("not.exist");
-    cy.get('[data-smart-selection-overlay="selected"]')
+    cy.get('[data-html-selection-overlay="hover"]').should("not.exist");
+    cy.get('[data-html-selection-overlay="selected"]')
       .should("contain.text", "Selected for AI")
       .then(($overlay) => {
         const bounds = $overlay[0].getBoundingClientRect();
@@ -62,7 +62,7 @@ describe("SmartHtmlSelectionOverlay", () => {
       });
 
     cy.get('[data-cy="move"]').click();
-    cy.get('[data-smart-selection-overlay="selected"]').then(($overlay) => {
+    cy.get('[data-html-selection-overlay="selected"]').then(($overlay) => {
       const bounds = $overlay[0].getBoundingClientRect();
       expect(bounds.left).to.be.closeTo(160, 1);
       expect(bounds.top).to.be.closeTo(120, 1);

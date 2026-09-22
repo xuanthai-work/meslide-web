@@ -13,7 +13,6 @@ export interface ChatAttachment {
 
 export interface ChatMessageRequest {
   presentation_id: string;
-  presentation_type?: "standard" | "smart";
   message: string;
   conversation_id?: string;
   attachments?: ChatAttachment[];
@@ -351,13 +350,11 @@ async function streamChatMessage(
 export class PresentationChatApi {
   static async listConversations(
     presentationId: string,
-    presentationType: "standard" | "smart" = "standard"
   ): Promise<ChatConversationSummary[]> {
     const u = new URL(
       buildAbsoluteApiRequestUrl("/api/v1/ppt/chat/conversations")
     );
     u.searchParams.set("presentation_id", presentationId);
-    u.searchParams.set("presentation_type", presentationType);
     const response = await fetch(u.toString(), {
       headers: getHeader(),
       cache: "no-cache",
@@ -371,11 +368,9 @@ export class PresentationChatApi {
   static async getHistory(
     presentationId: string,
     conversationId: string,
-    presentationType: "standard" | "smart" = "standard"
   ): Promise<ChatHistoryData> {
     const u = new URL(buildAbsoluteApiRequestUrl("/api/v1/ppt/chat/history"));
     u.searchParams.set("presentation_id", presentationId);
-    u.searchParams.set("presentation_type", presentationType);
     u.searchParams.set("conversation_id", conversationId);
     const response = await fetch(u.toString(), {
       headers: getHeader(),
@@ -390,13 +385,11 @@ export class PresentationChatApi {
   static async deleteConversation(
     presentationId: string,
     conversationId: string,
-    presentationType: "standard" | "smart" = "standard"
   ): Promise<void> {
     const u = new URL(
       buildAbsoluteApiRequestUrl("/api/v1/ppt/chat/conversation")
     );
     u.searchParams.set("presentation_id", presentationId);
-    u.searchParams.set("presentation_type", presentationType);
     u.searchParams.set("conversation_id", conversationId);
     const response = await fetch(u.toString(), {
       method: "DELETE",

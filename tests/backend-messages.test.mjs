@@ -100,7 +100,6 @@ test("coded errors translate and interpolate; legacy errors remain verbatim", ()
     "error.outline_slide_count",
     "error.outline_generation_failed",
     "error.slides_generation_failed",
-    "error.smart_generation_failed",
     "error.chat_stream_failed",
     "error.presentation_not_found",
     "error.image.invalid_image",
@@ -143,7 +142,7 @@ test("every emitted Task A trace code has a frontend mapping", () => {
   const traceCodes = [
     "adding_outline_slide", "updating_outline_slide", "deleting_outline_slide",
     "adding_blank_slide", "adding_slide_from_layout", "reading_template_summary",
-    "reading_smart_deck_context", "reading_source_documents", "searching_relevant_slides",
+    "reading_source_documents", "searching_relevant_slides",
     "opening_requested_slide", "checking_available_layouts", "checking_layout_schema",
     "generating_slide_assets", "saving_slide", "updating_slide", "deleting_slide",
     "adding_slide_element", "updating_slide_element", "removing_slide_element",

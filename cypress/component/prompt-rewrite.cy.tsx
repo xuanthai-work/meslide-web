@@ -22,15 +22,11 @@ const createTestStore = () =>
   });
 
 const mountUploadPage = ({
-  smartModeEnabled = false,
-  communityEnabled = false,
   // Document-aware rewrite is gated behind a feature flag that defaults
   // to off; the doc-aware Cypress suite turns it on so the assertions
   // exercise the document paths.
   documentAwareRewrite = false,
 }: {
-  smartModeEnabled?: boolean;
-  communityEnabled?: boolean;
   documentAwareRewrite?: boolean;
 } = {}) => {
   const push = cy.stub().as("routerPush");
@@ -46,7 +42,7 @@ const mountUploadPage = ({
   cy.mount(
     <AppRouterContext.Provider value={router}>
       <FeatureFlagsProvider
-        value={{ smartModeEnabled, communityEnabled, documentAwareRewrite }}
+        value={{ documentAwareRewrite }}
       >
         <Provider store={createTestStore()}>
           <I18nProvider locale="vi-VN">
@@ -59,10 +55,83 @@ const mountUploadPage = ({
 };
 
 describe("upload prompt rewrite flow", () => {
+  it("sizes the prompt input from its content instead of manual resizing", () => {
+    mountUploadPage();
+
+    cy.get('[data-testid="prompt-input"]')
+      .should("have.css", "resize", "none")
+      .then(($input) => {
+        const initialHeight = $input[0].getBoundingClientRect().height;
+
+        cy.wrap($input)
+          .type(
+            "Dòng 1{shift}{enter}Dòng 2{shift}{enter}Dòng 3{shift}{enter}Dòng 4{shift}{enter}Dòng 5{shift}{enter}Dòng 6{shift}{enter}Dòng 7{shift}{enter}Dòng 8",
+          )
+          .should(($grownInput) => {
+            expect($grownInput[0].getBoundingClientRect().height).to.be.greaterThan(
+              initialHeight,
+            );
+          })
+          .then(($grownInput) => {
+            cy.wrap($grownInput)
+              .type(
+                "{shift}{enter}Dòng 9{shift}{enter}Dòng 10{shift}{enter}Dòng 11{shift}{enter}Dòng 12{shift}{enter}Dòng 13{shift}{enter}Dòng 14{shift}{enter}Dòng 15{shift}{enter}Dòng 16{shift}{enter}Dòng 17{shift}{enter}Dòng 18{shift}{enter}Dòng 19{shift}{enter}Dòng 20{shift}{enter}Dòng 21{shift}{enter}Dòng 22{shift}{enter}Dòng 23{shift}{enter}Dòng 24{shift}{enter}Dòng 25",
+              )
+              .should(($cappedInput) => {
+                expect($cappedInput[0].getBoundingClientRect().height).to.equal(
+                  400,
+                );
+                expect($cappedInput[0].scrollHeight).to.be.greaterThan(
+                  $cappedInput[0].clientHeight,
+                );
+                expect(getComputedStyle($cappedInput[0]).overflowY).to.equal(
+                  "auto",
+                );
+              })
+              .clear()
+              .should(($clearedInput) => {
+                expect(
+                  $clearedInput[0].getBoundingClientRect().height,
+                ).to.be.lessThan(400);
+              });
+          });
+      });
+  });
+
+  it("remeasures wrapped prompt content when the available width changes", () => {
+    cy.viewport(1200, 720);
+    mountUploadPage();
+
+    cy.get('[data-testid="prompt-input"]')
+      .type(
+        "Nội dung trình bày cần giải thích rõ bối cảnh, mục tiêu, phương pháp, dữ liệu, kết quả, bài học và các bước hành động tiếp theo cho toàn bộ đội ngũ tham gia dự án trong quý này.",
+      )
+      .then(($wideInput) => {
+        const wideWidth = $wideInput[0].getBoundingClientRect().width;
+        const wideHeight = $wideInput[0].getBoundingClientRect().height;
+
+        cy.viewport(420, 720);
+        cy.get('[data-testid="prompt-input"]').should(($narrowInput) => {
+          expect($narrowInput[0].getBoundingClientRect().width).to.be.lessThan(
+            wideWidth,
+          );
+          expect($narrowInput[0].getBoundingClientRect().height).to.be.greaterThan(
+            wideHeight,
+          );
+        });
+      });
+  });
+
   it("keeps source and rewrite separate, then invalidates a stale result", () => {
     let rewriteCalls = 0;
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
       rewriteCalls += 1;
+      if (rewriteCalls === 1) {
+        expect(request.body.previous_prompt).to.equal(undefined);
+      } else {
+        expect(request.body.prompt).to.equal("AI trong giáo dục tại Việt Nam");
+        expect(request.body.previous_prompt).to.equal("Bản tối ưu thứ nhất");
+      }
       request.reply({
         delay: 750,
         body: {
@@ -93,7 +162,7 @@ describe("upload prompt rewrite flow", () => {
     );
     cy.get('[data-testid="rewritten-prompt-output"]')
       .should("have.value", "Bản tối ưu thứ nhất")
-      .and("have.attr", "readonly");
+      .and("not.have.attr", "readonly");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
 
     cy.get('[data-testid="prompt-input"]').clear();
@@ -153,6 +222,52 @@ describe("upload prompt rewrite flow", () => {
       "have.been.calledWith",
       "/outline?id=presentation-123&auto=1",
     );
+  });
+
+  it("submits a hand-edited rewrite", () => {
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
+      body: { rewritten_prompt: "Bản AI gốc" },
+    }).as("rewritePrompt");
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
+      expect(request.body.content).to.equal("Bản đã sửa tay");
+      request.reply({ body: { id: "presentation-123" } });
+    }).as("createPresentation");
+
+    mountUploadPage();
+    cy.get('[data-testid="prompt-input"]').type("Ý tưởng gốc");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.wait("@rewritePrompt");
+    cy.get('[data-testid="rewritten-prompt-output"]').should(
+      "not.have.attr",
+      "readonly",
+    );
+    cy.get('[data-testid="rewritten-prompt-output"]').clear();
+    cy.get('[data-testid="rewritten-prompt-output"]').type("Bản đã sửa tay");
+    cy.get('[data-testid="rewritten-prompt-output"]').should(
+      "have.value",
+      "Bản đã sửa tay",
+    );
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.wait("@createPresentation");
+  });
+
+  it("rewrites from Enter and keeps Shift+Enter as a newline", () => {
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
+      body: { rewritten_prompt: "Bản viết lại từ Enter" },
+    }).as("rewritePrompt");
+
+    mountUploadPage();
+    cy.get('[data-testid="prompt-input"]').type("Ý tưởng gốc");
+    cy.get('[data-testid="prompt-input"]').type("{enter}");
+    cy.wait("@rewritePrompt");
+    cy.get('[data-testid="rewritten-prompt-output"]').should(
+      "have.value",
+      "Bản viết lại từ Enter",
+    );
+
+    cy.get('[data-testid="prompt-input"]').type("{shift}{enter}dòng mới");
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Ý tưởng gốc\ndòng mới");
+    cy.get("@rewritePrompt.all").should("have.length", 1);
   });
 
   it("ignores an obsolete response and retains a prior result after refresh failure", () => {
@@ -324,30 +439,6 @@ describe("upload prompt rewrite flow", () => {
     cy.wait("@createPresentation");
   });
 
-  it("keeps community-reference-only creation eligible", () => {
-    cy.intercept("GET", "**/api/v1/ppt/community/presentations?*", {
-      body: {
-        total_pages: 1,
-        page: 1,
-        page_size: 8,
-        results: [
-          {
-            id: 42,
-            title: "Thiết kế cộng đồng",
-            created_by: "GSlide",
-            slides: [],
-          },
-        ],
-      },
-    }).as("communityPresentations");
-    mountUploadPage({ smartModeEnabled: true, communityEnabled: true });
-    cy.contains("button", "Tiêu chuẩn").click();
-    cy.contains('[role="radiogroup"] p', "Thông minh").click();
-    cy.wait("@communityPresentations");
-    cy.contains("button", "Sử dụng").click();
-    cy.get('[data-testid="prompt-input"]').should("have.value", "");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
-  });
 });
 
 /**

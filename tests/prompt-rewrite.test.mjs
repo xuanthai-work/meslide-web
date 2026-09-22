@@ -130,8 +130,19 @@ if (scenario === "request") {
     prompt: "clamped",
     nSlides: 99,
   });
+  const revisionResult = await mod.PresentationGenerationApi.rewritePrompt({
+    prompt: "Xin chao",
+    previousPrompt: "  Bản trước  ",
+  });
   console.log(
-    JSON.stringify({ ok: true, calls, result, defaultsResult, clampedResult })
+    JSON.stringify({
+      ok: true,
+      calls,
+      result,
+      defaultsResult,
+      clampedResult,
+      revisionResult,
+    })
   );
 } else {
   try {
@@ -203,9 +214,9 @@ test("rewritePrompt sends the documented request and returns the rewritten text"
   const run = runScenario("request");
 
   assert.equal(run.result, "REWRITTEN PROMPT");
-  assert.equal(run.calls.length, 3);
+  assert.equal(run.calls.length, 4);
 
-  const [request, defaults, clamped] = run.calls;
+  const [request, defaults, clamped, revision] = run.calls;
 
   assert.ok(request.url.endsWith("/api/v1/ppt/prompt/rewrite"));
   assert.equal(request.method, "POST");
@@ -228,6 +239,14 @@ test("rewritePrompt sends the documented request and returns the rewritten text"
 
   // Slide counts above MAX_NUMBER_OF_SLIDES are clamped, as in createPresentation.
   assert.equal(clamped.body.n_slides, 50);
+  assert.equal(request.body.previous_prompt, undefined);
+  assert.equal(run.revisionResult, "REWRITTEN PROMPT");
+  assert.deepEqual(revision.body, {
+    prompt: "Xin chao",
+    language: null,
+    n_slides: null,
+    previous_prompt: "Bản trước",
+  });
 });
 
 test("rewritePrompt rejects an empty rewritten_prompt", async () => {
@@ -312,6 +331,8 @@ test("UploadPage orchestrates the rewrite with abort and request-ID freshness gu
   // The context key is captured at request start and stored only after
   // success, together with the result.
   assert.match(handler, /const source = config\.prompt\.trim\(\);/);
+  assert.match(handler, /const previous = rewrittenPrompt\.trim\(\);/);
+  assert.match(handler, /previousPrompt: previous \|\| undefined/);
   assert.match(handler, /const contextKey = rewriteContextKey;/);
   assert.match(
     handler,
@@ -367,7 +388,7 @@ test("UploadPage orchestrates the rewrite with abort and request-ID freshness gu
   // runs the same rewrite flow.
   assert.match(
     page,
-    /value=\{rewrittenPrompt\}\s*isLoading=\{isRewriting\}\s*phase=\{rewritePhase\}\s*isStale=\{isRewriteStale\}\s*error=\{rewriteError\}/
+    /value=\{rewrittenPrompt\}\s*onChange=\{setRewrittenPrompt\}\s*keptOpen=\{rewrittenFromContextKey\.length > 0\}\s*isLoading=\{isRewriting\}\s*phase=\{rewritePhase\}\s*isStale=\{isRewriteStale\}\s*error=\{rewriteError\}/
   );
   assert.match(page, /onRetry=\{handleRewritePrompt\}/);
 });
@@ -430,7 +451,7 @@ test("Create eligibility preserves prompt-less inputs and does not block attachm
 
   assert.match(
     page,
-    /const hasPromptlessGenerationInput = files\.length > 0 \|\| hasCommunityReference/,
+    /const hasPromptlessGenerationInput = files\.length > 0/,
   );
   assert.match(
     page,
@@ -633,6 +654,15 @@ test("redesign: UploadPage composes prompt → attachments → rewrite → outpu
   assert.ok(attachmentsIdx < rewriteButtonIdx, "attachments come before rewrite");
   assert.ok(rewriteButtonIdx < outputIdx, "rewrite comes before output");
   assert.ok(outputIdx < createIdx, "output comes before Create");
+
+  // Attachments and the rewrite action live inside the composer. Bare Enter
+  // rewrites; Shift+Enter stays a newline; Ctrl/Cmd+Enter still creates.
+  const promptEnd = page.indexOf("</PromptInput>");
+  assert.ok(promptEnd > promptIdx, "PromptInput is not closed");
+  const composer = page.slice(promptIdx, promptEnd);
+  assert.match(composer, /<SupportingDoc/);
+  assert.match(composer, /data-testid="rewrite-action-button"/);
+  assert.match(composer, /onRewrite=\{handleRewritePrompt\}/);
 });
 
 test("redesign: Create is an explicit visible text action bound to handleGeneratePresentation", async () => {
@@ -653,7 +683,19 @@ test("redesign: Create is an explicit visible text action bound to handleGenerat
   // Create exactly as before.
   assert.match(createButton, /disabled=\{isCreateDisabled \|\| loadingState\.isLoading\}/);
   assert.match(createButton, /whitespace-nowrap/);
-  assert.match(createButton, /sm:w-auto/);
+  assert.match(page, /flex w-full justify-center/);
+  assert.doesNotMatch(page, /sm:justify-end/);
+});
+
+test("composer: Enter rewrites and Shift+Enter inserts a newline", async () => {
+  const promptInput = await read(
+    "app/(presentation-generator)/upload/components/PromptInput.tsx",
+  );
+  assert.match(promptInput, /onRewrite\?: \(\) => void/);
+  assert.match(promptInput, /if \(event\.shiftKey \|\| event\.altKey\) return/);
+  assert.match(promptInput, /onRewrite\?\.\(\)/);
+  assert.match(promptInput, /onSubmit\?\.\(\)/);
+  assert.match(promptInput, /isComposing/);
 });
 
 test("redesign: SupportingDoc is attachment-only with a typed usage mode", async () => {
@@ -703,9 +745,10 @@ test("redesign: SupportingDoc renders the right helper copy per usage mode", asy
 });
 
 test("redesign: RewrittenPrompt renders a compact empty state and a grounded helper", async () => {
-  const panel = await read(
-    "app/(presentation-generator)/upload/components/RewrittenPrompt.tsx",
-  );
+  const [panel, page] = await Promise.all([
+    read("app/(presentation-generator)/upload/components/RewrittenPrompt.tsx"),
+    read(UPLOAD_PAGE_PATH),
+  ]);
   // Compact empty state: no result, not loading, no error, not stale.
   assert.match(panel, /isCompactEmpty/);
   assert.match(panel, /data-compact-empty=\{isCompactEmpty \? "true" : undefined\}/);
@@ -718,6 +761,11 @@ test("redesign: RewrittenPrompt renders a compact empty state and a grounded hel
   assert.match(panel, /showGroundedHelper/);
   assert.match(panel, /upload\.prompt\.rewrite\.groundedSummary/);
   assert.match(panel, /data-testid="rewritten-prompt-grounded-helper"/);
+  // The result can be edited by hand. It stays read-only only while a rewrite
+  // is in flight, or when the parent does not provide an editor callback.
+  assert.match(panel, /onChange\?: \(value: string\) => void/);
+  assert.match(panel, /readOnly=\{isLoading \|\| !onChange\}/);
+  assert.match(page, /onChange=\{setRewrittenPrompt\}/);
 });
 
 test("redesign: new copy keys exist and remain symmetric across catalogs", async () => {

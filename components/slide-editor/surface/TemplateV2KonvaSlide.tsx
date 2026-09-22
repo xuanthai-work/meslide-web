@@ -58,7 +58,7 @@ import {
 
 import { updateSlideUi } from "@/store/slices/presentationGeneration";
 import type { RootState } from "@/store/store";
-import type { SmartSelectionRect } from "@/app/(presentation-generator)/components/SmartHtmlSelectionOverlay";
+import type { HtmlSelectionRect } from "@/app/(presentation-generator)/components/HtmlSelectionOverlay";
 import { useNearViewport } from "@/app/hooks/useNearViewport";
 import { resolveBackendAssetSource } from "@/utils/api";
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
@@ -291,14 +291,14 @@ function TemplateV2KonvaSlideComponent({
   const currentUiRef = useRef<RawUi>(uiDraft);
   const [selection, setSelection] = useState<Selection>(null);
   const hoveredKonvaNodeRef = useRef<Konva.Node | null>(null);
-  const [smartHoverRect, setSmartHoverRect] =
-    useState<SmartSelectionRect | null>(null);
+  const [hoverSelectionRect, setHoverSelectionRect] =
+    useState<HtmlSelectionRect | null>(null);
   const selectionRef = useRef<Selection>(selection);
 
   useEffect(() => {
     if (selectorEnabled) return;
     hoveredKonvaNodeRef.current = null;
-    setSmartHoverRect(null);
+    setHoverSelectionRect(null);
   }, [selectorEnabled]);
   const {
     inlineEdit,
@@ -1890,7 +1890,7 @@ function TemplateV2KonvaSlideComponent({
           onComponentDragEnd={handleComponentDragEnd}
           onActivateSurface={activateSurface}
           onClearEditorUiState={clearEditorUiState}
-          onSmartHoverRectChange={setSmartHoverRect}
+          onHoverSelectionRectChange={setHoverSelectionRect}
         />
       ) : null}
       <TemplateV2KonvaOverlays
@@ -1898,7 +1898,7 @@ function TemplateV2KonvaSlideComponent({
         imageUploadInputRef={imageUploadInputRef}
         onImageUploadChange={handleImageUploadChange}
         selectorEnabled={selectorEnabled}
-        smartHoverRect={smartHoverRect}
+        hoverSelectionRect={hoverSelectionRect}
         floatingToolbarAnchorBox={floatingToolbarAnchorBox}
         canUngroupSelectedComponent={canUngroupSelectedComponent}
         canUngroupLayoutTargetComponent={canUngroupLayoutTargetComponent}

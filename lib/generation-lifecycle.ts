@@ -8,11 +8,11 @@ export type GenerationLifecycleState =
   | "cancelling" | "cancelled" | "failed" | "complete";
 
 export type StreamEventType =
-  | "status" | "chunk" | "slide_html" | "slide_assets" | "fonts"
+  | "status" | "chunk" | "slide_assets" | "fonts"
   | "complete" | "closing" | "error" | "heartbeat";
 
 const USEFUL_EVENT_TYPES = new Set<StreamEventType>([
-  "status", "chunk", "slide_html", "slide_assets", "fonts",
+  "status", "chunk", "slide_assets", "fonts",
   "complete", "closing", "error",
 ]);
 

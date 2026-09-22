@@ -51,12 +51,6 @@ export const PresentationCard = ({
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);
   const isUnsupported = presentation?.version === "v1-standard";
-  // Keep this only for opening legacy smart decks with the correct editor.
-  // Generation mode is no longer a user-facing deck classification.
-  const presentationModeForRouting =
-    presentation?.type === "smart" || presentation?.generation_mode === "smart"
-      ? "smart"
-      : "standard";
 
   const handlePreview = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -67,7 +61,7 @@ export const PresentationCard = ({
       );
       return;
     }
-    router.push(`/presentation?id=${id}&type=${presentationModeForRouting}`);
+    router.push(`/presentation?id=${id}`);
   };
 
 

@@ -136,8 +136,7 @@ export async function readDecomposedFile(filePath: string) {
 export const conversationStorageKey = (
   scope: string,
   resourceId: string,
-  presentationType: "standard" | "smart",
-) => `gslide:chat:${scope}:${presentationType}:conversationId:${resourceId}`;
+) => `gslide:chat:${scope}:conversationId:${resourceId}`;
 
 export const readStoredConversationId = (key: string) => {
   if (typeof window === "undefined") return null;

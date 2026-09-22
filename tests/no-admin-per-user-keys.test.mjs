@@ -43,8 +43,8 @@ test("user-config forwards to /api/v1/settings/provider", async () => {
   assert.doesNotMatch(route, /status:\s*403|immutableResponse/);
   assert.match(route, /searchParams\.get\(["']source["']\) === ["']local["']/);
   assert.match(route, /getEffectiveUserConfig/);
-  assert.match(route, /status:\s*503/);
-  assert.match(route, /retryable:\s*true/);
+  assert.doesNotMatch(route, /export async function POST/);
+  assert.doesNotMatch(route, /method:\s*"PUT"/);
   assert.doesNotMatch(route, /GET_RETRY_DELAYS_MS/);
   assert.doesNotMatch(route, /console\.warn\([^)]+,\s*error\)/);
 });
@@ -55,29 +55,21 @@ test("server-auth role helper no longer exposes admin roles", async () => {
   assert.doesNotMatch(roleHelper, /\brole\b/);
 });
 
-test("settings page always renders SettingPage", async () => {
-  const page = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/page.tsx",
+test("settings page is removed", async () => {
+  await assert.rejects(
+    () =>
+      readNext(
+        "app/(presentation-generator)/(dashboard)/settings/page.tsx",
+      ),
+    (error) => error && error.code === "ENOENT",
   );
-  assert.match(page, /<SettingPage\s*\/>/);
-  assert.doesNotMatch(page, /getSettingsView/);
-  assert.doesNotMatch(page, /UserAccountSettings/);
-});
-
-test("SettingPage no longer imports AdminPanel", async () => {
-  const setting = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+  await assert.rejects(
+    () =>
+      readNext(
+        "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+      ),
+    (error) => error && error.code === "ENOENT",
   );
-  assert.doesNotMatch(setting, /AdminPanel/);
-  assert.doesNotMatch(setting, /selectedProvider === "admin"/);
-});
-
-test("SettingSideBar no longer offers an admin section", async () => {
-  const sidebar = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
-  );
-  assert.doesNotMatch(sidebar, /"admin"/);
-  assert.doesNotMatch(sidebar, /Admin/);
 });
 
 test("admin persona files are removed", async () => {
@@ -112,6 +104,7 @@ test("admin persona files are removed", async () => {
 test("ConfigurationInitializer contains no administrator-specific behavior", async () => {
   const config = await readNext("app/ConfigurationInitializer.tsx");
   assert.doesNotMatch(config, /administrator/i);
+  assert.doesNotMatch(config, /\/settings/);
 
   // Shared catalog copy must also remain free of the removed admin persona.
   const en = await readNext("i18n/locales/en.ts");

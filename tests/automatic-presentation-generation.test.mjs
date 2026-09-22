@@ -45,8 +45,9 @@ test("template selection starts the hidden outline-to-slide bootstrap", async ()
   assert.doesNotMatch(bootstrapHook, /DEFAULT_TEMPLATE_ID/);
   assert.match(
     bootstrapHook,
-    /\/presentation\?id=\$\{presentationId\}&stream=true&type=standard/,
+    /\/presentation\?id=\$\{presentationId\}&stream=true/,
   );
+  assert.doesNotMatch(bootstrapHook, /type=standard/);
 });
 
 test("automatic flow uses the outline page only as a template picker", async () => {

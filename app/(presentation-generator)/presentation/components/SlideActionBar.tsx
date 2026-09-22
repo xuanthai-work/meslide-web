@@ -94,8 +94,6 @@ const SlideActionBar = ({
       : 0;
   const templateId = useMemo(() => getSlideTemplateId(slide), [slide]);
   const isTemplateV2Slide = isTemplateV2PresentationSlide(slide);
-  const isSmartSlide =
-    typeof slide?.html_content === "string" && slide.html_content.trim();
   const speakerNote =
     typeof slide?.speaker_note === "string" ? slide.speaker_note.trim() : "";
   const keepVisible =
@@ -272,8 +270,7 @@ const SlideActionBar = ({
         )}
       >
         <div className="pointer-events-auto hide-scrollbar flex h-10 max-w-[calc(100%_-_2rem)] items-center overflow-x-auto rounded-[8px] border border-[#E6E6EC] bg-white px-2 shadow-[0_2px_14px_rgba(17,24,39,0.12)]">
-          {!isSmartSlide && (
-            <>
+          <>
               <button
                 type="button"
                 onClick={handleBlankSlide}
@@ -305,8 +302,7 @@ const SlideActionBar = ({
                 </>
               )}
               <Separator orientation="vertical" className="mx-2 h-6 shrink-0 bg-[#EDEEEF]" />
-            </>
-          )}
+          </>
           {speakerNote &&
             <Popover
               open={isSpeakerPopoverOpen}

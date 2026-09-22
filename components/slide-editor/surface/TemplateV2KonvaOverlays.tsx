@@ -6,9 +6,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
-import SmartHtmlSelectionOverlay, {
-  type SmartSelectionRect,
-} from "@/app/(presentation-generator)/components/SmartHtmlSelectionOverlay";
+import HtmlSelectionOverlay, {
+  type HtmlSelectionRect,
+} from "@/app/(presentation-generator)/components/HtmlSelectionOverlay";
 import { ChartDataEditorPopover } from "@/components/slide-editor/charts/ChartEditorContent";
 import IconsEditor from "@/components/slide-editor/images/IconsEditor";
 import {
@@ -57,7 +57,7 @@ export type TemplateV2KonvaOverlaysProps = {
   imageUploadInputRef: RefObject<HTMLInputElement | null>;
   onImageUploadChange: (event: ReactChangeEvent<HTMLInputElement>) => void;
   selectorEnabled: boolean;
-  smartHoverRect: SmartSelectionRect | null;
+  hoverSelectionRect: HtmlSelectionRect | null;
   floatingToolbarAnchorBox: Box | null;
   canUngroupSelectedComponent: boolean;
   canUngroupLayoutTargetComponent: boolean;
@@ -120,7 +120,7 @@ export function TemplateV2KonvaOverlays({
   imageUploadInputRef,
   onImageUploadChange,
   selectorEnabled,
-  smartHoverRect,
+  hoverSelectionRect,
   floatingToolbarAnchorBox,
   canUngroupSelectedComponent,
   canUngroupLayoutTargetComponent,
@@ -188,8 +188,8 @@ export function TemplateV2KonvaOverlays({
       {selectorEnabled &&
         typeof document !== "undefined" &&
         createPortal(
-          <SmartHtmlSelectionOverlay
-            hoverRect={smartHoverRect}
+          <HtmlSelectionOverlay
+            hoverRect={hoverSelectionRect}
             selectionRect={null}
           />,
           document.body,

@@ -78,14 +78,6 @@ const SidePanel = ({
     ? lastSlideLayoutGroup
     : lastSlideLayoutGroup || lastSlideLayoutTemplateId;
   const isTemplateFree = isTemplateFreePresentation(presentationData);
-  const persistedGenerationMode =
-    presentationData?.generation_mode ?? presentationData?.type;
-  const isSmartPresentation = persistedGenerationMode
-    ? persistedGenerationMode === "smart"
-    : presentationData?.slides?.some(
-        (slide: any) =>
-          typeof slide?.html_content === "string" && slide.html_content.trim()
-      );
 
   const handleAddSlideClick = () => {
     if (!presentationData?.slides?.length || isStreaming) return;
@@ -238,9 +230,7 @@ const SidePanel = ({
             <div
               ref={thumbnailScrollRef}
               data-slide-thumbnail-scroll-container="true"
-              className={`hide-scrollbar min-h-0 w-full flex-1 space-y-[15px] overflow-y-auto ${
-                isSmartPresentation ? "" : "pb-[76px]"
-              }`}
+              className="hide-scrollbar min-h-0 w-full flex-1 space-y-[15px] overflow-y-auto pb-[76px]"
             >
               {isStreaming ? (
                 presentationData &&
@@ -288,8 +278,7 @@ const SidePanel = ({
               )}
             </div>
           </DndContext>
-          {!isSmartPresentation && (
-            <div className="absolute -bottom-5 -left-4 flex w-[150px] justify-center bg-[linear-gradient(to_top,#FEFEFF_76%,rgba(254,254,255,0)_100%)] py-5">
+          <div className="absolute -bottom-5 -left-4 flex w-[150px] justify-center bg-[linear-gradient(to_top,#FEFEFF_76%,rgba(254,254,255,0)_100%)] py-5">
               <button
                 type="button"
                 onClick={handleAddSlideClick}
@@ -300,8 +289,7 @@ const SidePanel = ({
                   Add Slides
                 </span>
               </button>
-            </div>
-          )}
+          </div>
         </div>
       </div>
       {newSlideModal}

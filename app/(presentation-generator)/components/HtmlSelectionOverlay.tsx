@@ -1,25 +1,25 @@
 import { Sparkles } from "lucide-react";
 
-export type SmartSelectionRect = {
+export type HtmlSelectionRect = {
   left: number;
   top: number;
   width: number;
   height: number;
 };
 
-export default function SmartHtmlSelectionOverlay({
+export default function HtmlSelectionOverlay({
   hoverRect,
   selectionRect,
 }: {
-  hoverRect: SmartSelectionRect | null;
-  selectionRect: SmartSelectionRect | null;
+  hoverRect: HtmlSelectionRect | null;
+  selectionRect: HtmlSelectionRect | null;
 }) {
   return (
     <>
       {hoverRect && (
         <div
           aria-hidden="true"
-          data-smart-selection-overlay="hover"
+          data-html-selection-overlay="hover"
           className="pointer-events-none fixed z-[80] rounded-[8px] border-2 border-dotted border-[#1D6FE8]"
           style={{
             ...hoverRect,
@@ -35,7 +35,7 @@ export default function SmartHtmlSelectionOverlay({
       {selectionRect && (
         <div
           aria-hidden="true"
-          data-smart-selection-overlay="selected"
+          data-html-selection-overlay="selected"
           className="pointer-events-none fixed z-[81] rounded-[8px] border-2 border-dotted border-[#1558C0]"
           style={{
             ...selectionRect,

@@ -220,7 +220,6 @@ const OutlinePage: React.FC = () => {
         const params = new URLSearchParams({
           id: presentation_id,
           auto: "1",
-          type: "standard",
           template: template.id,
         });
         router.replace(`/presentation?${params.toString()}`);

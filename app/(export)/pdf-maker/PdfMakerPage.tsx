@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import "@/app/(presentation-generator)/utils/prism-languages";
@@ -19,7 +19,6 @@ import {
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import { normalizeBackendAssetUrls } from "@/utils/api";
 import { ensureTailwindBrowserScript } from "@/lib/tailwind-browser";
-import { useSmartChartInjection } from "@/app/(presentation-generator)/components/useSmartChartInjection";
 import { useT } from "@/i18n/provider";
 
 const PDF_PRINT_STYLE = `
@@ -103,41 +102,6 @@ type PresentationPageProps = {
   exportCookie?: string;
 };
 
-const SmartHtmlPdfSlide = ({
-  slide,
-  index,
-}: {
-  slide: { id?: string | null; index?: number; html_content?: string | null };
-  index: number;
-}) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const html = slide.html_content?.trim() ?? "";
-  const instanceId = useMemo(
-    () => `pdf-smart-${slide.id ?? index}`,
-    [index, slide.id]
-  );
-
-  useSmartChartInjection({
-    html,
-    instanceId,
-    domRevision: `${slide.index ?? "none"}:${index}`,
-    containerRef,
-  });
-
-  return (
-    <div className="smart-slide-export-root h-[720px] w-[1280px] overflow-hidden bg-white">
-      <div className="smart-slide-export-content h-[720px] w-[1280px] overflow-hidden bg-white">
-        <div
-          ref={containerRef}
-          data-smart-slide-instance={instanceId}
-          className="h-[720px] w-[1280px] overflow-hidden bg-white"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      </div>
-    </div>
-  );
-};
-
 const PresentationPage = ({ presentation_id, exportCookie }: PresentationPageProps) => {
   const [contentLoading, setContentLoading] = useState(true);
   const exportCookieFromHash =
@@ -158,9 +122,7 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
   useEffect(() => {
     if (
       presentationData?.slides?.some(
-        (slide: any) =>
-          slide?.layout?.includes("custom") ||
-          (typeof slide?.html_content === "string" && slide.html_content.trim())
+        (slide: any) => slide?.layout?.includes("custom")
       )
     ) {
       ensureTailwindBrowserScript();
@@ -337,9 +299,6 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
                           fonts={presentationData?.fonts}
                           fixedSize
                         />
-                      ) : typeof slide?.html_content === "string" &&
-                        slide.html_content.trim() ? (
-                        <SmartHtmlPdfSlide slide={slide} index={index} />
                       ) : (
                         <SlideScale
                           slide={slide}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ type Props = {
   onCancel: () => void;
   onKeepWaiting: () => void;
   onRetry: () => void;
+  className?: string;
 };
 
 const GenerationStatusBar: React.FC<Props> = ({
@@ -33,6 +35,7 @@ const GenerationStatusBar: React.FC<Props> = ({
   onCancel,
   onKeepWaiting,
   onRetry,
+  className,
 }) => {
   const t = useT();
   // Render nothing for terminal/idle states.
@@ -85,7 +88,10 @@ const GenerationStatusBar: React.FC<Props> = ({
       role="status"
       aria-live="polite"
       style={containerStyle}
-      className="mt-2 inline-flex w-fit max-w-[min(100%,22rem)] items-center gap-2 rounded-[12px] px-3 py-2 shadow-[0_4px_12px_rgba(16,24,40,0.06)]"
+      className={cn(
+        "mt-2 inline-flex w-fit max-w-[min(100%,22rem)] items-center gap-2 rounded-[12px] px-3 py-2 shadow-[0_4px_12px_rgba(16,24,40,0.06)]",
+        className,
+      )}
     >
       {isConnectingOrGenerating && (
         <>

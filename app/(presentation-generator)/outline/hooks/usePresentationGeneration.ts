@@ -108,7 +108,7 @@ export const usePresentationGeneration = (
         dispatch(clearPresentationData());
         clearTheme();
         router.replace(
-          `/presentation?id=${presentationId}&stream=true&type=standard`
+          `/presentation?id=${presentationId}&stream=true`
         );
       }
     } catch (error: any) {

@@ -10,7 +10,6 @@ const TECHNICAL_ONLY = /^(?:API|CSS|CSV|DOCX|HTML|ID|JSON|LLM|MB|PDF|PPTX|SVG|UR
 // Intentional display exceptions allowed by the localization specification.
 // Keep this list exact and short; product sentences do not belong here.
 const ALLOWLIST = new Set([
-  "app/(presentation-generator)/(dashboard)/settings/TextProvider.tsx|https://host.docker.internal:5000/v1",
   "components/slide-editor/text/TextToolbar.tsx|Aa",
 ]);
 

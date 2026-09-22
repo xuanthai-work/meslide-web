@@ -90,12 +90,6 @@ test("remaining editor and preview identifiers are GSlide", async () => {
   assert.doesNotMatch(preview, /dataset\.presentonCharts/);
   assert.doesNotMatch(preview, /dataset\.presentonChartRendered/);
 
-  const injection = await readNext(
-    "app/(presentation-generator)/components/useSmartChartInjection.ts",
-  );
-  assert.match(injection, /dataset\.gslideChartRendered/);
-  assert.doesNotMatch(injection, /dataset\.presentonChartRendered/);
-
   const editor = await readNext(
     "components/slide-editor/text/TiptapInlineTextEditor.tsx",
   );

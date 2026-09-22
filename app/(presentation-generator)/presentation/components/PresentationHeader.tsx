@@ -94,13 +94,10 @@ const PresentationHeader = ({
   presentation_id,
   isPresentationSaving,
   currentSlide,
-  generationMode = "standard",
-
 }: {
   presentation_id: string;
   isPresentationSaving: boolean;
   currentSlide?: number;
-  generationMode?: "standard" | "smart";
 }) => {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -279,11 +276,7 @@ const PresentationHeader = ({
     setIsRegenerateConfirmOpen(false);
     dispatch(clearPresentationData());
     dispatch(clearHistory());
-    router.push(
-      `/presentation?id=${presentation_id}&stream=true${
-        generationMode === "smart" ? "&type=smart" : ""
-      }`
-    );
+    router.push(`/presentation?id=${presentation_id}&stream=true`);
   };
   const downloadLink = (path: string, fileName: string) => {
     const link = document.createElement("a");
@@ -445,7 +438,7 @@ const PresentationHeader = ({
                 onClick={() => {
                   const to = `?id=${presentation_id}&mode=present&slide=${
                     currentSlide || 0
-                  }${generationMode === "smart" ? "&type=smart" : ""}`;
+                  }`;
                   router.push(to);
                 }}
                 disabled={
@@ -460,7 +453,7 @@ const PresentationHeader = ({
             </ToolTip>
           </div>
 
-        {generationMode === "standard" && (
+        {
           <ToolTip content={t("presentation.header.shortcuts")}>
             <button
               type="button"
@@ -478,7 +471,7 @@ const PresentationHeader = ({
                 strokeWidth={1.8}
               />
             </button>
-          </ToolTip>)}
+          </ToolTip>}
 
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>

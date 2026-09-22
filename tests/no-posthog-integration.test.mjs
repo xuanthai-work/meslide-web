@@ -97,12 +97,10 @@ test("ClientRoot no longer wires a telemetry initializer", async () => {
   assert.doesNotMatch(root, /initPostHog/);
 });
 
-test("settings sidebar no longer offers a telemetry/privacy section", async () => {
-  const sidebar = await readNext(
+test("settings sidebar is removed", async () => {
+  await assertAbsent(
     "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
   );
-  assert.doesNotMatch(sidebar, /"privacy"/);
-  assert.doesNotMatch(sidebar, /Analytics|Privacy controls/);
 });
 
 test("proxy no longer exempts a telemetry-status BFF route", async () => {

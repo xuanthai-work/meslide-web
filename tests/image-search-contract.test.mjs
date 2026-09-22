@@ -84,14 +84,12 @@ test("streamed slide warnings localize through the catalog", async () => {
   assert.match(streaming, /errorCode \?\? detail/);
 });
 
-test("web search settings disclose third-party image sourcing", async () => {
-  const webSearchProvider = await read(
-    "app/(presentation-generator)/(dashboard)/settings/WebSearchProvider.tsx",
+test("web search provider settings UI is removed", async () => {
+  await assert.rejects(
+    read(
+      "app/(presentation-generator)/(dashboard)/settings/WebSearchProvider.tsx",
+    ),
   );
-
-  assert.match(webSearchProvider, /settings\.webSearch\.imageDisclosure/);
-  // The existing toggle label is unchanged.
-  assert.match(webSearchProvider, /settings\.webSearch\.title/);
 });
 
 test("image-search copy never claims royalty-free results", async () => {

@@ -50,7 +50,23 @@ test("upload ignores retired query switches and creates Standard requests", () =
     api,
     /generation_mode|community_design_ids|switchPresentationMode/,
   );
-  assert.match(api, /version\s*=\s*["']v2-standard["']/);
+  assert.doesNotMatch(api, /version\s*[:=]\s*["']v2-standard["']/);
+});
+
+test("standard navigation and responses have no retired mode alias", () => {
+  for (const path of [
+    "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
+    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
+    "app/(presentation-generator)/outline/hooks/usePresentationGeneration.ts",
+    "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
+    "app/(presentation-generator)/services/api/presentation-generation.ts",
+  ]) {
+    assert.doesNotMatch(
+      read(path),
+      /type=standard|type:\s*["']standard["']/,
+      path,
+    );
+  }
 });
 
 test("presentation state has no retired mode or Community fields", () => {
@@ -59,4 +75,74 @@ test("presentation state has no retired mode or Community fields", () => {
     state,
     /generation_mode|community_design_ids|setPresentationGenerationMode|updateSlideHtmlContent/,
   );
+});
+
+test("web chat no longer sends or stores presentation type", () => {
+  for (const path of [
+    "app/(presentation-generator)/services/api/chat.ts",
+    "app/(presentation-generator)/presentation/components/chat/chat-types.ts",
+    "app/(presentation-generator)/presentation/components/chat/chat-adapter.ts",
+    "app/(presentation-generator)/presentation/components/chat/useChatSession.ts",
+    "app/(presentation-generator)/presentation/components/Chat.tsx",
+  ]) {
+    assert.doesNotMatch(
+      read(path),
+      /presentation_type|presentationType|Smart HTML presentation/,
+    );
+  }
+});
+
+test("smart html renderer and stream event are removed", () => {
+  assert.equal(
+    existsSync(
+      new URL(
+        "../app/(presentation-generator)/components/SmartHtmlSlide.tsx",
+        import.meta.url,
+      ),
+    ),
+    false,
+  );
+  const stream = read(
+    "app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
+  );
+  const lifecycle = read("lib/generation-lifecycle.ts");
+  assert.doesNotMatch(stream, /slide_html|isSmartMode|html_content/);
+  assert.doesNotMatch(lifecycle, /slide_html/);
+});
+
+test("template v2 keeps the shared selection overlay under a neutral name", () => {
+  assert.equal(
+    existsSync(
+      new URL(
+        "../app/(presentation-generator)/components/SmartHtmlSelectionOverlay.tsx",
+        import.meta.url,
+      ),
+    ),
+    false,
+  );
+  assert.equal(
+    existsSync(
+      new URL(
+        "../app/(presentation-generator)/components/HtmlSelectionOverlay.tsx",
+        import.meta.url,
+      ),
+    ),
+    true,
+  );
+  const overlays = read("components/slide-editor/surface/TemplateV2KonvaOverlays.tsx");
+  assert.match(overlays, /HtmlSelectionOverlay/);
+  assert.doesNotMatch(overlays, /SmartHtmlSelectionOverlay|SmartSelectionRect/);
+});
+
+test("runtime localization contains no retired Smart or Community contracts", () => {
+  for (const path of [
+    "i18n/locales/en.ts",
+    "i18n/locales/vi.ts",
+    "i18n/backend-messages.ts",
+  ]) {
+    assert.doesNotMatch(
+      read(path),
+      /community|smart mode|reading_smart_deck_context/i,
+    );
+  }
 });
