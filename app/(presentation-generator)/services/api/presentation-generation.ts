@@ -18,7 +18,6 @@ import { toLegacyLanguageValue } from "../../upload/language";
 export type BlankPresentationResponse = {
   id: string;
   version: PresentationVersion;
-  type: "standard";
   title: string | null;
   n_slides: number;
   language: string;
@@ -36,6 +35,8 @@ export type RewritePromptRequest = {
   language?: LanguageType | null;
   nSlides?: number | null;
   filePaths?: string[];
+  /** Current rewritten brief to revise. Omitted on the first rewrite. */
+  previousPrompt?: string | null;
   signal?: AbortSignal;
 };
 
@@ -99,7 +100,6 @@ export class PresentationGenerationApi {
 
   static async createPresentation({
     content,
-    version = "v2-standard",
     n_slides,
     file_paths,
     language,
@@ -107,11 +107,8 @@ export class PresentationGenerationApi {
     verbosity,
     instructions,
     web_search,
-    generation_mode = "standard",
-    community_design_ids,
   }: {
     content: string;
-    version?: PresentationVersion;
     n_slides: number | null;
     file_paths?: string[];
     language: LanguageType | null;
@@ -119,8 +116,6 @@ export class PresentationGenerationApi {
     verbosity?: string | null;
     instructions?: string | null;
     web_search?: boolean;
-    generation_mode?: "standard" | "smart";
-    community_design_ids?: number[];
   }) {
     try {
       const limitedSlideCount =
@@ -134,7 +129,6 @@ export class PresentationGenerationApi {
           headers: getHeader(),
           body: JSON.stringify({
             content,
-            version,
             n_slides: limitedSlideCount,
             file_paths,
             language: toLegacyLanguageValue(language),
@@ -144,8 +138,6 @@ export class PresentationGenerationApi {
             include_table_of_contents: true,
             include_title_slide: true,
             web_search,
-            generation_mode,
-            community_design_ids,
           }),
           cache: "no-cache",
         }
@@ -155,10 +147,7 @@ export class PresentationGenerationApi {
         response,
         "Failed to create presentation"
       );
-      return {
-        ...result,
-        type: generation_mode,
-      };
+      return result;
     } catch (error) {
       console.error("error in presentation creation", error);
       throw error;
@@ -170,6 +159,7 @@ export class PresentationGenerationApi {
     language = null,
     nSlides = null,
     filePaths,
+    previousPrompt,
     signal,
   }: RewritePromptRequest): Promise<string> {
     try {
@@ -177,6 +167,7 @@ export class PresentationGenerationApi {
         typeof nSlides === "number"
           ? Math.min(Math.max(nSlides, 1), MAX_NUMBER_OF_SLIDES)
           : null;
+      const trimmedPrevious = previousPrompt?.trim();
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/prompt/rewrite`),
         {
@@ -187,6 +178,7 @@ export class PresentationGenerationApi {
             language: toLegacyLanguageValue(language),
             n_slides: limitedSlideCount,
             file_paths: filePaths,
+            ...(trimmedPrevious ? { previous_prompt: trimmedPrevious } : {}),
           }),
           cache: "no-cache",
           signal,
@@ -278,31 +270,6 @@ export class PresentationGenerationApi {
       return await ApiResponseHandler.handleResponse(response, "Failed to update presentation content");
     } catch (error) {
       console.error("error in presentation content update", error);
-      throw error;
-    }
-  }
-
-  static async switchPresentationMode(
-    presentationId: string,
-    generationMode: "standard" | "smart"
-  ) {
-    try {
-      const response = await fetch(
-        getApiUrl(`/api/v1/ppt/presentation/${presentationId}/mode`),
-        {
-          method: "PATCH",
-          headers: getHeader(),
-          body: JSON.stringify({ generation_mode: generationMode }),
-          cache: "no-cache",
-        }
-      );
-
-      return await ApiResponseHandler.handleResponse(
-        response,
-        "Failed to switch presentation mode"
-      );
-    } catch (error) {
-      console.error("error switching presentation mode", error);
       throw error;
     }
   }

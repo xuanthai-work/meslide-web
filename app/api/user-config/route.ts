@@ -1,25 +1,16 @@
 import { NextResponse } from "next/server";
-import { describeFastApiConnectError } from "@/lib/fastapi-connect-error";
 import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
 import { getEffectiveUserConfig } from "@/lib/effective-user-config";
 
 export const dynamic = "force-dynamic";
 
-async function forwardProviderSettings(
-  request: Request,
-  method: "GET" | "PUT",
-  body?: string
-) {
+async function forwardProviderSettings(request: Request) {
   const cookie = request.headers.get("cookie") || "";
   const response = await fetch(
     `${getFastApiBaseUrl()}/api/v1/settings/provider`,
     {
-      method,
-      headers: {
-        ...(cookie ? { cookie } : {}),
-        ...(body ? { "content-type": "application/json" } : {}),
-      },
-      body,
+      method: "GET",
+      headers: cookie ? { cookie } : {},
       cache: "no-store",
     }
   );
@@ -43,16 +34,6 @@ function readLocalProviderConfig(): Record<string, unknown> {
   }
 }
 
-function unavailableSaveResponse() {
-  return NextResponse.json(
-    {
-      error: "Unable to save provider settings",
-      retryable: true,
-    },
-    { status: 503 }
-  );
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   if (url.searchParams.get("source") === "local") {
@@ -60,40 +41,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    return await forwardProviderSettings(request, "GET");
+    return await forwardProviderSettings(request);
   } catch {
     // FastAPI is not required to open the app: instance file/env is enough.
     return NextResponse.json(readLocalProviderConfig());
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.text();
-    if (!body.trim()) {
-      return NextResponse.json(
-        { error: "Invalid user config JSON body", status: 400 },
-        { status: 400 }
-      );
-    }
-    const parsed = JSON.parse(body) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return NextResponse.json(
-        { error: "Invalid user config JSON body", status: 400 },
-        { status: 400 }
-      );
-    }
-    return await forwardProviderSettings(request, "PUT", body);
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid user config JSON body", status: 400 },
-        { status: 400 }
-      );
-    }
-    console.warn(
-      `FastAPI provider settings unreachable at ${getFastApiBaseUrl()} (${describeFastApiConnectError(error)})`
-    );
-    return unavailableSaveResponse();
   }
 }

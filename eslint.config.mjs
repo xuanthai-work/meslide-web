@@ -14,16 +14,10 @@ function escapeGlob(path) {
 // `package.json` `lint` (`--max-warnings`). That ceiling only decreases.
 const setStateInEffectAllowlist = [
   "app/(export)/pdf-maker/PdfMakerPage.tsx",
-  "app/(presentation-generator)/(dashboard)/community/components/CommunityDesignPreviewDialog.tsx",
   "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/ImageProvider.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/TextProvider.tsx",
   "app/(presentation-generator)/(dashboard)/templates/components/TemplatePanel.tsx",
   "app/(presentation-generator)/(dashboard)/theme/components/ThemePanel/index.tsx",
   "app/(presentation-generator)/components/ImageEditor.tsx",
-  "app/(presentation-generator)/components/SmartHtmlEditor.tsx",
-  "app/(presentation-generator)/components/SmartHtmlSlide.tsx",
   "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
   "app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx",
   "app/(presentation-generator)/hooks/useTemplateDetails.ts",
@@ -37,7 +31,6 @@ const setStateInEffectAllowlist = [
   "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
   "app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
   "app/(presentation-generator)/template-preview/components/TemplatePreviewClient.tsx",
-  "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
   "app/(presentation-generator)/upload/components/ConfigurationSelects.tsx",
   "app/(presentation-generator)/upload/components/UploadPage.tsx",
   "app/ConfigurationInitializer.tsx",
@@ -61,7 +54,6 @@ const setStateInEffectAllowlist = [
 const noExplicitAnyAllowlist = [
   "app/(export)/pdf-maker/PdfMakerPage.tsx",
   "app/(presentation-generator)/(dashboard)/dashboard/components/PresentationCard.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/ImageProvider.tsx",
   "app/(presentation-generator)/(dashboard)/theme/components/ThemePanel/FontCard.tsx",
   "app/(presentation-generator)/(dashboard)/theme/components/ThemePanel/constants.ts",
   "app/(presentation-generator)/(dashboard)/theme/components/ThemePanel/index.tsx",

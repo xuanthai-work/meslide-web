@@ -23,24 +23,18 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import AdvanceSettings from "./AdvanceSettings";
-import GenerationModeDialog from "./GenerationModeDialog";
-import { type GenerationMode } from "../generation-mode";
 import {
   clampSlideCountValue,
   MAX_NUMBER_OF_SLIDES,
 } from "@/utils/presentationLimits";
 import { useT } from "@/i18n/provider";
-import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 
 // Types
 interface ConfigurationSelectsProps {
   config: PresentationConfig;
   onConfigChange: (key: keyof PresentationConfig, value: any) => void;
   compact?: boolean;
-  mode?: GenerationMode;
-  onModeChange?: (mode: GenerationMode) => void;
 }
 
 type SlideOption =
@@ -445,17 +439,9 @@ export function ConfigurationSelects({
   config,
   onConfigChange,
   compact = false,
-  mode,
-  onModeChange,
 }: ConfigurationSelectsProps) {
-  const t = useT();
-  const { smartModeEnabled } = useFeatureFlags();
   const [openSlides, setOpenSlides] = useState(false);
   const [openLanguage, setOpenLanguage] = useState(false);
-  const [modeDialogOpen, setModeDialogOpen] = useState(false);
-  const showModeSelector = Boolean(
-    smartModeEnabled && mode && onModeChange,
-  );
 
   return (
     <div
@@ -464,29 +450,6 @@ export function ConfigurationSelects({
         compact ? "gap-3" : "gap-4 min-[1800px]:gap-5",
       )}
     >
-      {showModeSelector && mode && onModeChange && (
-        <>
-          <Button
-            type="button"
-            onClick={() => setModeDialogOpen(true)}
-            className={cn(
-              "rounded-full border border-[var(--gslide-border)] bg-white px-4 py-1 text-sm font-medium text-[var(--gslide-ink)] hover:bg-[var(--gslide-accent-soft)]",
-              compact ? "h-[34px] shadow-none" : "h-[38px] shadow-sm",
-            )}
-          >
-            {mode === "standard"
-              ? t("upload.mode.standard.label")
-              : t("upload.mode.smart.label")}
-            <ChevronUp className="h-4 w-4" />
-          </Button>
-          <GenerationModeDialog
-            open={modeDialogOpen}
-            selectedMode={mode}
-            onOpenChange={setModeDialogOpen}
-            onSelect={onModeChange}
-          />
-        </>
-      )}
       <SlideCountSelect
         value={config.slides}
         onValueChange={(value) => onConfigChange("slides", value)}

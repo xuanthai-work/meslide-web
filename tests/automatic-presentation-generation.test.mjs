@@ -18,7 +18,7 @@ test("new presentations keep template selection but bypass outline verification"
   );
   assert.match(uploadPage, /auto:\s*"1"/);
   assert.match(documentsPreview, /router\.replace\(`\/outline\?/);
-  assert.match(documentsPreview, /generation_mode:\s*"standard"/);
+  assert.doesNotMatch(documentsPreview, /generation_mode|community_design_ids/);
 });
 
 test("template selection starts the hidden outline-to-slide bootstrap", async () => {
@@ -45,8 +45,9 @@ test("template selection starts the hidden outline-to-slide bootstrap", async ()
   assert.doesNotMatch(bootstrapHook, /DEFAULT_TEMPLATE_ID/);
   assert.match(
     bootstrapHook,
-    /\/presentation\?id=\$\{presentationId\}&stream=true&type=standard/,
+    /\/presentation\?id=\$\{presentationId\}&stream=true/,
   );
+  assert.doesNotMatch(bootstrapHook, /type=standard/);
 });
 
 test("automatic flow uses the outline page only as a template picker", async () => {

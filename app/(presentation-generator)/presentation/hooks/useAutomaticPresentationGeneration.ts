@@ -138,7 +138,7 @@ export function useAutomaticPresentationGeneration(
         setPhase("complete");
         dispatch(clearPresentationData());
         router.replace(
-          `/presentation?id=${presentationId}&stream=true&type=standard`,
+          `/presentation?id=${presentationId}&stream=true`,
         );
       })
       .catch((error: unknown) => {

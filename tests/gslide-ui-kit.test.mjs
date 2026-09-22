@@ -173,45 +173,28 @@ test("dashboard sidebar uses GSlideSidebar and accent active states", async () =
   assert.match(sidebar, /GSlideSidebar/);
   assert.doesNotMatch(sidebar, /#7C51F8/);
   assert.doesNotMatch(sidebar, /#5146E5/);
-  assert.match(sidebar, /mailto:help@placeholder\.example/);
+  assert.doesNotMatch(sidebar, /href="\/settings"/);
+  assert.doesNotMatch(sidebar, /nav\.help/);
+  assert.doesNotMatch(sidebar, /mailto:/);
 });
 
-test("settings chrome has no filter rail", async () => {
-  const settings = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
+test("settings chrome is removed", async () => {
+  await assert.rejects(
+    readNext("app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx"),
   );
-  const tabs = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
+  await assert.rejects(
+    readNext(
+      "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
+    ),
   );
-  assert.match(settings, /GSlideHeader/);
-  assert.doesNotMatch(settings, /FILTER BY/);
-  assert.doesNotMatch(tabs, /FILTER BY/);
-  assert.match(tabs, /role="tablist"/);
-  assert.doesNotMatch(tabs, /session/);
-  assert.doesNotMatch(tabs, /motion\/react/);
-  assert.doesNotMatch(tabs, /framer-motion/);
 });
 
-test("dashboard and community chrome use GSlide surfaces", async () => {
+test("dashboard chrome uses GSlide surfaces", async () => {
   const dash = await readNext(
     "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
   );
   assert.match(dash, /--gslide-bg/);
   assert.doesNotMatch(dash, /#7A5AF8/);
-
-  const community = await readNext(
-    "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
-  );
-  assert.doesNotMatch(community, /#6847F4/);
-});
-
-test("settings does not tell users to connect Presenton Cloud", async () => {
-  const settings = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
-  );
-  assert.doesNotMatch(settings, /Connect Presenton first/);
-  assert.doesNotMatch(settings, /Presenton Cloud/);
-  assert.doesNotMatch(settings, /LLM === "presenton"/);
 });
 
 test("template and generation APIs do not request Presenton Cloud", async () => {
@@ -283,14 +266,10 @@ const CHROME_FILES = [
   "app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx",
   "app/(presentation-generator)/(dashboard)/layout.tsx",
   "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
-  "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx",
-  "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
   "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
   "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
   "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
   "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
-  "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
   "app/(presentation-generator)/upload/page.tsx",
 ];
 
@@ -329,7 +308,6 @@ const SLIDE_EDITOR_CHROME_FILES = [
   "components/slide-editor/selection/ComponentActionsMenu.tsx",
   "components/slide-editor/layout/LayoutToolbar.tsx",
   "components/slide-editor/layout/InfographicToolbarControls.tsx",
-  "app/(presentation-generator)/components/ImageEditorToolbar.tsx",
 ];
 
 test("slide-editor chrome files do not contain banned purple or skeleton gray", async () => {
@@ -427,18 +405,6 @@ test("app metadata does not use presenton.ai", async () => {
   assert.doesNotMatch(outline, /presenton\.ai/);
 });
 
-test("community copy is GSlide not Presenton product", async () => {
-  const picker = await readNext(
-    "app/(presentation-generator)/upload/components/CommunityReferencePicker.tsx",
-  );
-  assert.doesNotMatch(picker, /\|\| "Presenton"/);
-
-  const preview = await readNext(
-    "app/(presentation-generator)/(dashboard)/community/components/CommunityDesignPreviewDialog.tsx",
-  );
-  assert.doesNotMatch(preview, /Presenton managed/);
-});
-
 test("PresentonMode filename is gone", async () => {
   await assert.rejects(
     () => readNext("components/OnBoarding/PresentonMode.tsx"),
@@ -489,26 +455,6 @@ test("create prompt page no longer renders a provider config chip", async () => 
       ),
     (error) => error && error.code === "ENOENT",
   );
-});
-
-test("community preview does not expose the text model name", async () => {
-  const source = await readNext(
-    "app/(presentation-generator)/(dashboard)/community/components/CommunityDesignPreviewDialog.tsx",
-  );
-  assert.match(source, /getProviderVisual\(textProvider\)\.label/);
-  assert.doesNotMatch(source, /setup\?\.text_model/);
-  assert.doesNotMatch(source, /SetupChip>\{setup\.text_model\}/);
-});
-
-test("settings text fields use one labeled column", async () => {
-  const source = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/TextProvider.tsx",
-  );
-  assert.match(source, /settings\.text\.customUrl/);
-  assert.match(source, /settingsFormColumnClassName/);
-  assert.match(source, /ChevronDown/);
-  assert.doesNotMatch(source, /relative shrink-0 w-\[262px\]/);
-  assert.doesNotMatch(source, /w-\[282px\]/);
 });
 
 test("Switch thumb stays inside the track when checked", async () => {

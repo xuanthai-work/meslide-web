@@ -25,7 +25,7 @@ import {
   type SelectOptions,
   type Selection,
 } from "@/components/slide-editor/model/model";
-import type { SmartSelectionRect } from "@/app/(presentation-generator)/components/SmartHtmlSelectionOverlay";
+import type { HtmlSelectionRect } from "@/app/(presentation-generator)/components/HtmlSelectionOverlay";
 import {
   ALIGNMENT_GUIDE_COLOR,
   ALIGNMENT_GUIDE_DASH_PX,
@@ -99,7 +99,7 @@ export type TemplateV2KonvaStageProps = {
   onComponentDragEnd: (componentIndex: number, node: Konva.Node) => void;
   onActivateSurface: (selection?: Selection) => void;
   onClearEditorUiState: () => void;
-  onSmartHoverRectChange: (rect: SmartSelectionRect | null) => void;
+  onHoverSelectionRectChange: (rect: HtmlSelectionRect | null) => void;
 };
 
 export function TemplateV2KonvaStage({
@@ -153,7 +153,7 @@ export function TemplateV2KonvaStage({
   onComponentDragEnd,
   onActivateSurface,
   onClearEditorUiState,
-  onSmartHoverRectChange,
+  onHoverSelectionRectChange,
 }: TemplateV2KonvaStageProps) {
   return (
     <Stage
@@ -187,7 +187,7 @@ export function TemplateV2KonvaStage({
           event.target.findAncestor("Transformer")
         ) {
           hoveredKonvaNodeRef.current = null;
-          onSmartHoverRectChange(null);
+          onHoverSelectionRectChange(null);
           return;
         }
 
@@ -208,7 +208,7 @@ export function TemplateV2KonvaStage({
         const viewport = rootElement.getBoundingClientRect();
         const scaleX = viewport.width / STAGE_WIDTH;
         const scaleY = viewport.height / STAGE_HEIGHT;
-        onSmartHoverRectChange(
+        onHoverSelectionRectChange(
           box.width > 0 && box.height > 0
             ? {
                 left: viewport.left + box.x * scaleX,
@@ -221,7 +221,7 @@ export function TemplateV2KonvaStage({
       }}
       onMouseLeave={() => {
         hoveredKonvaNodeRef.current = null;
-        onSmartHoverRectChange(null);
+        onHoverSelectionRectChange(null);
       }}
     >
       <Layer ref={backgroundLayerRef} listening={false}>

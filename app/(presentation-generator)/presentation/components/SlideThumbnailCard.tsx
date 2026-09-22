@@ -2,7 +2,6 @@ import React, { forwardRef, memo, useCallback } from "react";
 import type { Slide } from "../../types/slide";
 import { useNearViewport } from "@/app/hooks/useNearViewport";
 import { V1ContentRender } from "../../components/V1ContentRender";
-import SmartHtmlSlide from "../../components/SmartHtmlSlide";
 import {
   shouldRenderTemplateV2HtmlPreview,
   TemplateV2HtmlSlidePreview,
@@ -90,23 +89,6 @@ const SlideThumbnailCardComponent = forwardRef<
               className="absolute inset-0 bg-white"
               aria-hidden="true"
             />
-          ) : typeof slide.html_content === "string" && slide.html_content.trim() ? (
-            <div
-              className="absolute left-0 top-0 pointer-events-none"
-              style={{
-                width: 1280,
-                height: 720,
-                transformOrigin: "top left",
-                transform: `scale(${SCALE})`,
-              }}
-            >
-              <SmartHtmlSlide
-                fixedSize
-                fonts={fonts}
-                html={slide.html_content}
-                title={`Slide ${index + 1} thumbnail`}
-              />
-            </div>
           ) : useTemplateV2HtmlPreview ? (
             <div
               className="pointer-events-none absolute left-0 top-0"

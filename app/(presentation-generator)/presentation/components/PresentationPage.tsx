@@ -143,18 +143,13 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const autoGenerate = searchParams.get("auto") === "1";
   const automaticTemplateId = searchParams.get("template")?.trim() || null;
   const shouldPreloadTemplateV2Presentation =
-    searchParams.get("editor") === "v2" || searchParams.get("type") === "smart";
+    searchParams.get("editor") === "v2";
 
   const { presentationData, isStreaming } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
   const presentationDataRef = useRef(presentationData);
   const slidesLength = presentationData?.slides?.length ?? 0;
-  const persistedGenerationMode =
-    presentationData?.generation_mode ?? presentationData?.type;
-  const isSmartPresentation = persistedGenerationMode
-    ? persistedGenerationMode === "smart"
-    : searchParams.get("type") === "smart";
   const isTemplateV2Presentation =
     presentationData?.version === "v2-standard" ||
     hasTemplateV2Layouts(presentationData?.layout) ||
@@ -250,7 +245,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     fetchUserSlides,
     {
       preloadPresentationData: shouldPreloadTemplateV2Presentation,
-      generationMode: isSmartPresentation ? "smart" : "standard",
     }
   );
   const {
@@ -784,6 +778,21 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     );
   }
 
+  const generationStatusOverlay = (
+    <GenerationStatusBar
+      className="!mt-0"
+      surface={autoGenerate ? "outline" : "presentation"}
+      lifecycle={generationLifecycle}
+      statusMessage={generationStatusMessage}
+      draftCount={generationDraftCount}
+      totalCount={streamTotalCount}
+      onCancel={generationCancel}
+      onKeepWaiting={generationKeepWaiting}
+      onRetry={generationRetry}
+      canKeepWaiting={generationCanKeepWaiting}
+    />
+  );
+
   return (
     <div className="h-dvh overflow-hidden font-syne">
       <OverlayLoader
@@ -795,7 +804,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
       />
       <div
         style={{
-          background: isSmartPresentation ? "#F6F6F9" : "#EDEEEF",
+          background: "#EDEEEF",
         }}
         id="presentation-slides-wrapper"
         className="relative flex h-full flex-col overflow-hidden"
@@ -804,21 +813,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           presentation_id={presentation_id}
           isPresentationSaving={isSaving}
           currentSlide={selectedSlide}
-          generationMode={isSmartPresentation ? "smart" : "standard"}
         />
-        <div className="px-4">
-          <GenerationStatusBar
-            surface={autoGenerate ? "outline" : "presentation"}
-            lifecycle={generationLifecycle}
-            statusMessage={generationStatusMessage}
-            draftCount={generationDraftCount}
-            totalCount={streamTotalCount}
-            onCancel={generationCancel}
-            onKeepWaiting={generationKeepWaiting}
-            onRetry={generationRetry}
-            canKeepWaiting={generationCanKeepWaiting}
-          />
-        </div>
         <div className="flex flex-1 min-h-0 gap-3 overflow-hidden xl:gap-5 2xl:gap-6">
           <div className="sticky top-0 hidden h-full w-[150px] shrink-0 self-start md:block">
             <SidePanel
@@ -832,6 +827,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             ref={presentationCanvasRef}
             className="relative h-full min-w-0 flex-1 px-3 pb-6 pt-[18px] md:px-0 max-md:ml-3"
           >
+            <div className="pointer-events-none absolute right-2 top-3 z-40">
+              <div className="pointer-events-auto">{generationStatusOverlay}</div>
+            </div>
             {showNavigationHint ? (
               <div
                 className="pointer-events-none fixed top-[72px] z-[95] hidden items-center gap-3 rounded-full border border-[#E1E3E9] bg-white/95 py-2 pl-3 pr-2 font-syne text-[13px] text-[#344054] shadow-[0_8px_24px_rgba(16,24,40,0.14)] backdrop-blur md:flex"
@@ -977,7 +975,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             <div className="min-h-0 flex-1">
               <PresentationActions
                 presentationId={presentation_id}
-                presentationType={isSmartPresentation ? "smart" : "standard"}
                 variant={isTemplateV2Presentation ? "template-v2" : "presentation"}
                 currentSlide={selectedSlide}
                 presentationData={presentationData}

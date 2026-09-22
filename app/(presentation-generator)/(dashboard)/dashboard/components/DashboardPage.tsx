@@ -251,7 +251,7 @@ const DashboardPage: React.FC = () => {
       const presentation =
         await PresentationGenerationApi.createBlankPresentation();
       router.push(
-        `/presentation?id=${encodeURIComponent(presentation.id)}&type=standard`,
+        `/presentation?id=${encodeURIComponent(presentation.id)}`,
       );
     } catch (creationError) {
       const message =

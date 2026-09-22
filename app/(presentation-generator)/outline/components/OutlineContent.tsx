@@ -96,18 +96,22 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
   );
 
   return (
-    <div className="font-syne">
-      <GenerationStatusBar
-        surface="outline"
-        lifecycle={lifecycle}
-        statusMessage={statusMessage}
-        draftCount={draftCount}
-        totalCount={null}
-        onCancel={onCancel}
-        onKeepWaiting={onKeepWaiting}
-        onRetry={onRetry}
-        canKeepWaiting={canKeepWaiting}
-      />
+    <div className="relative font-syne">
+      <div className="pointer-events-none absolute right-0 top-0 z-30">
+        <div className="pointer-events-auto">
+          <GenerationStatusBar
+            surface="outline"
+            lifecycle={lifecycle}
+            statusMessage={statusMessage}
+            draftCount={draftCount}
+            totalCount={null}
+            onCancel={onCancel}
+            onKeepWaiting={onKeepWaiting}
+            onRetry={onRetry}
+            canKeepWaiting={canKeepWaiting}
+          />
+        </div>
+      </div>
 
       {isStreaming && (
         <div className="sr-only" role="status" aria-live="polite">

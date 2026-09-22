@@ -1,6 +1,5 @@
 import { memo } from "react";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
 import SlideScale from "../../components/PresentationRender";
 import SlideActionBar from "./SlideActionBar";
 import { isTemplateV2Slide } from "../../_shared/blank-slide";
@@ -61,9 +60,6 @@ const SlideContent = ({
         fitToContainer ? "h-full min-h-0" : "max-md:mb-4",
       )}
     >
-      {isStreaming && (
-        <Loader2 className="absolute right-2 top-2 z-30 h-8 w-8 animate-spin text-blue-800" />
-      )}
       <div
         data-layout={slide?.layout}
         data-group={slide?.layout_group}

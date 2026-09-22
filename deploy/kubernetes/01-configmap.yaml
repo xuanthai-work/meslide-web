@@ -18,6 +18,4 @@ data:
   # the real public URL; set it to the external https URL in production.
   SITE_URL: "http://localhost:3000"
   NEXT_PUBLIC_URL: "http://localhost:3000"
-  GSLIDE_FEATURE_SMART_MODE: "false"
-  GSLIDE_FEATURE_COMMUNITY: "false"
   GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE: "false"

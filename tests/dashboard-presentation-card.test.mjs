@@ -9,8 +9,7 @@ test("dashboard deck cards hide generation mode tags", async () => {
     "app/(presentation-generator)/(dashboard)/dashboard/components/PresentationCard.tsx",
   );
 
-  assert.match(card, /const presentationModeForRouting/);
-  assert.match(card, /type=\$\{presentationModeForRouting\}/);
-  assert.doesNotMatch(card, />\s*\{presentationModeForRouting\}\s*</);
+  assert.match(card, /router\.push\(`\/presentation\?id=\$\{id\}`\)/);
+  assert.doesNotMatch(card, /presentationModeForRouting|generation_mode|type=\$\{/);
   assert.doesNotMatch(card, /font-semibold capitalize shadow-sm backdrop-blur-sm/);
 });

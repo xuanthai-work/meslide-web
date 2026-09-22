@@ -16,9 +16,6 @@ export interface PresentationData {
   slides: any;
   theme: Theme | null;
   version?: string;
-  generation_mode?: "standard" | "smart";
-  type?: "standard" | "smart";
-  community_design_ids?: number[] | null;
   components?: any;
   fonts?: any;
   structure?: any;
@@ -107,15 +104,6 @@ const presentationGenerationSlice = createSlice({
     setPresentationData: (state, action: PayloadAction<PresentationData>) => {
       state.presentationData = action.payload;
       state.chatHtmlSelection = null;
-    },
-    setPresentationGenerationMode: (
-      state,
-      action: PayloadAction<"standard" | "smart">
-    ) => {
-      if (state.presentationData) {
-        state.presentationData.generation_mode = action.payload;
-        state.presentationData.type = action.payload;
-      }
     },
     setEnableHtmlSelector: (state, action: PayloadAction<boolean>) => {
       state.enableHtmlSelector = action.payload;
@@ -267,25 +255,6 @@ const presentationGenerationSlice = createSlice({
         state.presentationData.slides[action.payload.index] =
           action.payload.slide;
       }
-    },
-    updateSlideHtmlContent: (
-      state,
-      action: PayloadAction<{
-        slideIndex: number;
-        html: string;
-        slideId?: string | null;
-      }>
-    ) => {
-      const slides = state.presentationData?.slides;
-      if (!Array.isArray(slides)) return;
-
-      const slide =
-        (action.payload.slideId
-          ? slides.find((item: Slide) => item.id === action.payload.slideId)
-          : undefined) ??
-        slides.find((item: Slide) => item.index === action.payload.slideIndex) ??
-        slides[action.payload.slideIndex];
-      if (slide) slide.html_content = action.payload.html;
     },
     updateSlideUi: (
       state,
@@ -569,7 +538,6 @@ export const {
   clearOutlines,
   deleteSlideOutline,
   setPresentationData,
-  setPresentationGenerationMode,
   setEnableHtmlSelector,
   setChatHtmlSelection,
   clearChatHtmlSelection,
@@ -578,7 +546,6 @@ export const {
   // slides operations
   addSlide,
   updateSlide,
-  updateSlideHtmlContent,
   updateSlideUi,
   deletePresentationSlide,
   replaceSlidesWithBlankFallback,

@@ -34,13 +34,11 @@ export function historyMessagesToChatMessages(
 
 export async function loadChatConversation({
   resourceId,
-  presentationType,
   conversationStorageScope,
   chatAdapter,
   isCancelled,
 }: {
   resourceId: string;
-  presentationType: "standard" | "smart";
   conversationStorageScope: string;
   chatAdapter: ChatApiAdapter;
   isCancelled: () => boolean;
@@ -48,17 +46,13 @@ export async function loadChatConversation({
   const storageKey = conversationStorageKey(
     conversationStorageScope,
     resourceId,
-    presentationType,
   );
   const storedId = readStoredConversationId(storageKey);
   let conversations = null;
   let conversationListError: unknown = null;
 
   try {
-    const listedConversations = await chatAdapter.listConversations(
-      resourceId,
-      presentationType,
-    );
+    const listedConversations = await chatAdapter.listConversations(resourceId);
     conversations = Array.isArray(listedConversations)
       ? listedConversations
       : [];
@@ -95,7 +89,6 @@ export async function loadChatConversation({
       const data = await chatAdapter.getHistory(
         resourceId,
         candidateId,
-        presentationType,
       );
       if (isCancelled()) {
         return null;
@@ -136,13 +129,11 @@ export function useChatSession({
   activeResourceId,
   chatAdapter,
   conversationStorageScope,
-  presentationType,
   onSessionReset,
 }: {
   activeResourceId: string | undefined;
   chatAdapter: ChatApiAdapter;
   conversationStorageScope: string;
-  presentationType: "standard" | "smart";
   onSessionReset: () => void;
 }) {
   const t = useT();
@@ -170,7 +161,6 @@ export function useChatSession({
       try {
         const loaded = await loadChatConversation({
           resourceId: activeResourceId,
-          presentationType,
           conversationStorageScope,
           chatAdapter,
           isCancelled: () => cancelled,
@@ -201,7 +191,6 @@ export function useChatSession({
     activeResourceId,
     chatAdapter,
     conversationStorageScope,
-    presentationType,
     t,
   ]);
 

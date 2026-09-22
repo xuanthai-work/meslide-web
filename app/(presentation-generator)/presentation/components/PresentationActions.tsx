@@ -1141,12 +1141,10 @@ function PrimaryActionButton({
 
 function ActionsSidebar({
   activeAction,
-  aiOnly = false,
   blocksUnavailable = false,
   onActionSelect,
 }: {
   activeAction: ActionId;
-  aiOnly?: boolean;
   blocksUnavailable?: boolean;
   onActionSelect: (action: ActionId) => void;
 }) {
@@ -1179,8 +1177,7 @@ function ActionsSidebar({
           label={t("presentation.tools.ai")}
           onClick={() => onActionSelect("ai")}
         />
-        {!aiOnly && (
-          <>
+        <>
             <div className="h-0 w-[30px] border-t border-[#EDEEEF]" />
             <PrimaryActionButton
               active={activeAction === "blocks"}
@@ -1190,12 +1187,10 @@ function ActionsSidebar({
               label={t("presentation.tools.blocks")}
               onClick={() => onActionSelect("blocks")}
             />
-          </>
-        )}
+        </>
       </div>
 
-      {!aiOnly && (
-        <>
+      <>
           <div className="h-0 w-[30px] shrink-0 border-t border-[#EDEEEF]" />
           <nav className="flex w-full flex-col items-center gap-5">
             {insertActions.map((item) => (
@@ -1210,14 +1205,12 @@ function ActionsSidebar({
             ))}
           </nav>
         </>
-      )}
     </aside>
   );
 }
 
 function ActionsPanel({
   activeAction,
-  aiOnly = false,
   blocksUnavailable = false,
   chatProps,
   editingDisabled = false,
@@ -1231,7 +1224,6 @@ function ActionsPanel({
   presentationId,
 }: {
   activeAction: ActionId;
-  aiOnly?: boolean;
   blocksUnavailable?: boolean;
   chatProps: Omit<
     PresentationActionsProps,
@@ -1261,7 +1253,7 @@ function ActionsPanel({
         />
       </div>
 
-      {!aiOnly && !blocksUnavailable && activeAction === "blocks" && (
+      {!blocksUnavailable && activeAction === "blocks" && (
         <BlocksPanel
           disabled={editingDisabled}
           presentationId={presentationId}
@@ -1269,7 +1261,7 @@ function ActionsPanel({
           onInsertBlock={onBlockSelect}
         />
       )}
-      {!aiOnly && activeAction === "texts" && (
+      {activeAction === "texts" && (
         <InsertPanel
           disabled={editingDisabled}
           title={t("presentation.tools.texts")}
@@ -1277,7 +1269,7 @@ function ActionsPanel({
           onItemSelect={onTextItemSelect}
         />
       )}
-      {!aiOnly && activeAction === "charts" && (
+      {activeAction === "charts" && (
         <InsertPanel
           disabled={editingDisabled}
           title={t("presentation.tools.charts")}
@@ -1288,7 +1280,7 @@ function ActionsPanel({
           onItemSelect={onChartItemSelect}
         />
       )}
-      {!aiOnly && activeAction === "tables" && (
+      {activeAction === "tables" && (
         <InsertPanel
           disabled={editingDisabled}
           title={t("presentation.tools.tables")}
@@ -1296,7 +1288,7 @@ function ActionsPanel({
           onItemSelect={onTableItemSelect}
         />
       )}
-      {!aiOnly && activeAction === "images" && (
+      {activeAction === "images" && (
         <InsertPanel
           disabled={editingDisabled}
           title={t("presentation.tools.images")}
@@ -1304,7 +1296,7 @@ function ActionsPanel({
           onItemSelect={onImageItemSelect}
         />
       )}
-      {!aiOnly && activeAction === "elements" && (
+      {activeAction === "elements" && (
         <InsertPanel
           disabled={editingDisabled}
           title={t("presentation.tools.elements")}
@@ -1347,7 +1339,6 @@ const PresentationActions = (props: PresentationActionsProps) => {
     onPanelOpenChange = () => undefined,
     ...chatProps
   } = props;
-  const aiOnly = props.presentationType === "smart";
   const blocksUnavailable = isTemplateFreePresentation(presentationData);
   const [{ activeAction }, dispatchUiState] = useReducer(
     presentationActionsUiReducer,
@@ -1385,12 +1376,11 @@ const PresentationActions = (props: PresentationActionsProps) => {
 
   useEffect(() => {
     if (
-      (aiOnly || (blocksUnavailable && activeAction === "blocks")) &&
-      activeAction !== "ai"
+      blocksUnavailable && activeAction === "blocks"
     ) {
       dispatchUiState({ type: "selectAction", activeAction: "ai" });
     }
-  }, [activeAction, aiOnly, blocksUnavailable]);
+  }, [activeAction, blocksUnavailable]);
 
   useEffect(() => {
     setHiddenSlideReference(null);
@@ -1529,9 +1519,6 @@ const PresentationActions = (props: PresentationActionsProps) => {
   };
 
   const handleActionSelect = (nextAction: ActionId) => {
-    if (aiOnly && nextAction !== "ai") {
-      return;
-    }
     if (blocksUnavailable && nextAction === "blocks") {
       return;
     }
@@ -1553,7 +1540,6 @@ const PresentationActions = (props: PresentationActionsProps) => {
       {panelOpen ? (
         <ActionsPanel
           activeAction={activeAction}
-          aiOnly={aiOnly}
           blocksUnavailable={blocksUnavailable}
           chatProps={{
             ...chatProps,
@@ -1580,7 +1566,6 @@ const PresentationActions = (props: PresentationActionsProps) => {
       ) : null}
       <ActionsSidebar
         activeAction={activeAction}
-        aiOnly={aiOnly}
         blocksUnavailable={blocksUnavailable}
         onActionSelect={handleActionSelect}
       />

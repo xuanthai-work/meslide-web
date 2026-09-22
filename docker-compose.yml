@@ -5,8 +5,6 @@ x-web-environment: &web-environment
   - USER_CONFIG_PATH=/app_data/userConfig.json
   - APP_DATA_DIRECTORY=/app_data
   - SITE_URL=${SITE_URL:-http://localhost:${GSLIDE_WEB_HOST_PORT:-${GSLIDE_HTTP_HOST_PORT:-${PRESENTON_HTTP_HOST_PORT:-3000}}}}
-  - GSLIDE_FEATURE_SMART_MODE=${GSLIDE_FEATURE_SMART_MODE:-false}
-  - GSLIDE_FEATURE_COMMUNITY=${GSLIDE_FEATURE_COMMUNITY:-false}
   - GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE=${GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE:-false}
 
 # Browser-facing host port for the Next.js web service. Defaults to 3000.

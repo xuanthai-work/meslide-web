@@ -1,10 +1,11 @@
 "use client";
 
-import type { ChangeEvent, DragEvent } from "react";
+import { useCallback, useContext, useEffect, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { File, Paperclip, X } from "lucide-react";
 
 import { notify } from "@/components/ui/sonner";
 import { useT } from "@/i18n/provider";
+import { PromptComposerBoundaryContext } from "./PromptInput";
 
 /**
  * How the selected documents participate in the upload flow. The parent owns
@@ -32,6 +33,8 @@ interface SupportingDocProps {
    * has no files or no flag context.
    */
   usageMode?: SupportingDocUsageMode;
+  /** Composer action rendered on the bottom-right of the attachment row. */
+  action?: ReactNode;
 }
 
 const MAX_SUPPORTED_FILES = 8;
@@ -49,9 +52,11 @@ export default function SupportingDoc({
   disabled = false,
   multiple = true,
   usageMode = "none",
+  action,
 }: SupportingDocProps) {
   const t = useT();
-  const addFiles = (candidates: File[]) => {
+  const boundaryRef = useContext(PromptComposerBoundaryContext);
+  const addFiles = useCallback((candidates: File[]) => {
     const allowed = candidates.filter(isAllowedFile);
     const rejected = candidates.length - allowed.length;
     if (rejected > 0) {
@@ -76,7 +81,7 @@ export default function SupportingDoc({
       );
     }
     onFilesChange(limited);
-  };
+  }, [files, multiple, onFilesChange, t]);
 
   const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
     addFiles(Array.from(event.target.files ?? []));
@@ -98,33 +103,44 @@ export default function SupportingDoc({
         ? t("upload.files.helperPresentationOnly", { count: files.length })
         : t("upload.files.emptyGuidance");
 
+  // The composer owns the visible box, so drops anywhere on that box attach
+  // files. The listener is rebound when the selection changes so the next
+  // drop appends to the current list.
+  useEffect(() => {
+    const node = boundaryRef?.current;
+    if (!node) return;
+
+    const onDragOver = (event: globalThis.DragEvent) => {
+      event.preventDefault();
+    };
+    const onDrop = (event: globalThis.DragEvent) => {
+      event.preventDefault();
+      if (disabled) return;
+      addFiles(Array.from(event.dataTransfer?.files ?? []));
+    };
+
+    node.addEventListener("dragover", onDragOver);
+    node.addEventListener("drop", onDrop);
+    return () => {
+      node.removeEventListener("dragover", onDragOver);
+      node.removeEventListener("drop", onDrop);
+    };
+  }, [addFiles, boundaryRef, disabled]);
+
   return (
     <section
-      className="flex flex-col gap-2.5 rounded-[18px] border border-[var(--gslide-border)] bg-white p-3"
+      className="flex flex-col gap-2"
       data-testid="attachments-uploader"
       aria-labelledby="attachments-uploader-label"
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={handleDrop}
+      onDragOver={boundaryRef ? undefined : (event) => event.preventDefault()}
+      onDrop={boundaryRef ? undefined : handleDrop}
     >
-      <header className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[var(--gslide-accent-soft)]">
-            <Paperclip className="h-3 w-3 text-[var(--gslide-accent)]" aria-hidden="true" />
-          </span>
-          <h2
-            id="attachments-uploader-label"
-            className="font-manrope text-xs font-semibold uppercase tracking-wide text-[#333333]"
-          >
-            {t("upload.files.sectionLabel")}
-          </h2>
-        </div>
-        <span
-          data-testid="attachments-optional-indicator"
-          className="inline-flex h-[20px] items-center rounded-full bg-[#F4F4F4] px-2 font-manrope text-[10px] font-medium leading-none text-[#666666]"
-        >
-          {t("upload.files.optionalIndicator")}
-        </span>
-      </header>
+      <h2 id="attachments-uploader-label" className="sr-only">
+        {t("upload.files.sectionLabel")}
+      </h2>
+      <span className="sr-only" data-testid="attachments-optional-indicator">
+        {t("upload.files.optionalIndicator")}
+      </span>
 
       {files.length > 0 && (
         <ul
@@ -158,10 +174,19 @@ export default function SupportingDoc({
         </ul>
       )}
 
-      <div className="flex items-center justify-between gap-3">
-        <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-full px-2.5 font-manrope text-xs font-medium text-[#4C4C4C] transition hover:bg-[#F6F6F9] focus-within:outline-none focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]">
-          <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>{files.length ? t("upload.files.attachMore", { count: files.length }) : t("upload.files.attach")}</span>
+      {files.length > 0 && (
+        <p
+          data-testid="attachments-helper"
+          className="font-manrope text-[11px] font-normal leading-snug text-[var(--gslide-muted)]"
+        >
+          {helperCopy}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="inline-flex h-8 min-w-0 cursor-pointer items-center gap-2 rounded-full px-2.5 font-manrope text-xs font-medium text-[#4C4C4C] transition hover:bg-[#F6F6F9] focus-within:outline-none focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]">
+          <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{files.length ? t("upload.files.attachMore", { count: files.length }) : t("upload.files.attach")}</span>
           <input
             type="file"
             className="sr-only"
@@ -172,14 +197,8 @@ export default function SupportingDoc({
             data-testid="file-upload-input"
           />
         </label>
+        {action}
       </div>
-
-      <p
-        data-testid="attachments-helper"
-        className="font-manrope text-[11px] font-normal leading-snug text-[var(--gslide-muted)]"
-      >
-        {helperCopy}
-      </p>
     </section>
   );
 }

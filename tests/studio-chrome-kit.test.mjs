@@ -36,7 +36,7 @@ test("studio title uses Unbounded display and Manrope body, not Syne", async () 
   assert.doesNotMatch(source, /font-syne/);
 });
 
-test("upload page uses studio title keys and drop card", async () => {
+test("upload page uses studio title keys without the outer drop card", async () => {
   const source = await read(
     "app/(presentation-generator)/upload/components/UploadPage.tsx",
   );
@@ -44,7 +44,7 @@ test("upload page uses studio title keys and drop card", async () => {
   assert.match(source, /GSlideStudioTitle/);
   assert.match(source, /upload\.hero\.title/);
   assert.match(source, /className="pt-10 sm:pt-12 2xl:pt-14"/);
-  assert.match(source, /GSlideDropCard/);
+  assert.doesNotMatch(source, /GSlideDropCard/);
   assert.doesNotMatch(source, /font-syne/);
   assert.doesNotMatch(routeShell, /upload\.hero\.(title|subtitle)/);
 });
@@ -81,22 +81,6 @@ test("templates page header uses GSlideHeader or Unbounded plus pill create", as
   );
   assert.match(source, /GSlideHeader|font-unbounded/);
   assert.match(source, /rounded-full/);
-  assert.doesNotMatch(source, /font-syne/);
-});
-
-test("community page does not use ice header height 105px or Syne", async () => {
-  const source = await read(
-    "app/(presentation-generator)/(dashboard)/community/components/CommunityPage.tsx",
-  );
-  assert.doesNotMatch(source, /min-h-\[105px\]/);
-  assert.doesNotMatch(source, /font-syne/);
-});
-
-test("settings tabs use token accent without Syne", async () => {
-  const source = await read(
-    "app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx",
-  );
-  assert.match(source, /--gslide-accent/);
   assert.doesNotMatch(source, /font-syne/);
 });
 

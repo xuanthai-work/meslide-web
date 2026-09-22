@@ -20,8 +20,9 @@ export type RewritePhase =
  * this component is purely presentational. It renders a compact empty state
  * before the first rewrite so the panel does not dominate the composer, and
  * grows the output area once a result, loading state, stale result, or error
- * needs more space. The output textarea is `readOnly` — never `disabled` — so
- * it stays selectable and copyable.
+ * needs more space. The output stays editable after a rewrite so the user can
+ * adjust it by hand. While a rewrite is in flight the field is read-only,
+ * never disabled, so the arriving result is not typed over.
  */
 export interface RewrittenPromptProps {
   /** Latest AI-rewritten prompt; "" means no rewrite result yet. */
@@ -36,6 +37,13 @@ export interface RewrittenPromptProps {
   error: string | null;
   /** Invoked when the user asks to retry after a failed rewrite. */
   onRetry?: () => void;
+  /** Invoked when the user edits the rewritten prompt by hand. */
+  onChange?: (value: string) => void;
+  /**
+   * Keeps the editor open after a rewrite exists, including while the user
+   * clears the text to replace it.
+   */
+  keptOpen?: boolean;
   /**
    * Number of documents that grounded a fresh document-aware rewrite. When
    * this is provided together with a non-stale, non-error result, the panel
@@ -53,6 +61,8 @@ export function RewrittenPrompt({
   isStale,
   error,
   onRetry,
+  onChange,
+  keptOpen = false,
   groundedDocumentCount = 0,
 }: RewrittenPromptProps) {
   const t = useT();
@@ -79,7 +89,7 @@ export function RewrittenPrompt({
   // for: no result, not loading, no error, and a non-stale panel. Once any
   // of those flips the panel grows so the rewrite can be read comfortably.
   const isCompactEmpty =
-    !hasResult && !isLoading && !error && !isStale;
+    !hasResult && !isLoading && !error && !isStale && !keptOpen;
   const showGroundedHelper =
     hasResult && !isStale && !error && groundedDocumentCount > 0;
 
@@ -162,7 +172,8 @@ export function RewrittenPrompt({
         <div className="flex min-h-0 flex-1 items-start gap-2">
           <Textarea
             value={value}
-            readOnly
+            readOnly={isLoading || !onChange}
+            onChange={(event) => onChange?.(event.target.value)}
             rows={6}
             aria-label={outputLabel}
             placeholder={t("upload.prompt.rewrite.emptyHint")}

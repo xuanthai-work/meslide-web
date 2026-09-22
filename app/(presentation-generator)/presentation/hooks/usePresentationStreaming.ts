@@ -112,7 +112,6 @@ export const usePresentationStreaming = (
   }) => void | Promise<unknown>,
   options: {
     preloadPresentationData?: boolean;
-    generationMode?: "standard" | "smart";
   } = {}
 ) => {
   const t = useT();
@@ -122,11 +121,7 @@ export const usePresentationStreaming = (
   );
   const previousSlidesLength = useRef(0);
   const preloadPresentationData = Boolean(options.preloadPresentationData);
-  const isSmartMode = options.generationMode === "smart";
-
-  const defaultStatusMessage = isSmartMode
-    ? t("presentation.status.preparingSmart")
-    : t("presentation.status.creating");
+  const defaultStatusMessage = t("presentation.status.creating");
 
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
@@ -207,15 +202,12 @@ export const usePresentationStreaming = (
     let streamIsTemplateV2 = preloadPresentationData;
     const localizeBackendStatus = (status: string) => {
       const known: Record<string, string> = {
-        "Preparing Smart presentation": t("presentation.status.preparingSmart"),
         "Reading source documents": t("presentation.status.readingDocuments"),
         "Searching the web": t("presentation.status.searchingWeb"),
-        "Applying community design reference": t("presentation.status.applyingCommunity"),
         "Designing the complete presentation": t("presentation.status.designingComplete"),
       };
       return known[status] ?? status;
     };
-    let smartGenerationOutcomeTracked = false;
 
     streamStartedAtRef.current = streamStartedAt;
     isClosedRef.current = false;
@@ -349,11 +341,6 @@ export const usePresentationStreaming = (
       streamIsTemplateV2 = true;
     };
 
-    const trackSmartModeGenerationCompleted = () => {
-      if (!isSmartMode || smartGenerationOutcomeTracked) return;
-      smartGenerationOutcomeTracked = true;
-    };
-
     const updateGeneratingStatus = (slidesLength: number) => {
       const total =
         store.getState().presentationGeneration.presentationData?.structure
@@ -392,7 +379,7 @@ export const usePresentationStreaming = (
       setLifecycle("connecting");
 
       const eventSource = new EventSource(
-        getApiUrl(`/api/v1/ppt/presentation/stream/${presentationId}?regenerate=true`)
+        getApiUrl(`/api/v1/ppt/presentation/stream/${presentationId}`)
       );
       eventSourceRef.current = eventSource;
 
@@ -436,40 +423,6 @@ export const usePresentationStreaming = (
                 } as PresentationData)
               );
             }
-            break;
-          }
-
-          case "slide_html": {
-            const slideIndex = Number(data.index);
-            const html = typeof data.html === "string" ? data.html : "";
-            if (!Number.isFinite(slideIndex) || !html) break;
-
-            const incomingSlide =
-              data.slide && typeof data.slide === "object"
-                ? data.slide
-                : {
-                    id: data.slide_id,
-                    index: slideIndex,
-                    layout: "smart-html",
-                    layout_group: "smart-html",
-                    content: { title: `Slide ${slideIndex + 1}` },
-                    html_content: html,
-                  };
-            const normalizedSlide = normalizeBackendAssetUrls(incomingSlide);
-            const prev = store.getState().presentationGeneration.presentationData;
-            const mergedSlides = mergeSingleSlidePreservingResolvedAssets(
-              prev?.slides,
-              normalizedSlide
-            );
-            dispatch(
-              setPresentationData({
-                ...(prev ?? {}),
-                slides: mergedSlides,
-              } as PresentationData)
-            );
-            previousSlidesLength.current = mergedSlides.length;
-            updateGeneratingStatus(mergedSlides.length);
-            setLoading(false);
             break;
           }
 
@@ -606,7 +559,7 @@ export const usePresentationStreaming = (
                 data.presentation &&
                 typeof data.presentation === "object" &&
                 !Array.isArray(data.presentation);
-              let completedPresentation: unknown = hasCompletePresentation
+              const completedPresentation: unknown = hasCompletePresentation
                 ? data.presentation
                 : null;
 
@@ -620,21 +573,6 @@ export const usePresentationStreaming = (
                     )
                   )
                 );
-              } else if (
-                isSmartMode &&
-                typeof data.presentation_id === "string" &&
-                data.presentation_id === presentationId
-              ) {
-                // Smart v2 completes with only the presentation id. The local
-                // proxy mirrors the finished cloud deck before forwarding this
-                // event, so load that persisted presentation for the editor.
-                const fetchedPresentation = await fetchUserSlides({
-                  clearHistory: false,
-                });
-                if (!fetchedPresentation) {
-                  throw new Error("Completed presentation could not be loaded");
-                }
-                completedPresentation = fetchedPresentation;
               } else {
                 throw new Error("Completion event did not contain a presentation");
               }
@@ -644,7 +582,6 @@ export const usePresentationStreaming = (
               }
 
               trackTemplateV2StreamCompleted(completedPresentation);
-              trackSmartModeGenerationCompleted();
               dispatch(setStreaming(false));
               setLoading(false);
               isClosedRef.current = true;
@@ -676,7 +613,6 @@ export const usePresentationStreaming = (
               )
             );
             trackTemplateV2StreamCompleted(data.presentation);
-            trackSmartModeGenerationCompleted();
             setLoading(false);
             dispatch(setStreaming(false));
             isClosedRef.current = true;
@@ -776,8 +712,6 @@ export const usePresentationStreaming = (
     setError,
     fetchUserSlides,
     preloadPresentationData,
-    isSmartMode,
-    options.generationMode,
     defaultStatusMessage,
     startStallWatcher,
     t,

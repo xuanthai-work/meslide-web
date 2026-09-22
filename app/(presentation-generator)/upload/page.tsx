@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "data-driven presentations",
     "document to presentation",
     "presentation automation",
-    "smart presentation tool",
+    "AI presentation tool",
     "business presentations",
   ],
   openGraph: {

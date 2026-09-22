@@ -15,7 +15,7 @@ test("heartbeat is not a useful event", () => {
   assert.equal(isUsefulStreamEvent("heartbeat"), false);
   assert.equal(isUsefulStreamEvent("status"), true);
   assert.equal(isUsefulStreamEvent("chunk"), true);
-  assert.equal(isUsefulStreamEvent("slide_html"), true);
+  assert.equal(isUsefulStreamEvent("slide_html"), false);
   assert.equal(isUsefulStreamEvent("complete"), true);
   assert.equal(isUsefulStreamEvent("error"), true);
 });

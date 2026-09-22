@@ -24,11 +24,10 @@ test("root / redirects to /dashboard", async () => {
   assert.match(source, /redirect\(["']\/dashboard["']\)/);
 });
 
-test("SettingPage no longer imports LogoutButton", async () => {
-  const source = await readNext(
-    "app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx"
+test("settings page is removed", async () => {
+  await assert.rejects(
+    readNext("app/(presentation-generator)/(dashboard)/settings/SettingPage.tsx"),
   );
-  assert.doesNotMatch(source, /LogoutButton/);
 });
 
 test("proxy does not auth-gate browser requests", async () => {
