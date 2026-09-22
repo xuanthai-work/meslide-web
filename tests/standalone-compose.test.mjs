@@ -29,8 +29,7 @@ test("web compose runs only web services on the shared gslide network", async ()
   assert.match(compose, /:3000"/);
   assert.doesNotMatch(compose, /depends_on:/);
   assert.match(compose, /gslide_app_data:\/app_data:ro/);
-  assert.match(compose, /GSLIDE_FEATURE_SMART_MODE=\$\{GSLIDE_FEATURE_SMART_MODE:-false\}/);
-  assert.match(compose, /GSLIDE_FEATURE_COMMUNITY=\$\{GSLIDE_FEATURE_COMMUNITY:-false\}/);
+  assert.doesNotMatch(compose, /GSLIDE_FEATURE_SMART_MODE|GSLIDE_FEATURE_COMMUNITY/);
   assert.match(
     compose,
     /GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE=\$\{GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE:-false\}/,
@@ -42,8 +41,7 @@ test("web env example only covers the BFF surface", async () => {
 
   assert.match(env, /^GSLIDE_WEB_HOST_PORT=3000$/m);
   assert.match(env, /^FAST_API_INTERNAL_URL=http:\/\/api:8000$/m);
-  assert.match(env, /^GSLIDE_FEATURE_SMART_MODE=false$/m);
-  assert.match(env, /^GSLIDE_FEATURE_COMMUNITY=false$/m);
+  assert.doesNotMatch(env, /^GSLIDE_FEATURE_SMART_MODE|^GSLIDE_FEATURE_COMMUNITY/m);
   assert.match(env, /^GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE=false$/m);
   assert.doesNotMatch(env, /^OPENAI_API_KEY=/m);
   assert.doesNotMatch(env, /^SEARXNG_BASE_URL=/m);

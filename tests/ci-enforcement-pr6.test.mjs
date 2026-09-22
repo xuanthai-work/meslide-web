@@ -30,8 +30,7 @@ test("web CI stays aligned with npm run check plus build and Cypress", async () 
   for (const command of WEB_CI_COMMANDS) {
     assert.match(workflow, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(workflow, /GSLIDE_FEATURE_SMART_MODE:\s*"true"/);
-  assert.match(workflow, /GSLIDE_FEATURE_COMMUNITY:\s*"true"/);
+  assert.doesNotMatch(workflow, /GSLIDE_FEATURE_SMART_MODE|GSLIDE_FEATURE_COMMUNITY/);
 });
 
 test("ESLint and Knip skip the in-repo Cypress cache GitLab CI uses", async () => {
@@ -51,8 +50,7 @@ test("GitLab CI runs the same web gates as GitHub Actions", async () => {
       new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
     );
   }
-  assert.match(pipeline, /GSLIDE_FEATURE_SMART_MODE:\s*"true"/);
-  assert.match(pipeline, /GSLIDE_FEATURE_COMMUNITY:\s*"true"/);
+  assert.doesNotMatch(pipeline, /GSLIDE_FEATURE_SMART_MODE|GSLIDE_FEATURE_COMMUNITY/);
   assert.doesNotMatch(pipeline, /POSTHOG_/);
 });
 

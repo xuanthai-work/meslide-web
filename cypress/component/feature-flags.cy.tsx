@@ -9,35 +9,21 @@ const FeatureFlagProbe = () => {
 
   return (
     <output data-testid="feature-flags">
-      {flags.smartModeEnabled ? "smart:on" : "smart:off"};
-      {flags.communityEnabled ? "community:on" : "community:off"}
+      {flags.documentAwareRewrite ? "documents:on" : "documents:off"}
     </output>
   );
 };
 
-describe("retained feature lanes", () => {
-  it("keeps both features disabled by default", () => {
+describe("feature flags", () => {
+  it("keeps document-aware rewrite disabled by default", () => {
     expect(resolveFeatureFlags({})).to.deep.equal({
-      smartModeEnabled: false,
-      communityEnabled: false,
       documentAwareRewrite: false,
     });
   });
 
-  it("does not expose Community without Smart mode", () => {
-    expect(
-      resolveFeatureFlags({ GSLIDE_FEATURE_COMMUNITY: "true" }),
-    ).to.deep.equal({
-      smartModeEnabled: false,
-      communityEnabled: false,
-      documentAwareRewrite: false,
-    });
-  });
-
-  it("runs with Smart and Community enabled", () => {
+  it("resolves document-aware rewrite", () => {
     const flags = resolveFeatureFlags({
-      GSLIDE_FEATURE_SMART_MODE: "true",
-      GSLIDE_FEATURE_COMMUNITY: "true",
+      GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE: "true",
     });
 
     cy.mount(
@@ -48,7 +34,7 @@ describe("retained feature lanes", () => {
 
     cy.get('[data-testid="feature-flags"]').should(
       "have.text",
-      "smart:on;community:on",
+      "documents:on",
     );
   });
 });
