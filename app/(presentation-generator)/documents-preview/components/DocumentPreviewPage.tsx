@@ -157,7 +157,6 @@ const DocumentsPreviewPage: React.FC = () => {
           verbosity: config?.verbosity,
           instructions: config?.instructions || null,
           web_search: !!config?.webSearch,
-          generation_mode: "standard",
         }
       );
 

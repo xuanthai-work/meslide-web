@@ -33,3 +33,30 @@ test("only document-aware rewrite remains in feature flags", () => {
     /smartModeEnabled|communityEnabled|GSLIDE_FEATURE_SMART_MODE|GSLIDE_FEATURE_COMMUNITY/,
   );
 });
+
+test("upload ignores retired query switches and creates Standard requests", () => {
+  const upload = read(
+    "app/(presentation-generator)/upload/components/UploadPage.tsx",
+  );
+  const api = read(
+    "app/(presentation-generator)/services/api/presentation-generation.ts",
+  );
+
+  assert.doesNotMatch(
+    upload,
+    /params\.get\(["']mode["']\)|communityId|generationMode|communityReference|type=smart/,
+  );
+  assert.doesNotMatch(
+    api,
+    /generation_mode|community_design_ids|switchPresentationMode/,
+  );
+  assert.match(api, /version\s*=\s*["']v2-standard["']/);
+});
+
+test("presentation state has no retired mode or Community fields", () => {
+  const state = read("store/slices/presentationGeneration.ts");
+  assert.doesNotMatch(
+    state,
+    /generation_mode|community_design_ids|setPresentationGenerationMode|updateSlideHtmlContent/,
+  );
+});
