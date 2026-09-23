@@ -102,6 +102,30 @@ test("presentation retry re-locks the editor via setStreaming(true)", async () =
   assert.match(retryFn, /setError\(false\)/);
 });
 
+test("presentation retry keeps already-rendered slides while the saved prefix is replayed", async () => {
+  const source = await readFile(
+    new URL(
+      "../app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const chunkBlock = source.slice(
+    source.indexOf('case "chunk"'),
+    source.indexOf('case "slide_assets"')
+  );
+  const partialReplayBlock = chunkBlock.slice(
+    chunkBlock.indexOf("normalizedPartialData.slides")
+  );
+
+  assert.match(partialReplayBlock, /normalizedPartialData\.slides\.reduce\(/);
+  assert.match(partialReplayBlock, /mergeSingleSlidePreservingResolvedAssets\(/);
+  assert.doesNotMatch(
+    partialReplayBlock,
+    /mergeSlidesPreservingResolvedAssets\(\s*prev\?\.slides,\s*normalizedPartialData\.slides/
+  );
+});
+
 test("stream hooks hide Keep waiting after socket death", async () => {
   const outline = await backgroundOutlineSource();
   const presentation = await readFile(

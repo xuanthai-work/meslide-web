@@ -517,9 +517,10 @@ export const usePresentationStreaming = (
               ) {
                 const prev =
                   store.getState().presentationGeneration.presentationData;
-                const mergedSlides = mergeSlidesPreservingResolvedAssets(
-                  prev?.slides,
-                  normalizedPartialData.slides
+                const mergedSlides = normalizedPartialData.slides.reduce(
+                  (slides: any[], slide: any) =>
+                    mergeSingleSlidePreservingResolvedAssets(slides, slide),
+                  prev?.slides ?? []
                 );
                 dispatch(
                   setPresentationData({
@@ -528,8 +529,7 @@ export const usePresentationStreaming = (
                     slides: mergedSlides,
                   } as PresentationData)
                 );
-                previousSlidesLength.current =
-                  normalizedPartialData.slides.length;
+                previousSlidesLength.current = mergedSlides.length;
                 updateGeneratingStatus(mergedSlides.length);
                 setLoading(false);
               }
