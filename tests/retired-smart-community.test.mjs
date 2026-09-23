@@ -56,8 +56,6 @@ test("upload ignores retired query switches and creates Standard requests", () =
 test("standard navigation and responses have no retired mode alias", () => {
   for (const path of [
     "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
-    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
-    "app/(presentation-generator)/outline/hooks/usePresentationGeneration.ts",
     "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
     "app/(presentation-generator)/services/api/presentation-generation.ts",
   ]) {

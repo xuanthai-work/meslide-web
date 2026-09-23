@@ -31,7 +31,6 @@ import { useT } from "@/i18n/provider";
 import { TemplateV2HtmlSlidePreview } from "../../../components/TemplateV2HtmlSlidePreview";
 import {
   editorQuickPrompts,
-  outlineQuickPrompts,
   presentationQuickPrompts,
   suggestions,
   templateV2QuickPrompts,
@@ -55,7 +54,6 @@ export type ChatPresentationLayoutProps = {
   isSending: boolean;
   isHistoryLoading: boolean;
   chatInputDisabled: boolean;
-  isOutlineVariant: boolean;
   isTemplateV2Variant: boolean;
   showEditorEmptyState: boolean;
   input: string;
@@ -98,7 +96,6 @@ export function ChatPresentationLayout({
   isSending,
   isHistoryLoading,
   chatInputDisabled,
-  isOutlineVariant,
   isTemplateV2Variant,
   showEditorEmptyState,
   input,
@@ -183,7 +180,7 @@ export function ChatPresentationLayout({
               </span>
             )}
           </div>
-          {!isOutlineVariant && messages.length > 0 && (
+          {messages.length > 0 && (
             <button
               type="button"
               onClick={() => void resetChat()}
@@ -215,27 +212,7 @@ export function ChatPresentationLayout({
           </h3>
         ) : messages.length === 0 ? (
           <>
-            {isOutlineVariant ? (
-              <div>
-                <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
-                  {t("chat.quickPromptsLabel")}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {outlineQuickPrompts.map((prompt) => (
-                    <button
-                      key={prompt}
-                      type="button"
-                      onClick={() => applyPrompt(prompt)}
-                      className="cursor-pointer rounded-lg border border-[var(--gslide-border)] bg-white px-2.5 py-1 text-left transition-colors hover:bg-[var(--gslide-accent-soft)]"
-                    >
-                      <span className="text-[11px] font-normal leading-[15px] tracking-[0.367px] text-[#364153]">
-                        {localizeQuickPrompt(prompt)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : isTemplateV2Variant ? (
+            {isTemplateV2Variant ? (
               <div>
                 <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
                   {t("chat.quickPromptsLabel")}
@@ -594,13 +571,11 @@ export function ChatPresentationLayout({
           onDropCapture={handleDrop}
           onKeyDown={handleKeyDown}
           placeholder={
-            isOutlineVariant
-              ? t("chat.placeholder.regenerateOutline")
-              : showEditorEmptyState
-                ? t("chat.placeholder.general")
-                : isTemplateV2Variant
-                  ? t("chat.placeholder.changeTitle")
-                  : t("chat.placeholder.improveDesign")
+            showEditorEmptyState
+              ? t("chat.placeholder.general")
+              : isTemplateV2Variant
+                ? t("chat.placeholder.changeTitle")
+                : t("chat.placeholder.improveDesign")
           }
           aria-invalid={Boolean(errorMessage)}
         />

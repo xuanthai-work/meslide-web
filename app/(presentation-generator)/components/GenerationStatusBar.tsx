@@ -44,11 +44,17 @@ const GenerationStatusBar: React.FC<Props> = ({
   }
 
   const handleStop = () => {
-    if (needsCancelConfirm(draftCount)) {
-      const message =
-        surface === "outline"
-          ? t("common.generation.stopOutlineConfirm", { count: draftCount })
-          : t("common.generation.stopSlidesConfirm", { draft: draftCount, total: totalCount ?? draftCount });
+    const outlineDraftVisible = surface === "outline" && draftCount > 0;
+    if (outlineDraftVisible) {
+      const message = t("common.generation.stopOutlineConfirm", {
+        count: draftCount,
+      });
+      if (!window.confirm(message)) return;
+    } else if (surface !== "outline" && needsCancelConfirm(draftCount)) {
+      const message = t("common.generation.stopSlidesConfirm", {
+        draft: draftCount,
+        total: totalCount ?? draftCount,
+      });
       if (!window.confirm(message)) return;
     }
     void onCancel();

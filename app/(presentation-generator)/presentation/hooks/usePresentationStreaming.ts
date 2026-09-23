@@ -112,6 +112,7 @@ export const usePresentationStreaming = (
   }) => void | Promise<unknown>,
   options: {
     preloadPresentationData?: boolean;
+    skipSlideFetch?: boolean;
   } = {}
 ) => {
   const t = useT();
@@ -121,6 +122,7 @@ export const usePresentationStreaming = (
   );
   const previousSlidesLength = useRef(0);
   const preloadPresentationData = Boolean(options.preloadPresentationData);
+  const skipSlideFetch = Boolean(options.skipSlideFetch);
   const defaultStatusMessage = t("presentation.status.creating");
 
   const [lifecycle, setLifecycle] =
@@ -190,7 +192,9 @@ export const usePresentationStreaming = (
   useEffect(() => {
     if (!stream) {
       setLifecycle("idle");
-      fetchUserSlides();
+      if (!skipSlideFetch) {
+        fetchUserSlides();
+      }
       return;
     }
 
@@ -711,6 +715,7 @@ export const usePresentationStreaming = (
     setLoading,
     setError,
     fetchUserSlides,
+    skipSlideFetch,
     preloadPresentationData,
     defaultStatusMessage,
     startStallWatcher,

@@ -34,8 +34,6 @@ import {
 } from "@/components/ui/popover";
 import {
   editorQuickPrompts,
-  outlineEditorQuickPrompts,
-  outlineQuickPromptGroups,
   quickPromptGroups,
 } from "./chat-prompts";
 import type {
@@ -58,7 +56,6 @@ export type ChatEditorLayoutProps = {
   isSending: boolean;
   isHistoryLoading: boolean;
   chatInputDisabled: boolean;
-  isOutlineVariant: boolean;
   isTemplateV2Variant: boolean;
   input: string;
   errorMessage: string | null;
@@ -110,7 +107,6 @@ export function ChatEditorLayout({
   isSending,
   isHistoryLoading,
   chatInputDisabled,
-  isOutlineVariant,
   isTemplateV2Variant,
   input,
   errorMessage,
@@ -396,13 +392,9 @@ export function ChatEditorLayout({
           ) : (
             <div className="flex h-full items-center justify-center px-6 pb-4">
               <h3 className="-translate-y-2 text-center text-[22px] font-normal leading-[1.12] tracking-[-0.66px] text-[#4A4A4A]">
-                {isOutlineVariant
-                  ? t("chat.improveOutline")
-                  : t("chat.whatCanIDo")}
+                {t("chat.whatCanIDo")}
                 <br />
-                {isOutlineVariant
-                  ? "your outline today?"
-                  : "for your deck today?"}
+                for your deck today?
               </h3>
             </div>
           )}
@@ -568,11 +560,7 @@ export function ChatEditorLayout({
               onDragOverCapture={handleDragOver}
               onDropCapture={handleDrop}
               onKeyDown={handleKeyDown}
-              placeholder={
-                isOutlineVariant
-                  ? t("chat.placeholder.outline")
-                  : t("chat.placeholder.general")
-              }
+              placeholder={t("chat.placeholder.general")}
               aria-invalid={Boolean(errorMessage)}
             />
 
@@ -664,11 +652,7 @@ export function ChatEditorLayout({
                     <QuickPromptsPanel
                       onPromptSelect={applyPrompt}
                       localizeText={localizeQuickPrompt}
-                      groups={
-                        isOutlineVariant
-                          ? outlineQuickPromptGroups
-                          : quickPromptGroups
-                      }
+                      groups={quickPromptGroups}
                     />
                   </PopoverContent>
                 </Popover>
@@ -707,10 +691,7 @@ export function ChatEditorLayout({
           </form>
 
           <div className="flex h-[28px] w-full gap-2 overflow-hidden">
-            {(isOutlineVariant
-              ? outlineEditorQuickPrompts
-              : editorQuickPrompts
-            ).map((prompt) => (
+            {editorQuickPrompts.map((prompt) => (
               <button
                 key={prompt}
                 type="button"

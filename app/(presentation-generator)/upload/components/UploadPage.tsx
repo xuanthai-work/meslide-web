@@ -415,7 +415,7 @@ const UploadPage = () => {
       id: presentationId,
       auto: "1",
     });
-    return `/outline?${params.toString()}`;
+    return `/presentation?${params.toString()}`;
   };
 
   /**

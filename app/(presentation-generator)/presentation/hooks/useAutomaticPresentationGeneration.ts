@@ -10,8 +10,11 @@ import {
   setOutlines,
 } from "@/store/slices/presentationGeneration";
 import type { RootState } from "@/store/store";
-import { limitOutlines } from "@/utils/presentationLimits";
-import { useOutlineStreaming } from "../../outline/hooks/useOutlineStreaming";
+import {
+  limitOutlines,
+  validateAndLimitOutlines,
+} from "@/utils/presentationLimits";
+import { useBackgroundOutlineStream } from "./useBackgroundOutlineStream";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
 type BootstrapPhase =
@@ -50,23 +53,31 @@ export function useAutomaticPresentationGeneration(
   const prepareInFlightRef = useRef(false);
   const preparedRef = useRef(false);
   const cancelledByUserRef = useRef(false);
+  const prepareGenerationRef = useRef(0);
 
-  const outlineStream = useOutlineStreaming(
+  const outlineStream = useBackgroundOutlineStream(
     presentationId,
     enabled && outlineStreamEnabled,
   );
 
   useEffect(() => {
+    prepareGenerationRef.current += 1;
+    const hydrationGeneration = prepareGenerationRef.current;
+
     if (!enabled) {
       setPhase("idle");
       setOutlineStreamEnabled(false);
-      return;
+      return () => {
+        prepareGenerationRef.current += 1;
+      };
     }
 
     if (!templateId) {
       setPhase("idle");
-      router.replace(`/outline?id=${presentationId}&auto=1`);
-      return;
+      setOutlineStreamEnabled(false);
+      return () => {
+        prepareGenerationRef.current += 1;
+      };
     }
 
     let cancelled = false;
@@ -81,8 +92,16 @@ export function useAutomaticPresentationGeneration(
 
     void PresentationGenerationApi.getOutlines(presentationId)
       .then((response) => {
-        if (cancelled) return;
-        const persistedOutlines = limitOutlines(response?.slides ?? []);
+        if (
+          cancelled ||
+          cancelledByUserRef.current ||
+          hydrationGeneration !== prepareGenerationRef.current
+        ) {
+          return;
+        }
+        const persistedOutlines = validateAndLimitOutlines(
+          response?.slides ?? [],
+        );
         if (persistedOutlines.length > 0) {
           dispatch(setOutlines(persistedOutlines));
           setHasPersistedOutline(true);
@@ -93,7 +112,13 @@ export function useAutomaticPresentationGeneration(
         setOutlineStreamEnabled(true);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (
+          cancelled ||
+          cancelledByUserRef.current ||
+          hydrationGeneration !== prepareGenerationRef.current
+        ) {
+          return;
+        }
         const message =
           error instanceof Error
             ? error.message
@@ -104,8 +129,9 @@ export function useAutomaticPresentationGeneration(
 
     return () => {
       cancelled = true;
+      prepareGenerationRef.current += 1;
     };
-  }, [dispatch, enabled, hydrationAttempt, presentationId, router, t, templateId]);
+  }, [dispatch, enabled, hydrationAttempt, presentationId, t, templateId]);
 
   const outlineReady =
     hasPersistedOutline || outlineStream.lifecycle === "complete";
@@ -118,11 +144,13 @@ export function useAutomaticPresentationGeneration(
       !outlineReady ||
       outlines.length === 0 ||
       prepareInFlightRef.current ||
-      preparedRef.current
+      preparedRef.current ||
+      cancelledByUserRef.current
     ) {
       return;
     }
 
+    const prepareGeneration = prepareGenerationRef.current;
     prepareInFlightRef.current = true;
     setPhase("preparing");
     setFailureMessage("");
@@ -133,6 +161,7 @@ export function useAutomaticPresentationGeneration(
       layout: templateId,
     })
       .then(() => {
+        if (prepareGeneration !== prepareGenerationRef.current) return;
         if (cancelledByUserRef.current) return;
         preparedRef.current = true;
         setPhase("complete");
@@ -142,6 +171,7 @@ export function useAutomaticPresentationGeneration(
         );
       })
       .catch((error: unknown) => {
+        if (prepareGeneration !== prepareGenerationRef.current) return;
         const message =
           error instanceof Error
             ? error.message
@@ -150,6 +180,7 @@ export function useAutomaticPresentationGeneration(
         setPhase("failed");
       })
       .finally(() => {
+        if (prepareGeneration !== prepareGenerationRef.current) return;
         prepareInFlightRef.current = false;
       });
   }, [
@@ -165,23 +196,45 @@ export function useAutomaticPresentationGeneration(
   ]);
 
   const retry = useCallback(() => {
-    if (phase === "failed") {
-      setFailureMessage("");
-      if (outlines.length > 0) {
-        setPhase("outlining");
-      } else {
-        setHydrationAttempt((attempt) => attempt + 1);
-      }
+    const failed =
+      phase === "failed" || outlineStream.lifecycle === "failed";
+
+    if (!failed) {
+      outlineStream.retry();
       return;
     }
-    outlineStream.retry();
-  }, [outlineStream, outlines.length, phase]);
+
+    setFailureMessage("");
+
+    const completedOutlineInRedux =
+      outlines.length > 0 &&
+      (hasPersistedOutline ||
+        outlineStream.finalOutlineCount > 0 ||
+        outlineStream.lifecycle === "complete");
+
+    if (completedOutlineInRedux) {
+      setHasPersistedOutline(true);
+      setOutlineStreamEnabled(false);
+      setPhase("outlining");
+      return;
+    }
+
+    setHasPersistedOutline(false);
+    setOutlineStreamEnabled(false);
+    setPhase("checking");
+    setHydrationAttempt((attempt) => attempt + 1);
+  }, [hasPersistedOutline, outlineStream, outlines.length, phase]);
 
   const cancel = useCallback(async () => {
+    prepareGenerationRef.current += 1;
     cancelledByUserRef.current = true;
     await outlineStream.cancel();
-    router.replace(`/outline?id=${presentationId}&auto=1`);
-  }, [outlineStream, presentationId, router]);
+    dispatch(clearOutlines());
+    setHasPersistedOutline(false);
+    setOutlineStreamEnabled(false);
+    setPhase("idle");
+    router.replace(`/presentation?id=${presentationId}&auto=1`);
+  }, [dispatch, outlineStream, presentationId, router]);
 
   let lifecycle: GenerationLifecycleState = outlineStream.lifecycle;
   let statusMessage = outlineStream.statusMessage;
@@ -204,7 +257,7 @@ export function useAutomaticPresentationGeneration(
     active: enabled && phase !== "idle" && phase !== "complete",
     lifecycle,
     statusMessage,
-    draftCount: outlines.length,
+    draftCount: 0,
     canKeepWaiting:
       phase === "outlining" && outlineStream.canKeepWaiting,
     cancel,

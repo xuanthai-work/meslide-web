@@ -9,7 +9,6 @@ import { useT } from "@/i18n/provider";
 
 const PATHS_WITH_HEADER_BACK = [
   "/upload",
-  "/outline",
   "/documents-preview",
   "/template-preview",
 ] as const;
@@ -23,8 +22,7 @@ const Header = () => {
   const t = useT();
   const showHeaderBack = PATHS_WITH_HEADER_BACK.some((p) => pathMatches(pathname, p));
 
-  const backToUpload =
-    pathMatches(pathname, "/outline") || pathMatches(pathname, "/documents-preview");
+  const backToUpload = pathMatches(pathname, "/documents-preview");
   const backToTemplates = pathMatches(pathname, "/template-preview");
 
   const backHref = backToUpload ? "/upload" : backToTemplates ? "/templates" : "/dashboard";

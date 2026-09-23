@@ -36,6 +36,26 @@ export function limitOutlines<T extends { content?: unknown }>(
   }));
 }
 
+export function validateAndLimitOutlines(
+  outlines: unknown
+): { content: string }[] {
+  if (
+    !Array.isArray(outlines) ||
+    outlines.length === 0 ||
+    outlines.some(
+      (outline) =>
+        !outline ||
+        typeof outline !== "object" ||
+        typeof outline.content !== "string" ||
+        outline.content.trim().length === 0
+    )
+  ) {
+    return [];
+  }
+
+  return limitOutlines(outlines as { content: string }[]);
+}
+
 export function clampSlideCountValue(value: string): string {
   const digitsOnly = value.replace(/\D+/g, "");
   if (!digitsOnly) return "";

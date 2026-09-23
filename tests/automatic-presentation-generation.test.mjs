@@ -4,61 +4,59 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("new presentations keep template selection but bypass outline verification", async () => {
-  const uploadPage = await read(
-    "app/(presentation-generator)/upload/components/UploadPage.tsx",
-  );
-  const documentsPreview = await read(
-    "app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx",
-  );
+test("new presentations enter the template stage on /presentation", async () => {
+  const upload = await read("app/(presentation-generator)/upload/components/UploadPage.tsx");
+  const documents = await read("app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx");
 
-  assert.match(
-    uploadPage,
-    /return `\/outline\?\$\{params\.toString\(\)\}`/,
-  );
-  assert.match(uploadPage, /auto:\s*"1"/);
-  assert.match(documentsPreview, /router\.replace\(`\/outline\?/);
-  assert.doesNotMatch(documentsPreview, /generation_mode|community_design_ids/);
+  assert.match(upload, /return `\/presentation\?\$\{params\.toString\(\)\}`/);
+  assert.match(upload, /auto:\s*"1"/);
+  assert.match(documents, /router\.replace\(`\/presentation\?/);
+  assert.doesNotMatch(`${upload}\n${documents}`, /\/outline\?/);
 });
 
-test("template selection starts the hidden outline-to-slide bootstrap", async () => {
-  const outlinePage = await read(
-    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
+test("presentation owns template selection before automatic generation", async () => {
+  const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
+  const picker = await read("app/(presentation-generator)/presentation/components/PresentationTemplatePicker.tsx");
+  const bootstrap = await read("app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts");
+
+  assert.match(page, /autoGenerate\s*&&\s*!automaticTemplateId/);
+  assert.match(page, /<PresentationTemplatePicker/);
+  assert.match(picker, /template:\s*template\.id/);
+  assert.match(picker, /router\.replace\(`\/presentation\?/);
+  assert.doesNotMatch(
+    `${picker}\n${bootstrap}`,
+    /router\.(?:push|replace)\([^)]*["'`]\/outline/,
   );
-  const presentationPage = await read(
-    "app/(presentation-generator)/presentation/components/PresentationPage.tsx",
-  );
-  const bootstrapHook = await read(
+});
+
+test("automatic generation streams outlines in the background", async () => {
+  const bootstrap = await read(
     "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
   );
-
-  assert.match(outlinePage, /searchParams\.get\("auto"\) === "1"/);
-  assert.match(outlinePage, /template:\s*template\.id/);
-  assert.match(outlinePage, /router\.replace\(`\/presentation\?/);
-  assert.match(presentationPage, /searchParams\.get\("auto"\) === "1"/);
-  assert.match(presentationPage, /searchParams\.get\("template"\)/);
-  assert.match(presentationPage, /useAutomaticPresentationGeneration/);
-  assert.match(bootstrapHook, /PresentationGenerationApi\.getOutlines/);
-  assert.match(bootstrapHook, /useOutlineStreaming/);
-  assert.match(bootstrapHook, /PresentationGenerationApi\.presentationPrepare/);
-  assert.match(bootstrapHook, /layout:\s*templateId/);
-  assert.doesNotMatch(bootstrapHook, /DEFAULT_TEMPLATE_ID/);
-  assert.match(
-    bootstrapHook,
-    /\/presentation\?id=\$\{presentationId\}&stream=true/,
+  const hooks = await read(
+    "app/(presentation-generator)/presentation/hooks/index.ts",
   );
-  assert.doesNotMatch(bootstrapHook, /type=standard/);
+
+  assert.match(bootstrap, /useBackgroundOutlineStream/);
+  assert.match(bootstrap, /draftCount:\s*0/);
+  assert.doesNotMatch(bootstrap, /\/outline\/hooks\//);
+  assert.match(hooks, /useBackgroundOutlineStream/);
 });
 
-test("automatic flow uses the outline page only as a template picker", async () => {
-  const outlinePage = await read(
-    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
-  );
-  const templateSelection = await read(
-    "app/(presentation-generator)/outline/components/TemplateSelection.tsx",
-  );
+test("automatic generation skips the no-stream slide fetch", async () => {
+  const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
+  const streaming = await read("app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts");
 
-  assert.match(outlinePage, /autoGenerate/);
-  assert.doesNotMatch(outlinePage, /autoSubmitPresentation/);
-  assert.doesNotMatch(templateSelection, /autoSelect/);
+  assert.match(page, /skipSlideFetch:\s*autoGenerate/);
+  assert.match(streaming, /if \(!stream\)/);
+  assert.match(streaming, /if \(!skipSlideFetch\) \{\s*fetchUserSlides\(\);\s*\}/);
+});
+
+test("automatic generation keeps recovery controls clear of the page overlay", async () => {
+  const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
+
+  assert.match(
+    page,
+    /show=\{loadingState\.isLoading && !isStreaming && !autoGenerate\}/,
+  );
 });

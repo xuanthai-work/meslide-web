@@ -165,7 +165,7 @@ const DocumentsPreviewPage: React.FC = () => {
         id: createResponse.id,
         auto: "1",
       });
-      router.replace(`/outline?${params.toString()}`);
+      router.replace(`/presentation?${params.toString()}`);
     } catch (error: any) {
       console.error("Error in radar presentation creation:", error);
       notify.error(t("documentsPreview.toast.creationFailed.title"), error.message || t("documentsPreview.toast.creationFailed.fallbackDescription"));

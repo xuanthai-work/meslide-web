@@ -23,10 +23,6 @@ import type {
   ChatStreamTrace,
 } from "../../services/api/chat";
 import { useT } from "@/i18n/provider";
-import {
-  MAX_NUMBER_OF_SLIDES,
-  MAX_OUTLINE_CONTENT_WORDS,
-} from "@/utils/presentationLimits";
 import type { AppDispatch } from "@/store/store";
 import {
   setPresentationData,
@@ -87,7 +83,6 @@ const Chat = ({
   conversationStorageScope = "presentation",
   resourceLabel = "presentation",
   variant = "presentation",
-  useEditorLayout = false,
   inputDisabled = false,
   currentSlide,
   selectedTemplateV2Target,
@@ -374,11 +369,6 @@ const Chat = ({
   ) => {
     const contextLines: string[] = [];
 
-    if (variant === "outline") {
-      contextLines.push(
-        `UI context: the user is editing the outline draft. Use addOutline, updateOutline, and deleteOutline for outline edits. Keep at most ${MAX_NUMBER_OF_SLIDES} outline slides, and keep each outline content within ${MAX_OUTLINE_CONTENT_WORDS} words.`
-      );
-    }
     if (variant === "template-v2") {
       contextLines.push(
         "UI context: the user is editing a rendered TemplateV2 presentation with the v2 assistant. Use getTemplateSummary, getAvailableLayouts, getAvailableBlocks, searchSlide, getSlideAtIndex, getContentSchemaFromLayoutId, addNewSlide, addNewSlideLayout, saveSlide, updateSlide, deleteSlide, addElement, updateElement, deleteElement, addComponent, createComponent, updateComponent, deleteComponent, getPresentationTheme, setPresentationTheme, readSourceDocuments, and generateAssets. For visible edits inside an existing slide, inspect with getSlideAtIndex and use the returned componentId/elementPath exactly. Use updateElement for element toolbar-style properties and updateComponent for component move, resize, duplicate, layer order, group, and ungroup actions. When adding or creating rendered elements/components, prefer reusable template blocks over primitives: for custom new slides, search getAvailableBlocks for a title/header text block first, then requested chart/table/content blocks, adapt their component JSON, and include the final requested content instead of placeholder blocks. Keep new rendered elements/components strictly inside the 1280x720 visible slide window."
@@ -1236,7 +1226,7 @@ const Chat = ({
 
   const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const { cleanText, links } = pullLinksFromText(event.target.value);
-    if ((variant !== "outline" || useEditorLayout) && cleanText === "/") {
+    if (cleanText === "/") {
       setInput("");
       setIsQuickPromptsOpen(true);
       return;
@@ -1376,11 +1366,8 @@ const Chat = ({
     void processTemplateV2Files(files);
   };
 
-  const isOutlineVariant = variant === "outline";
   const isTemplateV2Variant = variant === "template-v2";
-  const usesEditorLayout = !isOutlineVariant || useEditorLayout;
-  const showEditorEmptyState =
-    usesEditorLayout && !isHistoryLoading && messages.length === 0;
+  const showEditorEmptyState = !isHistoryLoading && messages.length === 0;
   const chatSlideReference =
     typeof currentSlide === "number" &&
       hiddenOverlaySlideReference !== currentSlide
@@ -1399,14 +1386,13 @@ const Chat = ({
     : "";
   const clearChatTargetReference = onClearChatTargetReference;
 
-  if (usesEditorLayout) {
+  if (variant === "presentation" || isTemplateV2Variant) {
     return (
       <ChatEditorLayout
         messages={messages}
         isSending={isSending}
         isHistoryLoading={isHistoryLoading}
         chatInputDisabled={chatInputDisabled}
-        isOutlineVariant={isOutlineVariant}
         isTemplateV2Variant={isTemplateV2Variant}
         input={input}
         errorMessage={errorMessage}
@@ -1457,7 +1443,6 @@ const Chat = ({
       isSending={isSending}
       isHistoryLoading={isHistoryLoading}
       chatInputDisabled={chatInputDisabled}
-      isOutlineVariant={isOutlineVariant}
       isTemplateV2Variant={isTemplateV2Variant}
       showEditorEmptyState={showEditorEmptyState}
       input={input}

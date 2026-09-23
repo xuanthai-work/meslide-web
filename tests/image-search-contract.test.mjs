@@ -42,9 +42,6 @@ test("generation payloads still send the existing web_search boolean", async () 
   const uploadPage = await read(
     "app/(presentation-generator)/upload/components/UploadPage.tsx",
   );
-  const outlinePage = await read(
-    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
-  );
   const documentsPreview = await read(
     "app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx",
   );
@@ -56,7 +53,6 @@ test("generation payloads still send the existing web_search boolean", async () 
     (uploadPage.match(/web_search:\s*!!generationConfig\.webSearch/g) ?? []).length,
     2,
   );
-  assert.match(outlinePage, /web_search:\s*!!draftConfig\.webSearch/);
   assert.match(
     documentsPreview,
     /web_search:\s*!!config\?\.webSearch/,

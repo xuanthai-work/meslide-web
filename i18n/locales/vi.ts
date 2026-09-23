@@ -194,20 +194,6 @@ const vi = {
   },
 
   outline: {
-    metadata: {
-      title: "Dàn ý bài thuyết trình",
-      description:
-        "Tùy chỉnh và sắp xếp dàn ý bài thuyết trình. Kéo thả slide, thêm biểu đồ và tạo bài thuyết trình dễ dàng.",
-    },
-    header: {
-      title: {
-        outlineGeneration: "Tạo dàn ý",
-        selectTemplate: "Chọn mẫu",
-      },
-      aria: {
-        goToDashboard: "Về trang chủ",
-      },
-    },
     status: {
       preparing: "Đang chuẩn bị dàn ý bài thuyết trình",
       analyzingTopic: "Đang phân tích chủ đề để nghiên cứu trên web",
@@ -222,107 +208,10 @@ const vi = {
     loading: {
       generatingPresentationData: "Đang tạo dữ liệu bài thuyết trình…",
     },
-    empty: {
-      title: "Không tìm thấy bài thuyết trình",
-      description: {
-        notFound:
-          "Có vẻ không tìm thấy bài thuyết trình bạn đang tìm.",
-        createPrompt: "Hãy tạo một bài thuyết trình mới!",
-      },
-      button: {
-        create: "Tạo bài thuyết trình mới",
-      },
-      outlines: {
-        title: "Chưa có dàn ý nào",
-        button: {
-          addFirst: "+ Thêm slide đầu tiên",
-        },
-      },
-    },
-    promptBar: {
-      label: "Lời nhắc",
-      placeholder: "Mô tả bài thuyết trình bạn muốn tạo",
-      aria: {
-        regenerate: "Tạo lại dàn ý",
-      },
-      title: {
-        regenerate: "Tạo lại dàn ý",
-      },
-    },
-    item: {
-      newContent: "Tiêu đề dàn ý",
-      aria: {
-        moveSlide: (p) => `Di chuyển slide ${p.index}`,
-        editMarkdown: (p) => `Chỉnh sửa markdown slide ${p.index}`,
-      },
-      slideBadge: (p) => `Slide: ${p.index}`,
-      placeholder: {
-        markdown: "Nhập nội dung markdown tại đây…",
-      },
-    },
-    addSlide: {
-      title: {
-        maxReached: (p) => `Tối đa ${p.max} slide`,
-      },
-      label: {
-        maxReached: (p) => `Đã đạt tối đa ${p.max} slide`,
-        add: "+ Thêm slide mới",
-      },
-    },
-    generateButton: {
-      loading: "Đang tải…",
-      selectTemplate: "Chọn một mẫu",
-      continue: "Tiếp tục",
-    },
-    template: {
-      error: {
-        loadFailed: (p) => `Không thể tải mẫu: ${p.error}`,
-      },
-      suggestion: {
-        selected: "Đã chọn mẫu gợi ý.",
-        continueHint: "Nhấp vào mẫu được tô đậm để tiếp tục.",
-      },
-      section: {
-        templates: "Mẫu",
-        custom: "Tùy chỉnh",
-        builtin: "Có sẵn",
-      },
-      empty: {
-        noBuiltin: "Không có mẫu có sẵn.",
-      },
-    },
     toast: {
-      selectTemplateFirst: "Vui lòng chọn một mẫu trước",
-      selectLanguage: "Vui lòng chọn ngôn ngữ",
-      selectLanguageBeforeRegenFromDocs:
-        "Vui lòng chọn ngôn ngữ trước khi tạo lại từ tài liệu",
-      noPromptOrDocument: "Chưa có lời nhắc hoặc tài liệu",
-      outlineError: {
-        title: "Lỗi dàn ý",
-        fallbackDescription: "Tạo lại dàn ý thất bại.",
-      },
-      slideLimitReached: {
-        title: "Đã đạt giới hạn slide",
-        description: (p) => `Bạn chỉ được dùng tối đa ${p.max} slide dàn ý.`,
-        generateDescription: (p) =>
-          `Chỉ dùng ${p.max} slide dàn ý trở xuống trước khi tạo.`,
-      },
-      outlinesNotReady: {
-        title: "Dàn ý chưa sẵn sàng",
-        description:
-          "Vui lòng đợi dàn ý tạo xong trước khi tiếp tục.",
-      },
-      templateNotSelected: {
-        title: "Chưa chọn mẫu",
-        description: "Hãy chọn một mẫu trước khi tạo bài thuyết trình.",
-      },
       generationError: {
         title: "Lỗi tạo",
         fallbackDescription: "Có lỗi khi tạo bài thuyết trình.",
-      },
-      streamParseFailed: {
-        title: "Phân tích luồng thất bại",
-        description: "Không thể phân tích phản hồi luồng dàn ý.",
       },
       parseFailed: {
         title: "Phân tích thất bại",
@@ -336,10 +225,6 @@ const vi = {
       },
       connectionFailed: {
         title: "Kết nối thất bại",
-      },
-      draftNotSaved: {
-        title: "Bản nháp chưa lưu",
-        description: "Tải lại trang có thể làm mất dàn ý đã dừng.",
       },
     },
   },
@@ -658,12 +543,9 @@ const vi = {
     understanding: "Đang tìm hiểu",
     thinking: "Đang suy nghĩ",
     working: "Đang xử lý…",
-    improveOutline: "Tôi có thể cải thiện gì",
     whatCanIDo: "Tôi có thể giúp gì",
     placeholder: {
-      outline: "Hỏi về dàn ý của bạn.\nGõ / để xem lời nhắc nhanh.",
       general: "Hỏi bất kỳ điều gì.\nGõ / để xem lời nhắc nhanh.",
-      regenerateOutline: "Tạo lại dàn ý này",
       changeTitle: "Đổi tiêu đề slide 2",
       improveDesign: "Cải thiện thiết kế slide",
     },
@@ -1259,6 +1141,24 @@ const vi = {
       preparingLayouts: "Đang chuẩn bị bố cục",
       layoutsProgress: (p) => `${p.done} / ${p.total} bố cục`,
       processingAria: (p) => `${p.name} đang được tạo`,
+    },
+    selection: {
+      title: "Chọn mẫu",
+      error: {
+        loadFailed: (p) => `Không thể tải mẫu: ${p.error}`,
+      },
+      suggestion: {
+        selected: "Đã chọn mẫu gợi ý.",
+        continueHint: "Nhấp vào mẫu được tô đậm để tiếp tục.",
+      },
+      section: {
+        templates: "Mẫu",
+        custom: "Tùy chỉnh",
+        builtin: "Có sẵn",
+      },
+      empty: {
+        noBuiltin: "Không có mẫu có sẵn.",
+      },
     },
   },
 

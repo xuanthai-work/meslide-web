@@ -49,23 +49,6 @@ test("upload page uses studio title keys without the outer drop card", async () 
   assert.doesNotMatch(routeShell, /upload\.hero\.(title|subtitle)/);
 });
 
-test("outline header is white hairline chrome without Syne", async () => {
-  const header = await read(
-    "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
-  );
-  assert.match(header, /font-unbounded/);
-  assert.doesNotMatch(header, /font-syne/);
-  assert.match(header, /--gslide-border/);
-});
-
-test("outline generate uses GSlideButton pill", async () => {
-  const source = await read(
-    "app/(presentation-generator)/outline/components/GenerateButton.tsx",
-  );
-  assert.match(source, /GSlideButton/);
-  assert.doesNotMatch(source, /from "@\/components\/ui\/button"/);
-});
-
 test("dashboard action cards use 12px radius and token hairline", async () => {
   const source = await read(
     "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
