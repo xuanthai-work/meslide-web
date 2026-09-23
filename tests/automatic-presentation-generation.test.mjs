@@ -29,6 +29,20 @@ test("presentation owns template selection before automatic generation", async (
   );
 });
 
+test("automatic generation streams outlines in the background", async () => {
+  const bootstrap = await read(
+    "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
+  );
+  const hooks = await read(
+    "app/(presentation-generator)/presentation/hooks/index.ts",
+  );
+
+  assert.match(bootstrap, /useBackgroundOutlineStream/);
+  assert.match(bootstrap, /draftCount:\s*0/);
+  assert.doesNotMatch(bootstrap, /\/outline\/hooks\//);
+  assert.match(hooks, /useBackgroundOutlineStream/);
+});
+
 test("automatic generation skips the no-stream slide fetch", async () => {
   const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
   const streaming = await read("app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts");

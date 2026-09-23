@@ -11,7 +11,7 @@ import {
 } from "@/store/slices/presentationGeneration";
 import type { RootState } from "@/store/store";
 import { limitOutlines } from "@/utils/presentationLimits";
-import { useOutlineStreaming } from "../../outline/hooks/useOutlineStreaming";
+import { useBackgroundOutlineStream } from "./useBackgroundOutlineStream";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
 type BootstrapPhase =
@@ -51,7 +51,7 @@ export function useAutomaticPresentationGeneration(
   const preparedRef = useRef(false);
   const cancelledByUserRef = useRef(false);
 
-  const outlineStream = useOutlineStreaming(
+  const outlineStream = useBackgroundOutlineStream(
     presentationId,
     enabled && outlineStreamEnabled,
   );
@@ -204,7 +204,7 @@ export function useAutomaticPresentationGeneration(
     active: enabled && phase !== "idle" && phase !== "complete",
     lifecycle,
     statusMessage,
-    draftCount: outlines.length,
+    draftCount: 0,
     canKeepWaiting:
       phase === "outlining" && outlineStream.canKeepWaiting,
     cancel,

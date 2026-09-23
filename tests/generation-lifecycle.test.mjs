@@ -11,6 +11,14 @@ import {
   shouldShowKeepWaiting,
 } from "../lib/generation-lifecycle.ts";
 
+const backgroundOutlineSource = () => readFile(
+  new URL(
+    "../app/(presentation-generator)/presentation/hooks/useBackgroundOutlineStream.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
 test("heartbeat is not a useful event", () => {
   assert.equal(isUsefulStreamEvent("heartbeat"), false);
   assert.equal(isUsefulStreamEvent("status"), true);
@@ -49,13 +57,7 @@ test("Keep waiting only for silence stalls, not dead sockets", () => {
 });
 
 test("outline stream hook imports lifecycle helpers", async () => {
-  const source = await readFile(
-    new URL(
-      "../app/(presentation-generator)/outline/hooks/useOutlineStreaming.ts",
-      import.meta.url
-    ),
-    "utf8"
-  );
+  const source = await backgroundOutlineSource();
   assert.match(source, /from "@\/lib\/generation-lifecycle"/);
   assert.match(source, /shouldSilentRetry/);
   assert.match(source, /isUsefulStreamEvent/);
@@ -112,13 +114,7 @@ test("presentation retry re-locks the editor via setStreaming(true)", async () =
 });
 
 test("stream hooks hide Keep waiting after socket death", async () => {
-  const outline = await readFile(
-    new URL(
-      "../app/(presentation-generator)/outline/hooks/useOutlineStreaming.ts",
-      import.meta.url
-    ),
-    "utf8"
-  );
+  const outline = await backgroundOutlineSource();
   const presentation = await readFile(
     new URL(
       "../app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
@@ -131,4 +127,34 @@ test("stream hooks hide Keep waiting after socket death", async () => {
     assert.match(source, /stallCauseRef\.current = "socket"/);
     assert.match(source, /if \(!eventSourceRef\.current\) \{\s*return;/);
   }
+});
+
+test("background outline chunks report progress without exposing partial outlines", async () => {
+  const source = await backgroundOutlineSource();
+  const chunkBlock = source.slice(
+    source.indexOf('case "chunk"'),
+    source.indexOf('case "heartbeat"'),
+  );
+  assert.match(chunkBlock, /lastUsefulEventAtRef\.current = Date\.now\(\)/);
+  assert.match(chunkBlock, /setLifecycle\("generating"\)/);
+  assert.doesNotMatch(chunkBlock, /jsonrepair|JSON\.parse|setOutlines/);
+});
+
+test("background outline completion is the only event that stores outlines", async () => {
+  const source = await backgroundOutlineSource();
+  const completeBlock = source.slice(
+    source.indexOf('case "complete"'),
+    source.indexOf('case "closing"'),
+  );
+  assert.match(completeBlock, /data\.presentation\.outlines\.slides/);
+  assert.match(completeBlock, /limitOutlines/);
+  assert.match(completeBlock, /dispatch\(setOutlines/);
+  assert.match(completeBlock, /outlinesData\.length === 0/);
+});
+
+test("background outline cancellation discards partial state", async () => {
+  const source = await backgroundOutlineSource();
+  const cancelBlock = source.slice(source.indexOf("const cancel = useCallback"));
+  assert.match(cancelBlock, /dispatch\(clearOutlines\(\)\)/);
+  assert.doesNotMatch(cancelBlock, /updateOutlines/);
 });
