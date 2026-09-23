@@ -809,7 +809,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   return (
     <div className="h-dvh overflow-hidden font-syne">
       <OverlayLoader
-        show={loadingState.isLoading && !isStreaming}
+        show={loadingState.isLoading && !isStreaming && !autoGenerate}
         text={loadingState.message}
         showProgress={loadingState.showProgress}
         duration={loadingState.duration}

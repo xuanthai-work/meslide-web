@@ -51,3 +51,12 @@ test("automatic generation skips the no-stream slide fetch", async () => {
   assert.match(streaming, /if \(!stream\)/);
   assert.match(streaming, /if \(!skipSlideFetch\) \{\s*fetchUserSlides\(\);\s*\}/);
 });
+
+test("automatic generation keeps recovery controls clear of the page overlay", async () => {
+  const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
+
+  assert.match(
+    page,
+    /show=\{loadingState\.isLoading && !isStreaming && !autoGenerate\}/,
+  );
+});
