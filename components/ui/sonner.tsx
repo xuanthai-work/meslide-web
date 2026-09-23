@@ -94,7 +94,7 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           border-radius: 10px !important;
 
           border: 1px solid var(--Base-Gray-700, #e1e1e5) !important;
-          background: rgba(255, 255, 255, 0.6) !important;
+          background: rgba(255, 255, 255, 0.94) !important;
           box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.06) !important;
           padding: clamp(9px, 0.5rem + 0.35vw, 12px) clamp(11px, 0.65rem + 0.5vw, 14px) !important;
           gap: clamp(8px, 0.5rem + 0.35vw, 11px) !important;
@@ -223,6 +223,8 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
 
         [data-sonner-toast][data-styled="true"].generation-status-toast {
           cursor: default !important;
+          background: rgba(255, 255, 255, 0.94) !important;
+          box-shadow: 0 8px 24px 0 rgba(16, 24, 40, 0.12) !important;
         }
 
         [data-sonner-toast][data-styled="true"] .generation-toast-actions {
@@ -309,7 +311,7 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
         .dark [data-sonner-toast][data-styled="true"] {
           border-radius: 10px !important;
           border: 1px solid rgba(148, 163, 184, 0.22) !important;
-          background: rgba(2, 6, 23, 0.6) !important;
+          background: rgba(2, 6, 23, 0.94) !important;
           box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.06) !important;
           backdrop-filter: blur(6px) !important;
           -webkit-backdrop-filter: blur(6px) !important;
@@ -333,6 +335,11 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           background: rgb(2 6 23) !important;
           color: rgb(248 250 252) !important;
           border: 1px solid rgba(148, 163, 184, 0.26) !important;
+        }
+
+        .dark [data-sonner-toast][data-styled="true"].generation-status-toast {
+          background: rgba(2, 6, 23, 0.94) !important;
+          box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.35) !important;
         }
 
         .dark [data-sonner-toast][data-styled="true"] [data-button]:hover {
