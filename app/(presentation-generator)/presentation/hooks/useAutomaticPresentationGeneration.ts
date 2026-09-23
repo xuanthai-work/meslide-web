@@ -165,23 +165,44 @@ export function useAutomaticPresentationGeneration(
   ]);
 
   const retry = useCallback(() => {
-    if (phase === "failed") {
-      setFailureMessage("");
-      if (outlines.length > 0) {
-        setPhase("outlining");
-      } else {
-        setHydrationAttempt((attempt) => attempt + 1);
-      }
+    const failed =
+      phase === "failed" || outlineStream.lifecycle === "failed";
+
+    if (!failed) {
+      outlineStream.retry();
       return;
     }
-    outlineStream.retry();
-  }, [outlineStream, outlines.length, phase]);
+
+    setFailureMessage("");
+
+    const completedOutlineInRedux =
+      outlines.length > 0 &&
+      (hasPersistedOutline ||
+        outlineStream.finalOutlineCount > 0 ||
+        outlineStream.lifecycle === "complete");
+
+    if (completedOutlineInRedux) {
+      setHasPersistedOutline(true);
+      setOutlineStreamEnabled(false);
+      setPhase("outlining");
+      return;
+    }
+
+    setHasPersistedOutline(false);
+    setOutlineStreamEnabled(false);
+    setPhase("checking");
+    setHydrationAttempt((attempt) => attempt + 1);
+  }, [hasPersistedOutline, outlineStream, outlines.length, phase]);
 
   const cancel = useCallback(async () => {
     cancelledByUserRef.current = true;
     await outlineStream.cancel();
+    dispatch(clearOutlines());
+    setHasPersistedOutline(false);
+    setOutlineStreamEnabled(false);
+    setPhase("idle");
     router.replace(`/presentation?id=${presentationId}&auto=1`);
-  }, [outlineStream, presentationId, router]);
+  }, [dispatch, outlineStream, presentationId, router]);
 
   let lifecycle: GenerationLifecycleState = outlineStream.lifecycle;
   let statusMessage = outlineStream.statusMessage;
