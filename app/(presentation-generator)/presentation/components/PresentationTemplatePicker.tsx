@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GSlideButton, GSlideHeader } from "@/components/gslide";
 import { useT } from "@/i18n/provider";
@@ -51,19 +51,19 @@ export default function PresentationTemplatePicker({
     router.replace(`/presentation?${params.toString()}`);
   };
 
-  useEffect(() => {
-    if (loading || !suggestedTemplate || selectedTemplateId) return;
-    const match = [...defaultTemplates, ...customTemplates].find((template) =>
-      matchesSuggestedTemplate(template, suggestedTemplate),
-    );
-    if (match) setSelectedTemplateId(match.id);
-  }, [customTemplates, defaultTemplates, loading, selectedTemplateId, suggestedTemplate]);
+  const suggestedMatchId =
+    !loading && suggestedTemplate
+      ? ([...defaultTemplates, ...customTemplates].find((template) =>
+          matchesSuggestedTemplate(template, suggestedTemplate),
+        )?.id ?? null)
+      : null;
+  const activeTemplateId = selectedTemplateId ?? suggestedMatchId;
 
   const renderTemplateCard = (template: TemplateListItem) => (
     <TemplateListCard
       key={template.id}
       template={template}
-      isSelected={selectedTemplateId === template.id}
+      isSelected={activeTemplateId === template.id}
       isSuggested={matchesSuggestedTemplate(template, suggestedTemplate)}
       showArrow
       selectionPage

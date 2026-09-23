@@ -197,20 +197,6 @@ const en = {
   },
 
   outline: {
-    metadata: {
-      title: "Outline Presentation",
-      description:
-        "Customize and organize your presentation outline. Drag and drop slides, add charts, and generate your presentation with ease.",
-    },
-    header: {
-      title: {
-        outlineGeneration: "Outline Generation",
-        selectTemplate: "Select Template",
-      },
-      aria: {
-        goToDashboard: "Go to dashboard",
-      },
-    },
     status: {
       preparing: "Preparing your presentation outline",
       analyzingTopic: "Analyzing your topic for web research",
@@ -225,107 +211,10 @@ const en = {
     loading: {
       generatingPresentationData: "Generating presentation data…",
     },
-    empty: {
-      title: "No Presentation Found",
-      description: {
-        notFound:
-          "It looks like the presentation you are looking for is not found.",
-        createPrompt: "Let's create a brand new presentation!",
-      },
-      button: {
-        create: "Create New Presentation",
-      },
-      outlines: {
-        title: "No outlines available",
-        button: {
-          addFirst: "+ Add First Slide",
-        },
-      },
-    },
-    promptBar: {
-      label: "Prompt",
-      placeholder: "Describe the presentation you want to generate",
-      aria: {
-        regenerate: "Regenerate outline",
-      },
-      title: {
-        regenerate: "Regenerate outline",
-      },
-    },
-    item: {
-      newContent: "Outline title",
-      aria: {
-        moveSlide: (p) => `Move slide ${p.index}`,
-        editMarkdown: (p) => `Edit slide ${p.index} markdown`,
-      },
-      slideBadge: (p) => `Slide: ${p.index}`,
-      placeholder: {
-        markdown: "Enter markdown content here…",
-      },
-    },
-    addSlide: {
-      title: {
-        maxReached: (p) => `Maximum ${p.max} slides`,
-      },
-      label: {
-        maxReached: (p) => `Maximum ${p.max} slides reached`,
-        add: "+ Add New Slide",
-      },
-    },
-    generateButton: {
-      loading: "Loading…",
-      selectTemplate: "Select a Template",
-      continue: "Continue",
-    },
-    template: {
-      error: {
-        loadFailed: (p) => `Templates could not be loaded: ${p.error}`,
-      },
-      suggestion: {
-        selected: "Suggested template selected.",
-        continueHint: "Click the highlighted template to continue.",
-      },
-      section: {
-        templates: "Templates",
-        custom: "Custom",
-        builtin: "Built-In",
-      },
-      empty: {
-        noBuiltin: "No built-in templates available.",
-      },
-    },
     toast: {
-      selectTemplateFirst: "Please select a template first",
-      selectLanguage: "Please select language",
-      selectLanguageBeforeRegenFromDocs:
-        "Please choose a language before regenerating from documents",
-      noPromptOrDocument: "No Prompt or Document Provided",
-      outlineError: {
-        title: "Outline Error",
-        fallbackDescription: "Failed to regenerate outline.",
-      },
-      slideLimitReached: {
-        title: "Slide limit reached",
-        description: (p) => `You can have up to ${p.max} outline slides.`,
-        generateDescription: (p) =>
-          `Use ${p.max} or fewer outline slides before generating.`,
-      },
-      outlinesNotReady: {
-        title: "Outlines not ready",
-        description:
-          "Please wait for your outlines to finish generating before continuing.",
-      },
-      templateNotSelected: {
-        title: "Template not selected",
-        description: "Choose a template before generating your presentation.",
-      },
       generationError: {
         title: "Generation error",
         fallbackDescription: "Error in presentation generation.",
-      },
-      streamParseFailed: {
-        title: "Stream parse failed",
-        description: "Failed to parse outline stream response.",
       },
       parseFailed: {
         title: "Parse failed",
@@ -339,10 +228,6 @@ const en = {
       },
       connectionFailed: {
         title: "Connection failed",
-      },
-      draftNotSaved: {
-        title: "Draft not saved",
-        description: "Refresh may lose the stopped outline.",
       },
     },
   },

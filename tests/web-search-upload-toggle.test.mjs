@@ -11,12 +11,8 @@ const CONFIG_SELECTS_PATH =
 
 test("upload config defaults web search on and does not inherit WEB_GROUNDING", async () => {
   const uploadPage = await read(UPLOAD_PAGE_PATH);
-  const outlinePage = await read(
-    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
-  );
 
   assert.match(uploadPage, /webSearch:\s*true/);
-  assert.match(outlinePage, /webSearch:\s*true/);
   assert.doesNotMatch(
     uploadPage,
     /webSearch:\s*!!llmConfig\.WEB_GROUNDING/,

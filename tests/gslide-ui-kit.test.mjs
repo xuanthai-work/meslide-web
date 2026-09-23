@@ -219,13 +219,6 @@ test("Presenton Cloud onboarding UI file is removed", async () => {
   );
 });
 
-test("outline header does not use Presenton PNG", async () => {
-  const outline = await readNext(
-    "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
-  );
-  assert.doesNotMatch(outline, /logo-with-bg\.png/);
-});
-
 test("editor chrome uses GSlide wordmark not Presenton PNG", async () => {
   const presentation = await readNext(
     "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
@@ -267,7 +260,6 @@ const CHROME_FILES = [
   "app/(presentation-generator)/(dashboard)/layout.tsx",
   "app/(presentation-generator)/(dashboard)/dashboard/components/DashboardPage.tsx",
   "app/(presentation-generator)/presentation/components/PresentationHeader.tsx",
-  "app/(presentation-generator)/outline/components/OutlineStandardHeader.tsx",
   "app/(presentation-generator)/custom-template/CustomTemplatePage.tsx",
   "app/(presentation-generator)/template-preview/components/editor/TemplateEditorHeader.tsx",
   "app/(presentation-generator)/upload/page.tsx",
@@ -399,10 +391,10 @@ test("app metadata does not use presenton.ai", async () => {
   assert.doesNotMatch(upload, /PresentOn/);
   assert.doesNotMatch(upload, /@presenton_ai/);
 
-  const outline = await readNext(
-    "app/(presentation-generator)/outline/page.tsx",
+  await assert.rejects(
+    () => readNext("app/(presentation-generator)/outline/page.tsx"),
+    (error) => error && error.code === "ENOENT",
   );
-  assert.doesNotMatch(outline, /presenton\.ai/);
 });
 
 test("PresentonMode filename is gone", async () => {

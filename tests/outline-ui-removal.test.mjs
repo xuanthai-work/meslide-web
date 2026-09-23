@@ -14,3 +14,28 @@ test("chat exposes no manual outline mode", () => {
     assert.doesNotMatch(read(path), /isOutlineVariant|variant\s*[!=]==?\s*["']outline["']/);
   }
 });
+
+test("outline route and manual editor files are removed", () => {
+  for (const path of [
+    "app/(presentation-generator)/outline/page.tsx",
+    "app/(presentation-generator)/outline/components/OutlinePage.tsx",
+    "app/(presentation-generator)/outline/components/OutlineContent.tsx",
+    "app/(presentation-generator)/outline/components/OutlinePromptBar.tsx",
+    "app/(presentation-generator)/outline/hooks/useOutlineManagement.ts",
+    "app/(presentation-generator)/outline/hooks/usePresentationGeneration.ts",
+    "app/(presentation-generator)/components/useStableOutlineIds.ts",
+  ]) {
+    assert.equal(existsSync(new URL(`../${path}`, import.meta.url)), false, path);
+  }
+});
+
+test("web client contains no outline navigation", () => {
+  for (const path of [
+    "app/(presentation-generator)/upload/components/UploadPage.tsx",
+    "app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx",
+    "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
+    "app/(presentation-generator)/(dashboard)/dashboard/components/Header.tsx",
+  ]) {
+    assert.doesNotMatch(read(path), /["'`]\/outline(?:[?/'`"]|$)/, path);
+  }
+});

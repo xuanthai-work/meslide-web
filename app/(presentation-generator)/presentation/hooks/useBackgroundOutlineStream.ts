@@ -229,8 +229,8 @@ export function useBackgroundOutlineStream(
         if (!data?.type) {
           if (!scheduleRetry("invalid SSE payload")) {
             failStream(
-              t("outline.toast.streamParseFailed.description"),
-              t("outline.toast.streamParseFailed.title"),
+              t("outline.toast.parseFailed.description"),
+              t("outline.toast.parseFailed.title"),
             );
           }
           return;

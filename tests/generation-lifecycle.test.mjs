@@ -78,17 +78,6 @@ test("presentation stream hook imports lifecycle helpers", async () => {
   assert.match(source, /heartbeat/);
 });
 
-test("outline cancel persists via updateOutlines", async () => {
-  const source = await readFile(
-    new URL(
-      "../app/(presentation-generator)/outline/hooks/useOutlineStreaming.ts",
-      import.meta.url
-    ),
-    "utf8"
-  );
-  assert.match(source, /updateOutlines/);
-});
-
 test("presentation cancel persists via updatePresentationContent", async () => {
   const source = await readFile(
     new URL(
