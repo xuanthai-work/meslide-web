@@ -10,6 +10,9 @@ type NotifyOptions = Pick<
   | "id"
   | "action"
   | "cancel"
+  | "closeButton"
+  | "dismissible"
+  | "testId"
   | "onDismiss"
   | "onAutoClose"
   | "className"
@@ -216,6 +219,36 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
 
         [data-sonner-toast][data-styled="true"] [data-button]:hover {
           background: rgb(248 250 252) !important; /* slate-50 */
+        }
+
+        [data-sonner-toast][data-styled="true"].generation-status-toast {
+          cursor: default !important;
+        }
+
+        [data-sonner-toast][data-styled="true"] .generation-toast-actions {
+          display: flex !important;
+          flex: 0 0 auto !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          justify-content: flex-end !important;
+          gap: 6px !important;
+          margin-left: auto !important;
+        }
+
+        [data-sonner-toast][data-styled="true"] .generation-toast-actions [data-button] {
+          margin-left: 0 !important;
+        }
+
+        @media (max-width: 640px) {
+          [data-sonner-toast][data-styled="true"].generation-status-toast {
+            flex-wrap: wrap !important;
+          }
+
+          [data-sonner-toast][data-styled="true"] .generation-toast-actions {
+            flex-basis: 100% !important;
+            justify-content: flex-start !important;
+            margin-left: 31px !important;
+          }
         }
 
         [data-sonner-toast][data-styled="true"].template-v2-model-warning-toast {

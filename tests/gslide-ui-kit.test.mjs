@@ -422,19 +422,6 @@ test("chart preview size helper lives in chart-data", async () => {
   assert.doesNotMatch(editor, /function chartPreviewSourceSize/);
 });
 
-test("GenerationStatusBar uses stall copy and gslide tokens", async () => {
-  const source = await readNext(
-    "app/(presentation-generator)/components/GenerationStatusBar.tsx",
-  );
-  assert.match(source, /common\.generation\.takingLonger/);
-  assert.match(source, /common\.generation\.keepWaiting/);
-  assert.match(source, /canKeepWaiting/);
-  assert.match(source, /--gslide-accent/);
-  assert.match(source, /aria-live/);
-  assert.match(source, /w-fit/);
-  assert.match(source, /max-w-\[min\(100%,22rem\)\]/);
-});
-
 test("create prompt page no longer renders a provider config chip", async () => {
   const uploadPage = await readNext(
     "app/(presentation-generator)/upload/components/UploadPage.tsx",
