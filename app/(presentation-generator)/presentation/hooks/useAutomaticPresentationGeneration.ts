@@ -50,6 +50,7 @@ export function useAutomaticPresentationGeneration(
   const prepareInFlightRef = useRef(false);
   const preparedRef = useRef(false);
   const cancelledByUserRef = useRef(false);
+  const prepareGenerationRef = useRef(0);
 
   const outlineStream = useBackgroundOutlineStream(
     presentationId,
@@ -57,16 +58,22 @@ export function useAutomaticPresentationGeneration(
   );
 
   useEffect(() => {
+    prepareGenerationRef.current += 1;
+
     if (!enabled) {
       setPhase("idle");
       setOutlineStreamEnabled(false);
-      return;
+      return () => {
+        prepareGenerationRef.current += 1;
+      };
     }
 
     if (!templateId) {
       setPhase("idle");
       setOutlineStreamEnabled(false);
-      return;
+      return () => {
+        prepareGenerationRef.current += 1;
+      };
     }
 
     let cancelled = false;
@@ -104,6 +111,7 @@ export function useAutomaticPresentationGeneration(
 
     return () => {
       cancelled = true;
+      prepareGenerationRef.current += 1;
     };
   }, [dispatch, enabled, hydrationAttempt, presentationId, t, templateId]);
 
@@ -123,6 +131,7 @@ export function useAutomaticPresentationGeneration(
       return;
     }
 
+    const prepareGeneration = prepareGenerationRef.current;
     prepareInFlightRef.current = true;
     setPhase("preparing");
     setFailureMessage("");
@@ -133,6 +142,7 @@ export function useAutomaticPresentationGeneration(
       layout: templateId,
     })
       .then(() => {
+        if (prepareGeneration !== prepareGenerationRef.current) return;
         if (cancelledByUserRef.current) return;
         preparedRef.current = true;
         setPhase("complete");
@@ -142,6 +152,7 @@ export function useAutomaticPresentationGeneration(
         );
       })
       .catch((error: unknown) => {
+        if (prepareGeneration !== prepareGenerationRef.current) return;
         const message =
           error instanceof Error
             ? error.message
@@ -150,6 +161,7 @@ export function useAutomaticPresentationGeneration(
         setPhase("failed");
       })
       .finally(() => {
+        if (prepareGeneration !== prepareGenerationRef.current) return;
         prepareInFlightRef.current = false;
       });
   }, [
@@ -195,6 +207,7 @@ export function useAutomaticPresentationGeneration(
   }, [hasPersistedOutline, outlineStream, outlines.length, phase]);
 
   const cancel = useCallback(async () => {
+    prepareGenerationRef.current += 1;
     cancelledByUserRef.current = true;
     await outlineStream.cancel();
     dispatch(clearOutlines());
