@@ -28,3 +28,12 @@ test("presentation owns template selection before automatic generation", async (
     /router\.(?:push|replace)\([^)]*["'`]\/outline/,
   );
 });
+
+test("automatic generation skips the no-stream slide fetch", async () => {
+  const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
+  const streaming = await read("app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts");
+
+  assert.match(page, /skipSlideFetch:\s*autoGenerate/);
+  assert.match(streaming, /if \(!stream\)/);
+  assert.match(streaming, /if \(!skipSlideFetch\) \{\s*fetchUserSlides\(\);\s*\}/);
+});

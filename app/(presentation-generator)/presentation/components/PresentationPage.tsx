@@ -248,6 +248,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     fetchUserSlides,
     {
       preloadPresentationData: shouldPreloadTemplateV2Presentation,
+      skipSlideFetch: autoGenerate,
     }
   );
   const {
