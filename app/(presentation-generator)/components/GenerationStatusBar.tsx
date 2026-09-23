@@ -1,11 +1,8 @@
 "use client";
 
-import React from "react";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import React, { useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
+import { notify } from "@/components/ui/sonner";
 import {
   needsCancelConfirm,
   type GenerationLifecycleState,
@@ -25,6 +22,43 @@ type Props = {
   className?: string;
 };
 
+const GENERATION_TOAST_ID = "generation-status";
+
+type ActionKey = "keepWaiting" | "retry" | "stop";
+
+function GenerationToastActions({
+  actions,
+  onKeepWaiting,
+  onRetry,
+  onStop,
+}: {
+  actions: ActionKey[];
+  onKeepWaiting: () => void;
+  onRetry: () => void;
+  onStop: () => void;
+}) {
+  const t = useT();
+  return (
+    <div className="generation-toast-actions">
+      {actions.includes("keepWaiting") && (
+        <button type="button" data-button onClick={onKeepWaiting}>
+          {t("common.generation.keepWaiting")}
+        </button>
+      )}
+      {actions.includes("retry") && (
+        <button type="button" data-button onClick={onRetry}>
+          {t("common.generation.retry")}
+        </button>
+      )}
+      {actions.includes("stop") && (
+        <button type="button" data-button onClick={onStop}>
+          {t("common.generation.stop")}
+        </button>
+      )}
+    </div>
+  );
+}
+
 const GenerationStatusBar: React.FC<Props> = ({
   surface,
   lifecycle,
@@ -35,13 +69,8 @@ const GenerationStatusBar: React.FC<Props> = ({
   onCancel,
   onKeepWaiting,
   onRetry,
-  className,
 }) => {
   const t = useT();
-  // Render nothing for terminal/idle states.
-  if (lifecycle === "idle" || lifecycle === "complete" || lifecycle === "cancelled") {
-    return null;
-  }
 
   const handleStop = () => {
     const outlineDraftVisible = surface === "outline" && draftCount > 0;
@@ -58,157 +87,112 @@ const GenerationStatusBar: React.FC<Props> = ({
       if (!window.confirm(message)) return;
     }
     void onCancel();
-    toast.success(
+    notify.success(
       draftCount > 0
         ? t("presentation.status.stoppedWithDraft")
         : t("presentation.status.stopped"),
     );
   };
 
-  const handleKeepWaiting = () => {
-    void onKeepWaiting();
-  };
+  useEffect(() => {
+    if (
+      lifecycle === "idle" ||
+      lifecycle === "complete" ||
+      lifecycle === "cancelled"
+    ) {
+      notify.dismiss(GENERATION_TOAST_ID);
+      return;
+    }
 
-  const handleRetry = () => {
-    void onRetry();
-  };
+    let cancelled = false;
 
-  const isCancelling = lifecycle === "cancelling";
-  const isStalled = lifecycle === "stalled";
-  const isFailed = lifecycle === "failed";
-  const isConnectingOrGenerating =
-    lifecycle === "connecting" || lifecycle === "generating";
+    queueMicrotask(() => {
+      if (cancelled) return;
 
-  const containerStyle: React.CSSProperties = {
-    background: "var(--gslide-card)",
-    border: "1px solid var(--gslide-border)",
-    color: "var(--gslide-ink)",
-  };
-  const accentStyle: React.CSSProperties = {
-    background: "var(--gslide-accent)",
-    color: "#ffffff",
-  };
+      const baseOptions = {
+        id: GENERATION_TOAST_ID,
+        duration: Infinity,
+        closeButton: false,
+        dismissible: false,
+        testId: "generation-status-toast",
+        className: "generation-status-toast",
+      } as const;
 
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      style={containerStyle}
-      className={cn(
-        "mt-2 inline-flex w-fit max-w-[min(100%,22rem)] items-center gap-2 rounded-[12px] px-3 py-2 shadow-[0_4px_12px_rgba(16,24,40,0.06)]",
-        className,
-      )}
-    >
-      {isConnectingOrGenerating && (
-        <>
-          <Loader2
-            className="h-4 w-4 shrink-0 animate-spin"
-            style={{ color: "var(--gslide-accent)" }}
-            aria-hidden="true"
+      const withActions = (actions: ActionKey[]) => ({
+        ...baseOptions,
+        action: (
+          <GenerationToastActions
+            actions={actions}
+            onKeepWaiting={() => void onKeepWaiting()}
+            onRetry={() => void onRetry()}
+            onStop={handleStop}
           />
-          <span className="min-w-0 truncate text-sm">{statusMessage}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleStop}
-            className="h-7 shrink-0 px-2 text-sm"
-          >
-            {t("common.generation.stop")}
-          </Button>
-        </>
-      )}
+        ),
+      });
 
-      {isStalled && (
-        <div className="flex min-w-0 flex-col gap-2">
-          <span className="text-sm font-semibold">
-            {t("common.generation.takingLonger")}
-          </span>
-          <span className="min-w-0 text-sm opacity-80">
-            {statusMessage || t("presentation.status.noContent")}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {canKeepWaiting && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleKeepWaiting}
-                style={accentStyle}
-                className="h-7 shrink-0 px-2.5"
-              >
-                {t("common.generation.keepWaiting")}
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleStop}
-              className="h-7 shrink-0 px-2.5"
-            >
-              {t("common.generation.stop")}
-            </Button>
-            <Button
-              type="button"
-              variant={canKeepWaiting ? "ghost" : undefined}
-              size="sm"
-              onClick={handleRetry}
-              style={canKeepWaiting ? undefined : accentStyle}
-              className="h-7 shrink-0 px-2.5"
-            >
-              {t("common.generation.retry")}
-            </Button>
-          </div>
-        </div>
-      )}
+      switch (lifecycle) {
+        case "connecting":
+        case "generating":
+          notify.loading(statusMessage, undefined, withActions(["stop"]));
+          break;
+        case "stalled": {
+          const description =
+            statusMessage || t("presentation.status.noContent");
+          const actions: ActionKey[] = ["retry", "stop"];
+          if (canKeepWaiting) {
+            actions.unshift("keepWaiting");
+          }
+          notify.warning(
+            t("common.generation.takingLonger"),
+            description,
+            withActions(actions),
+          );
+          break;
+        }
+        case "cancelling":
+          notify.loading(
+            t("presentation.status.stopping"),
+            undefined,
+            baseOptions,
+          );
+          break;
+        case "failed": {
+          const title =
+            surface === "outline"
+              ? t("outline.toast.streamingFailed.title")
+              : t("presentation.status.streamingFailed");
+          notify.error(title, statusMessage, withActions(["retry", "stop"]));
+          break;
+        }
+        default:
+          break;
+      }
+    });
 
-      {isCancelling && (
-        <>
-          <Loader2
-            className="h-4 w-4 shrink-0 animate-spin"
-            style={{ color: "var(--gslide-accent)" }}
-            aria-hidden="true"
-          />
-          <span className="min-w-0 truncate text-sm">{t("presentation.status.stopping")}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled
-            className="h-7 shrink-0 px-2"
-          >
-            {t("presentation.status.stopping")}
-          </Button>
-        </>
-      )}
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    lifecycle,
+    statusMessage,
+    surface,
+    draftCount,
+    totalCount,
+    canKeepWaiting,
+    onCancel,
+    onKeepWaiting,
+    onRetry,
+    t,
+  ]);
 
-      {isFailed && (
-        <div className="flex min-w-0 flex-col gap-2">
-          <span className="min-w-0 text-sm">{statusMessage}</span>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleRetry}
-              style={accentStyle}
-              className="h-7 shrink-0 px-2.5"
-            >
-              {t("common.generation.retry")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleStop}
-              className="h-7 shrink-0 px-2.5"
-            >
-              {t("common.generation.stop")}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+  useEffect(
+    () => () => {
+      notify.dismiss(GENERATION_TOAST_ID);
+    },
+    [],
   );
+
+  return null;
 };
 
 export default GenerationStatusBar;
