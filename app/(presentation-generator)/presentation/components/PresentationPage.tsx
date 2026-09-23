@@ -43,6 +43,7 @@ import {
   isTemplateV2Slide,
 } from "../../_shared/blank-slide";
 import PresentationHeader from "./PresentationHeader";
+import PresentationTemplatePicker from "./PresentationTemplatePicker";
 import PresentationActions from "./PresentationActions";
 import GenerationStatusBar from "../../components/GenerationStatusBar";
 import {
@@ -142,6 +143,8 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const router = useRouter();
   const autoGenerate = searchParams.get("auto") === "1";
   const automaticTemplateId = searchParams.get("template")?.trim() || null;
+  const suggestedTemplate = searchParams.get("suggested_template")?.trim() || null;
+  const showTemplatePicker = autoGenerate && !automaticTemplateId;
   const shouldPreloadTemplateV2Presentation =
     searchParams.get("editor") === "v2";
 
@@ -728,6 +731,15 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [isPresentMode, isTemplateV2Presentation, selectedSlide]);
+
+  if (showTemplatePicker) {
+    return (
+      <PresentationTemplatePicker
+        presentationId={presentation_id}
+        suggestedTemplate={suggestedTemplate}
+      />
+    );
+  }
 
   // Presentation Mode View
   if (isPresentMode) {

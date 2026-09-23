@@ -220,7 +220,7 @@ describe("upload prompt rewrite flow", () => {
     cy.wait("@createPresentation");
     cy.get("@routerPush").should(
       "have.been.calledWith",
-      "/outline?id=presentation-123&auto=1",
+      "/presentation?id=presentation-123&auto=1",
     );
   });
 
@@ -527,7 +527,7 @@ describe("document-aware rewrite flow", () => {
     });
     cy.get("@routerPush").should(
       "have.been.calledWith",
-      "/outline?id=presentation-123&auto=1",
+      "/presentation?id=presentation-123&auto=1",
     );
   });
 
@@ -715,7 +715,7 @@ describe("document-aware rewrite flow", () => {
       });
     cy.get("@routerPush").should(
       "have.been.calledWith",
-      "/outline?id=presentation-123&auto=1",
+      "/presentation?id=presentation-123&auto=1",
     );
     cy.then(() => {
       expect(state.rewrite, "no rewrite happens without a prompt").to.equal(0);

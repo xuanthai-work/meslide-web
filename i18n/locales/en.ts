@@ -1024,6 +1024,24 @@ const en = {
       layoutsProgress: (p) => `${p.done} of ${p.total} layouts`,
       processingAria: (p) => `${p.name} template is processing`,
     },
+    selection: {
+      title: "Select Template",
+      error: {
+        loadFailed: (p) => `Templates could not be loaded: ${p.error}`,
+      },
+      suggestion: {
+        selected: "Suggested template selected.",
+        continueHint: "Click the highlighted template to continue.",
+      },
+      section: {
+        templates: "Templates",
+        custom: "Custom",
+        builtin: "Built-In",
+      },
+      empty: {
+        noBuiltin: "No built-in templates available.",
+      },
+    },
   },
 
   slideEditor: {

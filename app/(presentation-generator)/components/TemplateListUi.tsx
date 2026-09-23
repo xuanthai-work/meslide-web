@@ -337,7 +337,7 @@ export function TemplateTabSwitcher({
           color: tab === "custom" ? "#1D6FE8" : "#3A3A3A",
         }}
       >
-        {t("outline.template.section.custom")}
+        {t("templates.selection.section.custom")}
       </button>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -359,7 +359,7 @@ export function TemplateTabSwitcher({
           color: tab === "default" ? "#1D6FE8" : "#3A3A3A",
         }}
       >
-        {t("outline.template.section.builtin")}
+        {t("templates.selection.section.builtin")}
       </button>
     </div>
   );

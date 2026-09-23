@@ -1260,6 +1260,24 @@ const vi = {
       layoutsProgress: (p) => `${p.done} / ${p.total} bố cục`,
       processingAria: (p) => `${p.name} đang được tạo`,
     },
+    selection: {
+      title: "Chọn mẫu",
+      error: {
+        loadFailed: (p) => `Không thể tải mẫu: ${p.error}`,
+      },
+      suggestion: {
+        selected: "Đã chọn mẫu gợi ý.",
+        continueHint: "Nhấp vào mẫu được tô đậm để tiếp tục.",
+      },
+      section: {
+        templates: "Mẫu",
+        custom: "Tùy chỉnh",
+        builtin: "Có sẵn",
+      },
+      empty: {
+        noBuiltin: "Không có mẫu có sẵn.",
+      },
+    },
   },
 
   slideEditor: {

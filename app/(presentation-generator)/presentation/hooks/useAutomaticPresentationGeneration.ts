@@ -65,7 +65,7 @@ export function useAutomaticPresentationGeneration(
 
     if (!templateId) {
       setPhase("idle");
-      router.replace(`/outline?id=${presentationId}&auto=1`);
+      setOutlineStreamEnabled(false);
       return;
     }
 
@@ -105,7 +105,7 @@ export function useAutomaticPresentationGeneration(
     return () => {
       cancelled = true;
     };
-  }, [dispatch, enabled, hydrationAttempt, presentationId, router, t, templateId]);
+  }, [dispatch, enabled, hydrationAttempt, presentationId, t, templateId]);
 
   const outlineReady =
     hasPersistedOutline || outlineStream.lifecycle === "complete";
@@ -180,7 +180,7 @@ export function useAutomaticPresentationGeneration(
   const cancel = useCallback(async () => {
     cancelledByUserRef.current = true;
     await outlineStream.cancel();
-    router.replace(`/outline?id=${presentationId}&auto=1`);
+    router.replace(`/presentation?id=${presentationId}&auto=1`);
   }, [outlineStream, presentationId, router]);
 
   let lifecycle: GenerationLifecycleState = outlineStream.lifecycle;
