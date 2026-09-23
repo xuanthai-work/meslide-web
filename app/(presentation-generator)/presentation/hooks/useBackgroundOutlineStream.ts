@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
-import { notify } from "@/components/ui/sonner";
 import { useT } from "@/i18n/provider";
 import {
   translateBackendError,
@@ -195,13 +194,10 @@ export function useBackgroundOutlineStream(
       return true;
     };
 
-    const failStream = (message: string, title?: string) => {
+    const failStream = (message: string) => {
       closeStreamResources();
       setLifecycle("failed");
       setStatusMessage(message);
-      if (title) {
-        notify.error(title, message);
-      }
     };
 
     const openStream = () => {
@@ -228,10 +224,7 @@ export function useBackgroundOutlineStream(
           typeof raw === "string" ? parseOutlineStreamPayload(raw) : null;
         if (!data?.type) {
           if (!scheduleRetry("invalid SSE payload")) {
-            failStream(
-              t("outline.toast.parseFailed.description"),
-              t("outline.toast.parseFailed.title"),
-            );
+            failStream(t("outline.toast.parseFailed.description"));
           }
           return;
         }
@@ -289,14 +282,7 @@ export function useBackgroundOutlineStream(
 
           case "error":
             // The server already failed the job: do not silent-retry.
-            closeStreamResources();
-            setLifecycle("failed");
-            notify.error(
-              t("outline.toast.streamingFailed.title"),
-              translateBackendError(t, data) ||
-                t("outline.toast.connectFailed.description"),
-            );
-            setStatusMessage(
+            failStream(
               translateBackendError(t, data) ||
                 t("outline.toast.connectFailed.description"),
             );
@@ -310,10 +296,7 @@ export function useBackgroundOutlineStream(
         }
         if (!hasUsefulEventRef.current) {
           if (!scheduleRetry("connection lost")) {
-            failStream(
-              t("outline.toast.connectFailed.description"),
-              t("outline.toast.connectionFailed.title"),
-            );
+            failStream(t("outline.toast.connectFailed.description"));
           }
           return;
         }

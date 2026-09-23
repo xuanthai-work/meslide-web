@@ -241,11 +241,7 @@ export const usePresentationStreaming = (
       }
     };
 
-    const finalizeFailure = (
-      description: string,
-      opts: { showToast?: boolean } = {}
-    ) => {
-      // Keep local failure diagnostics even when the UI toast is suppressed.
+    const finalizeFailure = (description: string) => {
       console.error("Presentation streaming failed", description);
       closeEventSource();
       clearRetryTimer();
@@ -253,13 +249,9 @@ export const usePresentationStreaming = (
       setLoading(false);
       dispatch(setStreaming(false));
       setError(true);
+      setStatusMessage(description);
       setLifecycle("failed");
-      // Spec: remove `stream` on cancel/complete/fail so a refresh does not
-      // reopen /presentation/stream/{id} and start a second generation job.
       removeStreamParamFromUrl();
-      if (opts.showToast !== false) {
-        notify.error(t("presentation.status.streamingFailed"), description);
-      }
     };
 
     const scheduleRetry = (reason: string): boolean => {

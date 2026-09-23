@@ -1,9 +1,66 @@
 import React, { useState } from "react";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { Provider } from "react-redux";
 
 import GenerationStatusBar from "../../app/(presentation-generator)/components/GenerationStatusBar";
 import { I18nProvider } from "../../i18n/provider";
 import type { GenerationLifecycleState } from "../../lib/generation-lifecycle";
-import { Toaster } from "../../components/ui/sonner";
+import { notify, Toaster } from "../../components/ui/sonner";
+import {
+  clearOutlines,
+  clearPresentationData,
+  setStreaming,
+} from "../../store/slices/presentationGeneration";
+import { store } from "../../store/store";
+
+class FakeEventSource {
+  static instances: FakeEventSource[] = [];
+
+  onerror: ((event: Event) => void) | null = null;
+  private responseListener: ((event: MessageEvent) => void) | null = null;
+
+  constructor(public readonly url: string) {
+    FakeEventSource.instances.push(this);
+  }
+
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+    if (type !== "response") return;
+    this.responseListener = (event) => {
+      if (typeof listener === "function") {
+        listener(event);
+      } else {
+        listener.handleEvent(event);
+      }
+    };
+  }
+
+  emitResponse(payload: unknown) {
+    this.responseListener?.(
+      new MessageEvent("response", { data: JSON.stringify(payload) }),
+    );
+  }
+
+  close() {}
+}
+
+const createRouter = () => ({
+  back: cy.stub(),
+  forward: cy.stub(),
+  refresh: cy.stub(),
+  push: cy.stub(),
+  replace: cy.stub(),
+  prefetch: cy.stub(),
+});
+
+const mountStreamHarness = (children: React.ReactNode) => {
+  cy.mount(
+    <AppRouterContext.Provider value={createRouter()}>
+      <Provider store={store}>
+        <I18nProvider locale="vi-VN">{children}</I18nProvider>
+      </Provider>
+    </AppRouterContext.Provider>,
+  );
+};
 
 type HarnessProps = {
   initialLifecycle?: GenerationLifecycleState;
@@ -52,6 +109,130 @@ function Harness({
     </I18nProvider>
   );
 }
+
+const resetStreamFailureHarness = () => {
+  FakeEventSource.instances = [];
+  store.dispatch(clearOutlines());
+  store.dispatch(clearPresentationData());
+  store.dispatch(setStreaming(false));
+  notify.dismiss("generation-status");
+  notify.dismiss();
+};
+
+describe("generation status stream failure integration", () => {
+  beforeEach(() => {
+    FakeEventSource.instances = [];
+    notify.dismiss();
+  });
+
+  afterEach(() => {
+    FakeEventSource.instances = [];
+    notify.dismiss("generation-status");
+    notify.dismiss();
+  });
+
+  it("shows one operational error toast when the presentation stream fails", () => {
+    const { usePresentationStreaming } =
+      require("../../app/(presentation-generator)/presentation/hooks/usePresentationStreaming") as typeof import("../../app/(presentation-generator)/presentation/hooks/usePresentationStreaming");
+
+    function PresentationStreamHarness() {
+      const stream = usePresentationStreaming(
+        "presentation-123",
+        "true",
+        () => {},
+        () => {},
+        () => {},
+        { skipSlideFetch: true },
+      );
+
+      return (
+        <>
+          <GenerationStatusBar
+            surface="presentation"
+            lifecycle={stream.lifecycle}
+            statusMessage={stream.statusMessage}
+            draftCount={stream.draftCount}
+            totalCount={null}
+            canKeepWaiting={stream.canKeepWaiting}
+            onCancel={() => void stream.cancel()}
+            onKeepWaiting={stream.keepWaiting}
+            onRetry={stream.retry}
+          />
+          <Toaster position="top-center" />
+        </>
+      );
+    }
+
+    resetStreamFailureHarness();
+    cy.window().then((win) => {
+      win.EventSource = FakeEventSource as unknown as typeof EventSource;
+    });
+    mountStreamHarness(<PresentationStreamHarness />);
+
+    cy.wrap(null).should(() => {
+      expect(FakeEventSource.instances).to.have.length(1);
+    });
+    cy.get('[data-testid="generation-status-toast"]').should("exist");
+    cy.then(() => {
+      FakeEventSource.instances[0].emitResponse({
+        type: "error",
+        detail: "Provider generation failed",
+      });
+    });
+
+    cy.get('[data-testid="generation-status-toast"]')
+      .should("have.length", 1)
+      .and("contain", "Provider generation failed");
+    cy.get('[data-sonner-toast]').should("have.length", 1);
+  });
+
+  it("shows one operational error toast when the outline stream fails", () => {
+    const { useBackgroundOutlineStream } =
+      require("../../app/(presentation-generator)/presentation/hooks/useBackgroundOutlineStream") as typeof import("../../app/(presentation-generator)/presentation/hooks/useBackgroundOutlineStream");
+
+    function BackgroundOutlineStreamHarness() {
+      const stream = useBackgroundOutlineStream("presentation-123", true);
+
+      return (
+        <>
+          <GenerationStatusBar
+            surface="outline"
+            lifecycle={stream.lifecycle}
+            statusMessage={stream.statusMessage}
+            draftCount={0}
+            totalCount={5}
+            canKeepWaiting={stream.canKeepWaiting}
+            onCancel={() => void stream.cancel()}
+            onKeepWaiting={stream.keepWaiting}
+            onRetry={stream.retry}
+          />
+          <Toaster position="top-center" />
+        </>
+      );
+    }
+
+    resetStreamFailureHarness();
+    cy.window().then((win) => {
+      win.EventSource = FakeEventSource as unknown as typeof EventSource;
+    });
+    mountStreamHarness(<BackgroundOutlineStreamHarness />);
+
+    cy.wrap(null).should(() => {
+      expect(FakeEventSource.instances).to.have.length(1);
+    });
+    cy.then(() => {
+      FakeEventSource.instances[0].emitResponse({
+        type: "error",
+        detail: "Provider generation failed",
+      });
+    });
+
+    cy.get('[data-testid="generation-status-toast"]')
+      .should("have.length", 1)
+      .and("contain", "Provider generation failed");
+    cy.get('[data-sonner-toast]').should("have.length", 1);
+  });
+});
 
 describe("generation status toast", () => {
   it("updates one top-center toast when generation moves into SearXNG search", () => {
