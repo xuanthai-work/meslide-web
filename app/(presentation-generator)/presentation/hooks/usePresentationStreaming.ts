@@ -145,6 +145,19 @@ export const usePresentationStreaming = (
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stallIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const openStreamRef = useRef<() => void>(() => {});
+  // Epoch of the latest openStream(). A retry while `stream` is still set
+  // supersedes the effect's epoch so the effect teardown does not close the
+  // replacement socket. Unmount still closes via presentationStreamMountedRef.
+  const streamEpochRef = useRef(0);
+  const supersedeStreamEpochRef = useRef(false);
+  const presentationStreamMountedRef = useRef(false);
+
+  useEffect(() => {
+    presentationStreamMountedRef.current = true;
+    return () => {
+      presentationStreamMountedRef.current = false;
+    };
+  }, []);
 
   // Keep lifecycle ref in sync so the stall watcher can read the latest state.
   useEffect(() => {
@@ -191,11 +204,39 @@ export const usePresentationStreaming = (
 
   useEffect(() => {
     if (!stream) {
-      setLifecycle("idle");
-      if (!skipSlideFetch) {
-        fetchUserSlides();
+      const lifecycleState = lifecycleRef.current;
+      // Cancelled stays stopped. An in-flight retry (connecting / generating /
+      // stalled) must also survive the later stream → null commit; resetting
+      // those to idle dismisses the toast and may fetch slides under a live socket.
+      const preserveLifecycle =
+        lifecycleState === "cancelled" ||
+        lifecycleState === "connecting" ||
+        lifecycleState === "generating" ||
+        lifecycleState === "stalled";
+      if (!preserveLifecycle) {
+        setLifecycle("idle");
+        if (!skipSlideFetch) {
+          fetchUserSlides();
+        }
       }
-      return;
+      // retry() can reopen the leftover controller while stream is null.
+      // Close that socket and its timers on the next run or unmount so a
+      // later idle reset cannot fetch slides against a live EventSource.
+      return () => {
+        isClosedRef.current = true;
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+        if (retryTimerRef.current) {
+          clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = null;
+        }
+        if (stallIntervalRef.current) {
+          clearInterval(stallIntervalRef.current);
+          stallIntervalRef.current = null;
+        }
+      };
     }
 
     let accumulatedChunks = "";
@@ -215,6 +256,7 @@ export const usePresentationStreaming = (
 
     streamStartedAtRef.current = streamStartedAt;
     isClosedRef.current = false;
+    supersedeStreamEpochRef.current = false;
     hasUsefulEventRef.current = false;
     retryCountRef.current = 0;
     accumulatedChunksRef.current = "";
@@ -354,7 +396,20 @@ export const usePresentationStreaming = (
       window.history.replaceState({}, "", newUrl.toString());
     };
 
+    // Epoch this effect is allowed to close. Later non-superseding opens
+    // (silent retry) move it forward. A user retry detaches instead.
+    let ownedStreamEpoch = streamEpochRef.current;
+    let streamCloseDetached = false;
+
     const openStream = () => {
+      const epoch = ++streamEpochRef.current;
+      if (supersedeStreamEpochRef.current) {
+        supersedeStreamEpochRef.current = false;
+        streamCloseDetached = true;
+      } else if (!streamCloseDetached) {
+        ownedStreamEpoch = epoch;
+      }
+
       closeEventSource();
       clearStallInterval();
 
@@ -695,6 +750,13 @@ export const usePresentationStreaming = (
     void startStream();
 
     return () => {
+      const epochStillCurrent =
+        !streamCloseDetached && streamEpochRef.current === ownedStreamEpoch;
+      // A superseded retry owns the replacement EventSource. Leave it open
+      // when `stream` flips to null. Unmount still closes the socket.
+      if (presentationStreamMountedRef.current && !epochStillCurrent) {
+        return;
+      }
       isClosedRef.current = true;
       closeEventSource();
       clearRetryTimer();
@@ -737,17 +799,18 @@ export const usePresentationStreaming = (
     }
     dispatch(setStreaming(false));
     setLoading(false);
-    // Remove the stream search param so a refresh/reload does not resume.
+    lifecycleRef.current = "cancelled";
+    setLifecycle("cancelled");
+
     if (typeof window !== "undefined") {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete("stream");
       window.history.replaceState({}, "", newUrl.toString());
     }
-    setLifecycle("cancelled");
-    // Best-effort persist of the stopped slide draft. Set lifecycle to
-    // "cancelled" BEFORE the await so the UI dismisses the bar immediately;
-    // the UI fire-and-forgets this with `void cancel()` (Task 8). Do NOT
-    // clearPresentationData: cancel keeps the current Redux slides as the draft.
+    // Cancelled is set before URL synchronization so the stopped state and
+    // retry action survive, while draft persistence remains best-effort and
+    // unchanged. Do NOT clearPresentationData: cancel keeps the current Redux
+    // slides as the draft.
     const presentationData = store.getState().presentationGeneration.presentationData;
     const slides = presentationData?.slides;
     if (Array.isArray(slides) && slides.length > 0) {
@@ -783,7 +846,11 @@ export const usePresentationStreaming = (
 
   const retry = useCallback(() => {
     const fromState = lifecycleRef.current;
-    if (fromState !== "stalled" && fromState !== "failed") {
+    if (
+      fromState !== "stalled" &&
+      fromState !== "failed" &&
+      fromState !== "cancelled"
+    ) {
       return;
     }
     hasUsefulEventRef.current = false;
@@ -797,8 +864,12 @@ export const usePresentationStreaming = (
     setStallCause(null);
     dispatch(setStreaming(true));
     setError(false);
+    lifecycleRef.current = "connecting";
     setLifecycle("connecting");
     setStatusMessage(defaultStatusMessage);
+    // Detach this open from the active stream effect so a later stream → null
+    // cleanup does not close the replacement EventSource.
+    supersedeStreamEpochRef.current = true;
     openStreamRef.current();
   }, [defaultStatusMessage, dispatch, setError]);
 

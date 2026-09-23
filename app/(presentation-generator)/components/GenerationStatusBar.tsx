@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 import { notify } from "@/components/ui/sonner";
 import {
@@ -39,19 +39,37 @@ function GenerationToastActions({
 }) {
   const t = useT();
   return (
-    <div className="generation-toast-actions">
+    <div className="generation-toast-actions" data-dismissible="false">
       {actions.includes("keepWaiting") && (
-        <button type="button" data-button onClick={onKeepWaiting}>
+        <button
+          type="button"
+          data-button
+          data-dismissible="false"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onKeepWaiting}
+        >
           {t("common.generation.keepWaiting")}
         </button>
       )}
       {actions.includes("retry") && (
-        <button type="button" data-button onClick={onRetry}>
+        <button
+          type="button"
+          data-button
+          data-dismissible="false"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onRetry}
+        >
           {t("common.generation.retry")}
         </button>
       )}
       {actions.includes("stop") && (
-        <button type="button" data-button onClick={onStop}>
+        <button
+          type="button"
+          data-button
+          data-dismissible="false"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onStop}
+        >
           {t("common.generation.stop")}
         </button>
       )}
@@ -71,6 +89,15 @@ const GenerationStatusBar: React.FC<Props> = ({
   onRetry,
 }) => {
   const t = useT();
+  const onCancelRef = useRef(onCancel);
+  const onKeepWaitingRef = useRef(onKeepWaiting);
+  const onRetryRef = useRef(onRetry);
+
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+    onKeepWaitingRef.current = onKeepWaiting;
+    onRetryRef.current = onRetry;
+  }, [onCancel, onKeepWaiting, onRetry]);
 
   const handleStop = () => {
     const outlineDraftVisible = surface === "outline" && draftCount > 0;
@@ -86,19 +113,21 @@ const GenerationStatusBar: React.FC<Props> = ({
       });
       if (!window.confirm(message)) return;
     }
-    void onCancel();
-    notify.success(
-      draftCount > 0
-        ? t("presentation.status.stoppedWithDraft")
-        : t("presentation.status.stopped"),
-    );
+    void onCancelRef.current();
+    if (surface === "outline") {
+      notify.success(
+        draftCount > 0
+          ? t("presentation.status.stoppedWithDraft")
+          : t("presentation.status.stopped"),
+      );
+    }
   };
 
   useEffect(() => {
     if (
       lifecycle === "idle" ||
       lifecycle === "complete" ||
-      lifecycle === "cancelled"
+      (lifecycle === "cancelled" && surface !== "presentation")
     ) {
       notify.dismiss(GENERATION_TOAST_ID);
       return;
@@ -121,8 +150,8 @@ const GenerationStatusBar: React.FC<Props> = ({
       const toastActions = (actions: ActionKey[]) => (
         <GenerationToastActions
           actions={actions}
-          onKeepWaiting={() => void onKeepWaiting()}
-          onRetry={() => void onRetry()}
+          onKeepWaiting={() => void onKeepWaitingRef.current()}
+          onRetry={() => void onRetryRef.current()}
           onStop={handleStop}
         />
       );
@@ -190,6 +219,20 @@ const GenerationStatusBar: React.FC<Props> = ({
           );
           break;
         }
+        case "cancelled":
+          if (surface === "presentation") {
+            notify.success(
+              draftCount > 0
+                ? t("presentation.status.stoppedWithDraft")
+                : t("presentation.status.stopped"),
+              undefined,
+              publishOptions({
+                description: undefined,
+                action: toastActions(["retry"]),
+              }),
+            );
+          }
+          break;
         default:
           break;
       }
@@ -205,10 +248,6 @@ const GenerationStatusBar: React.FC<Props> = ({
     draftCount,
     totalCount,
     canKeepWaiting,
-    onCancel,
-    onKeepWaiting,
-    onRetry,
-    t,
   ]);
 
   useEffect(
