@@ -118,22 +118,35 @@ const GenerationStatusBar: React.FC<Props> = ({
         className: "generation-status-toast",
       } as const;
 
-      const withActions = (actions: ActionKey[]) => ({
+      const toastActions = (actions: ActionKey[]) => (
+        <GenerationToastActions
+          actions={actions}
+          onKeepWaiting={() => void onKeepWaiting()}
+          onRetry={() => void onRetry()}
+          onStop={handleStop}
+        />
+      );
+
+      const publishOptions = (options: {
+        description: string | undefined;
+        action: React.ReactNode | undefined;
+      }) => ({
         ...baseOptions,
-        action: (
-          <GenerationToastActions
-            actions={actions}
-            onKeepWaiting={() => void onKeepWaiting()}
-            onRetry={() => void onRetry()}
-            onStop={handleStop}
-          />
-        ),
+        description: options.description,
+        action: options.action,
       });
 
       switch (lifecycle) {
         case "connecting":
         case "generating":
-          notify.loading(statusMessage, undefined, withActions(["stop"]));
+          notify.loading(
+            statusMessage,
+            undefined,
+            publishOptions({
+              description: undefined,
+              action: toastActions(["stop"]),
+            }),
+          );
           break;
         case "stalled": {
           const description =
@@ -144,8 +157,11 @@ const GenerationStatusBar: React.FC<Props> = ({
           }
           notify.warning(
             t("common.generation.takingLonger"),
-            description,
-            withActions(actions),
+            undefined,
+            publishOptions({
+              description,
+              action: toastActions(actions),
+            }),
           );
           break;
         }
@@ -153,7 +169,10 @@ const GenerationStatusBar: React.FC<Props> = ({
           notify.loading(
             t("presentation.status.stopping"),
             undefined,
-            baseOptions,
+            publishOptions({
+              description: undefined,
+              action: undefined,
+            }),
           );
           break;
         case "failed": {
@@ -161,7 +180,14 @@ const GenerationStatusBar: React.FC<Props> = ({
             surface === "outline"
               ? t("outline.toast.streamingFailed.title")
               : t("presentation.status.streamingFailed");
-          notify.error(title, statusMessage, withActions(["retry", "stop"]));
+          notify.error(
+            title,
+            undefined,
+            publishOptions({
+              description: statusMessage,
+              action: toastActions(["retry", "stop"]),
+            }),
+          );
           break;
         }
         default:

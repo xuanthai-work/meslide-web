@@ -1,8 +1,13 @@
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import {
+  PathnameContext,
+  SearchParamsContext,
+} from "next/dist/shared/lib/hooks-client-context.shared-runtime";
 import { Provider } from "react-redux";
 
 import GenerationStatusBar from "../../app/(presentation-generator)/components/GenerationStatusBar";
+import PresentationPage from "../../app/(presentation-generator)/presentation/components/PresentationPage";
 import { I18nProvider } from "../../i18n/provider";
 import type { GenerationLifecycleState } from "../../lib/generation-lifecycle";
 import { notify, Toaster } from "../../components/ui/sonner";
@@ -59,6 +64,26 @@ const mountStreamHarness = (children: React.ReactNode) => {
         <I18nProvider locale="vi-VN">{children}</I18nProvider>
       </Provider>
     </AppRouterContext.Provider>,
+  );
+};
+
+const mountPresentationPageWithStream = () => {
+  const searchParams = new URLSearchParams({ stream: "1" });
+  cy.mount(
+    <SearchParamsContext.Provider value={searchParams}>
+      <PathnameContext.Provider value="/presentation">
+        <AppRouterContext.Provider value={createRouter()}>
+          <Provider store={store}>
+            <I18nProvider locale="vi-VN">
+              <Suspense fallback={null}>
+                <PresentationPage presentation_id="presentation-123" />
+              </Suspense>
+              <Toaster position="top-center" />
+            </I18nProvider>
+          </Provider>
+        </AppRouterContext.Provider>
+      </PathnameContext.Provider>
+    </SearchParamsContext.Provider>,
   );
 };
 
@@ -172,6 +197,29 @@ describe("generation status stream failure integration", () => {
     cy.wrap(null).should(() => {
       expect(FakeEventSource.instances).to.have.length(1);
     });
+    cy.then(() => {
+      FakeEventSource.instances[0].emitResponse({
+        type: "error",
+        detail: "Provider generation failed",
+      });
+    });
+
+    cy.get('[data-testid="generation-status-toast"]')
+      .should("have.length", 1)
+      .and("contain", "Provider generation failed");
+    cy.get('[data-sonner-toast]').should("have.length", 1);
+  });
+
+  it("keeps one error toast visible on PresentationPage after stream failure", () => {
+    resetStreamFailureHarness();
+    cy.window().then((win) => {
+      win.EventSource = FakeEventSource as unknown as typeof EventSource;
+    });
+    mountPresentationPageWithStream();
+
+    cy.wrap(null).should(() => {
+      expect(FakeEventSource.instances).to.have.length(1);
+    });
     cy.get('[data-testid="generation-status-toast"]').should("exist");
     cy.then(() => {
       FakeEventSource.instances[0].emitResponse({
@@ -180,6 +228,7 @@ describe("generation status stream failure integration", () => {
       });
     });
 
+    cy.get('[role="alert"]').should("exist");
     cy.get('[data-testid="generation-status-toast"]')
       .should("have.length", 1)
       .and("contain", "Provider generation failed");
@@ -235,6 +284,16 @@ describe("generation status stream failure integration", () => {
 });
 
 describe("generation status toast", () => {
+  beforeEach(() => {
+    notify.dismiss("generation-status");
+    notify.dismiss();
+  });
+
+  afterEach(() => {
+    notify.dismiss("generation-status");
+    notify.dismiss();
+  });
+
   it("updates one top-center toast when generation moves into SearXNG search", () => {
     const onCancel = cy.stub().as("cancel");
     cy.mount(<Harness onCancel={onCancel} />);
@@ -271,9 +330,15 @@ describe("generation status toast", () => {
 
     cy.get('[data-testid="generation-status-toast"] [data-close-button]')
       .should("not.exist");
-    cy.contains("button", "Tiếp tục chờ").click();
-    cy.contains("button", "Thử lại").click();
-    cy.contains("button", "Dừng").click();
+    cy.get('[data-testid="generation-status-toast"]')
+      .contains("button", "Tiếp tục chờ")
+      .click();
+    cy.get('[data-testid="generation-status-toast"]')
+      .contains("button", "Thử lại")
+      .click();
+    cy.get('[data-testid="generation-status-toast"]')
+      .contains("button", "Dừng")
+      .click();
     cy.get("@keepWaiting").should("have.been.calledOnce");
     cy.get("@retry").should("have.been.calledOnce");
     cy.get("@cancel").should("have.been.calledOnce");
@@ -292,5 +357,68 @@ describe("generation status toast", () => {
     cy.mount(<Harness draftCount={2} onCancel={onCancel} />);
     cy.contains('[data-testid="generation-status-toast"] button', "Dừng").click();
     cy.get("@cancel").should("not.have.been.called");
+  });
+
+  it("clears stale description and action buttons when lifecycle changes", () => {
+    function LifecycleHarness() {
+      const [lifecycle, setLifecycle] =
+        useState<GenerationLifecycleState>("stalled");
+      const [message, setMessage] = useState(
+        "Chi tiết trì hoãn từ backend",
+      );
+
+      return (
+        <I18nProvider locale="vi-VN">
+          <button
+            type="button"
+            data-testid="to-generating"
+            onClick={() => {
+              setLifecycle("generating");
+              setMessage("Đang tạo slide mới");
+            }}
+          >
+            Generating
+          </button>
+          <button
+            type="button"
+            data-testid="to-cancelling"
+            onClick={() => setLifecycle("cancelling")}
+          >
+            Cancelling
+          </button>
+          <GenerationStatusBar
+            surface="presentation"
+            lifecycle={lifecycle}
+            statusMessage={message}
+            draftCount={0}
+            totalCount={5}
+            canKeepWaiting
+            onCancel={() => {}}
+            onRetry={() => {}}
+            onKeepWaiting={() => {}}
+          />
+          <Toaster position="top-center" />
+        </I18nProvider>
+      );
+    }
+
+    cy.mount(<LifecycleHarness />);
+
+    cy.get('[data-testid="generation-status-toast"]')
+      .should("contain", "Chi tiết trì hoãn từ backend")
+      .find('[data-description]')
+      .should("exist");
+    cy.get('[data-testid="generation-status-toast"] .generation-toast-actions button')
+      .should("have.length.at.least", 1);
+
+    cy.get('[data-testid="to-generating"]').click();
+    cy.get('[data-testid="generation-status-toast"]')
+      .should("contain", "Đang tạo slide mới")
+      .find('[data-description]')
+      .should("not.exist");
+
+    cy.get('[data-testid="to-cancelling"]').click();
+    cy.get('[data-testid="generation-status-toast"] .generation-toast-actions')
+      .should("not.exist");
   });
 });

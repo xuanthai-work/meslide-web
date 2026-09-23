@@ -733,18 +733,31 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     return () => window.cancelAnimationFrame(frame);
   }, [isPresentMode, isTemplateV2Presentation, selectedSlide]);
 
+  const generationStatusToast = (
+    <GenerationStatusBar
+      surface={autoGenerate ? "outline" : "presentation"}
+      lifecycle={generationLifecycle}
+      statusMessage={generationStatusMessage}
+      draftCount={autoGenerate ? 0 : generationDraftCount}
+      totalCount={streamTotalCount}
+      onCancel={generationCancel}
+      onKeepWaiting={generationKeepWaiting}
+      onRetry={generationRetry}
+      canKeepWaiting={generationCanKeepWaiting}
+    />
+  );
+
+  let pageContent: React.ReactNode;
+
   if (showTemplatePicker) {
-    return (
+    pageContent = (
       <PresentationTemplatePicker
         presentationId={presentation_id}
         suggestedTemplate={suggestedTemplate}
       />
     );
-  }
-
-  // Presentation Mode View
-  if (isPresentMode) {
-    return (
+  } else if (isPresentMode) {
+    pageContent = (
       <PresentationMode
         slides={presentationData?.slides!}
         currentSlide={presentSlideFromUrl}
@@ -756,10 +769,8 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
         onSlideChange={onSlideChange}
       />
     );
-  }
-
-  if (error) {
-    return (
+  } else if (error) {
+    pageContent = (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100 font-syne">
         <div
           className="bg-white border border-red-300 text-red-700 px-6 py-8 rounded-lg shadow-lg flex flex-col items-center"
@@ -789,25 +800,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
         </div>
       </div>
     );
-  }
-
-  const generationStatusToast = (
-    <GenerationStatusBar
-      surface={autoGenerate ? "outline" : "presentation"}
-      lifecycle={generationLifecycle}
-      statusMessage={generationStatusMessage}
-      draftCount={autoGenerate ? 0 : generationDraftCount}
-      totalCount={streamTotalCount}
-      onCancel={generationCancel}
-      onKeepWaiting={generationKeepWaiting}
-      onRetry={generationRetry}
-      canKeepWaiting={generationCanKeepWaiting}
-    />
-  );
-
-  return (
+  } else {
+    pageContent = (
     <div className="h-dvh overflow-hidden font-syne">
-      {generationStatusToast}
       <OverlayLoader
         show={loadingState.isLoading && !isStreaming && !autoGenerate}
         text={loadingState.message}
@@ -1002,6 +997,14 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
         </div>
       </div>
     </div>
+    );
+  }
+
+  return (
+    <>
+      {generationStatusToast}
+      {pageContent}
+    </>
   );
 };
 

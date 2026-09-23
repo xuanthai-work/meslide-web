@@ -277,7 +277,7 @@ export function useBackgroundOutlineStream(
           case "closing":
             closeStreamResources();
             setLifecycle("failed");
-            setStatusMessage(t("outline.toast.streamingFailed.title"));
+            setStatusMessage(t("outline.toast.connectFailed.description"));
             break;
 
           case "error":
