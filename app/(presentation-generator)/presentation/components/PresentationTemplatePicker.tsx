@@ -98,10 +98,18 @@ export default function PresentationTemplatePicker({
         }
         selectionPage
       >
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {customTemplates.length === 0 && <CreateCustomTemplate selectionPage />}
-          {defaultTemplates.map(renderTemplateCard)}
-        </div>
+        {defaultTemplates.length === 0 && customTemplates.length > 0 ? (
+          <TemplateListEmptyState
+            message={t("templates.selection.empty.noBuiltin")}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {customTemplates.length === 0 && (
+              <CreateCustomTemplate selectionPage />
+            )}
+            {defaultTemplates.map(renderTemplateCard)}
+          </div>
+        )}
       </TemplateListSection>
     </div>
   );

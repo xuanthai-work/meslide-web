@@ -136,7 +136,7 @@ test("background outline completion is the only event that stores outlines", asy
     source.indexOf('case "closing"'),
   );
   assert.match(completeBlock, /data\.presentation\.outlines\.slides/);
-  assert.match(completeBlock, /limitOutlines/);
+  assert.match(completeBlock, /validateAndLimitOutlines/);
   assert.match(completeBlock, /dispatch\(setOutlines/);
   assert.match(completeBlock, /outlinesData\.length === 0/);
 });

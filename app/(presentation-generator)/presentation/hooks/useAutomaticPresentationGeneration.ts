@@ -10,7 +10,10 @@ import {
   setOutlines,
 } from "@/store/slices/presentationGeneration";
 import type { RootState } from "@/store/store";
-import { limitOutlines } from "@/utils/presentationLimits";
+import {
+  limitOutlines,
+  validateAndLimitOutlines,
+} from "@/utils/presentationLimits";
 import { useBackgroundOutlineStream } from "./useBackgroundOutlineStream";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
@@ -59,6 +62,7 @@ export function useAutomaticPresentationGeneration(
 
   useEffect(() => {
     prepareGenerationRef.current += 1;
+    const hydrationGeneration = prepareGenerationRef.current;
 
     if (!enabled) {
       setPhase("idle");
@@ -88,8 +92,16 @@ export function useAutomaticPresentationGeneration(
 
     void PresentationGenerationApi.getOutlines(presentationId)
       .then((response) => {
-        if (cancelled) return;
-        const persistedOutlines = limitOutlines(response?.slides ?? []);
+        if (
+          cancelled ||
+          cancelledByUserRef.current ||
+          hydrationGeneration !== prepareGenerationRef.current
+        ) {
+          return;
+        }
+        const persistedOutlines = validateAndLimitOutlines(
+          response?.slides ?? [],
+        );
         if (persistedOutlines.length > 0) {
           dispatch(setOutlines(persistedOutlines));
           setHasPersistedOutline(true);
@@ -100,7 +112,13 @@ export function useAutomaticPresentationGeneration(
         setOutlineStreamEnabled(true);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (
+          cancelled ||
+          cancelledByUserRef.current ||
+          hydrationGeneration !== prepareGenerationRef.current
+        ) {
+          return;
+        }
         const message =
           error instanceof Error
             ? error.message
@@ -126,7 +144,8 @@ export function useAutomaticPresentationGeneration(
       !outlineReady ||
       outlines.length === 0 ||
       prepareInFlightRef.current ||
-      preparedRef.current
+      preparedRef.current ||
+      cancelledByUserRef.current
     ) {
       return;
     }

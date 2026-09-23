@@ -21,7 +21,7 @@ import {
 } from "@/store/slices/presentationGeneration";
 import { store } from "@/store/store";
 import { getApiUrl } from "@/utils/api";
-import { limitOutlines } from "@/utils/presentationLimits";
+import { validateAndLimitOutlines } from "@/utils/presentationLimits";
 
 const STALL_INTERVAL_MS = 1_000;
 
@@ -262,7 +262,7 @@ export function useBackgroundOutlineStream(
           case "complete": {
             let outlinesData: { content: string }[] = [];
             try {
-              outlinesData = limitOutlines(
+              outlinesData = validateAndLimitOutlines(
                 data.presentation.outlines.slides ?? [],
               );
             } catch {

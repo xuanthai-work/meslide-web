@@ -85,6 +85,16 @@ describe("presentation template picker", () => {
     cy.contains(/không thể tải mẫu|could not be loaded/i).should("exist");
   });
 
+  it("shows the built-in empty state when only custom templates exist", () => {
+    stubTemplateRequests([], [custom]);
+    mountPicker();
+
+    cy.contains("Sales Review").should("exist");
+    cy.contains(/không có mẫu có sẵn|no built-in templates available/i).should(
+      "exist",
+    );
+  });
+
   it("marks a suggested template and navigates only after click", () => {
     stubTemplateRequests([builtIn], []);
     mountPicker({ suggestedTemplate: "momentum" });
