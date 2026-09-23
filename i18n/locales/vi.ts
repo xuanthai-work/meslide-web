@@ -658,12 +658,9 @@ const vi = {
     understanding: "Đang tìm hiểu",
     thinking: "Đang suy nghĩ",
     working: "Đang xử lý…",
-    improveOutline: "Tôi có thể cải thiện gì",
     whatCanIDo: "Tôi có thể giúp gì",
     placeholder: {
-      outline: "Hỏi về dàn ý của bạn.\nGõ / để xem lời nhắc nhanh.",
       general: "Hỏi bất kỳ điều gì.\nGõ / để xem lời nhắc nhanh.",
-      regenerateOutline: "Tạo lại dàn ý này",
       changeTitle: "Đổi tiêu đề slide 2",
       improveDesign: "Cải thiện thiết kế slide",
     },

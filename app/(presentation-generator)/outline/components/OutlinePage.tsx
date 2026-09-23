@@ -429,8 +429,6 @@ const OutlinePage: React.FC = () => {
                 <Chat
                   key={presentation_id}
                   presentationId={presentation_id}
-                  variant="outline"
-                  useEditorLayout
                   inputDisabled={!isOutlineReady}
                   onBeforeSend={handleBeforeOutlineChatSend}
                   onPresentationChanged={handleOutlineChanged}

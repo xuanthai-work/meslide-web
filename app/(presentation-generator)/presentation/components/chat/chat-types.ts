@@ -96,8 +96,7 @@ export type ChatProps = {
   chatAdapter?: ChatApiAdapter;
   conversationStorageScope?: string;
   resourceLabel?: string;
-  variant?: "presentation" | "outline" | "template-v2";
-  useEditorLayout?: boolean;
+  variant?: "presentation" | "template-v2";
   inputDisabled?: boolean;
   currentSlide?: number;
   selectedTemplateV2Target?: TemplateV2SurfaceSelectedDetail["selection"];
