@@ -1,3 +1,4 @@
+import { readOkResponseBody, statusFallbackMessage } from "@/lib/api-response-contract";
 import {
   extractApiErrorMessage,
   type ApiErrorResponse,
@@ -19,18 +20,7 @@ export class ApiResponseHandler {
   static async handleResponse(response: Response, defaultErrorMessage: string): Promise<any> {
     // Handle successful responses
     if (response.ok) {
-      // Handle 204 No Content responses
-      if (response.status === 204) {
-        return true;
-      }
-      
-      // Try to parse JSON response
-      try {
-        return await response.json();
-      } catch {
-        // If JSON parsing fails but response is ok, return empty object
-        return {};
-      }
+      return readOkResponseBody(response.status, () => response.json());
     }
 
     // Handle error responses
@@ -49,7 +39,7 @@ export class ApiResponseHandler {
       );
     } catch {
       // If JSON parsing fails, use status-based messages
-      errorMessage = this.getStatusBasedErrorMessage(response.status, defaultErrorMessage);
+      errorMessage = statusFallbackMessage(response.status, defaultErrorMessage);
     }
 
     // Throw error with appropriate message
@@ -76,7 +66,7 @@ export class ApiResponseHandler {
         );
       } catch {
         // If JSON parsing fails, use status-based messages
-        errorMessage = this.getStatusBasedErrorMessage(response.status, defaultErrorMessage);
+        errorMessage = statusFallbackMessage(response.status, defaultErrorMessage);
       }
 
       return {
@@ -88,36 +78,6 @@ export class ApiResponseHandler {
         success: false,
         message: error instanceof Error ? error.message : defaultErrorMessage,
       };
-    }
-  }
-
-
-  private static getStatusBasedErrorMessage(status: number, defaultMessage: string): string {
-    switch (status) {
-      case 400:
-        return "Bad request. Please check your input and try again.";
-      case 401:
-        return "Unauthorized. Please log in and try again.";
-      case 403:
-        return "Access forbidden. You don't have permission to perform this action.";
-      case 404:
-        return "Resource not found. The requested item may have been deleted or moved.";
-      case 409:
-        return "Conflict. The resource already exists or there's a conflict with the current state.";
-      case 422:
-        return "Validation error. Please check your input and try again.";
-      case 429:
-        return "Too many requests. Please wait a moment and try again.";
-      case 500:
-        return "Internal server error. Please try again later.";
-      case 502:
-        return "Bad gateway. The server is temporarily unavailable.";
-      case 503:
-        return "Service unavailable. Please try again later.";
-      case 504:
-        return "Gateway timeout. The request took too long to process.";
-      default:
-        return defaultMessage;
     }
   }
 }

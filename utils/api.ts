@@ -1,3 +1,4 @@
+import { parseFastApiQueryOrigin, resolveApiUrl, resolveFastApiClientOrigin } from "@/lib/api-url";
 import { extractApiErrorMessage } from "@/utils/apiErrorMessages";
 
 function isAbsoluteHttpUrl(path: string): boolean {
@@ -37,18 +38,19 @@ function getConfiguredFastApiUrl(): string | null {
   return null;
 }
 
+function currentApiRuntime() {
+  return {
+    windowOrigin: typeof window !== "undefined" ? window.location.origin : null,
+    queryOrigin: getFastApiUrlFromQuery(),
+    configuredUrl: getConfiguredFastApiUrl(),
+  };
+}
+
 function getFastApiUrlFromQuery(): string | null {
   if (typeof window === "undefined") return null;
   try {
     const params = new URLSearchParams(window.location.search);
-    const value = params.get("fastapiUrl");
-    if (!value) return null;
-
-    const parsed = new URL(value);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return null;
-    }
-    return parsed.origin;
+    return parseFastApiQueryOrigin(params.get("fastapiUrl"));
   } catch {
     return null;
   }
@@ -77,37 +79,12 @@ function resolveBackendPathForRuntime(path: string): string {
 // - Browser query override: direct FastAPI origin.
 // - Server-side: configured FastAPI origin fallback.
 export function getFastAPIUrl(): string {
-  const queryFastApiUrl = getFastApiUrlFromQuery();
-  if (queryFastApiUrl) {
-    return queryFastApiUrl;
-  }
-
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-
-  return getConfiguredFastApiUrl() || "http://127.0.0.1:5001";
+  return resolveFastApiClientOrigin(currentApiRuntime());
 }
 
 // Utility to construct API URL for Docker/web runtime.
 export function getApiUrl(path: string): string {
-  if (isAbsoluteHttpUrl(path)) {
-    return path;
-  }
-
-  const normalizedPath = withLeadingSlash(path);
-  const isFastApiEndpoint =
-    normalizedPath.startsWith("/api/v1/") ||
-    normalizedPath.startsWith("/api/v2/");
-  if (!isFastApiEndpoint) {
-    return normalizedPath;
-  }
-
-  if (typeof window === "undefined" && !getConfiguredFastApiUrl()) {
-    return normalizedPath;
-  }
-
-  return resolveBackendPathForRuntime(normalizedPath);
+  return resolveApiUrl(path, currentApiRuntime());
 }
 
 /**
