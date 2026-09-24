@@ -1,8 +1,8 @@
-import { createSlice, original, PayloadAction } from '@reduxjs/toolkit';
-import { Slide } from '@/app/(presentation-generator)/types/slide';
+import { createSlice, original, type PayloadAction } from '@reduxjs/toolkit';
+import type { DeckSlide } from '@/store/slices/presentationGeneration';
 
 interface HistoryState {
-  slides: Slide[];
+  slides: DeckSlide[];
   timestamp: number;
   actionType: string;
 }
@@ -29,7 +29,7 @@ const undoRedoSlice = createSlice({
   name: 'undoRedo',
   initialState,
   reducers: {
-    addToHistory: (state, action: PayloadAction<{slides: Slide[], actionType: string}>) => {
+    addToHistory: (state, action: PayloadAction<{slides: DeckSlide[], actionType: string}>) => {
       if (state.pendingHistorySkips > 0) {
         state.pendingHistorySkips -= 1;
         if (state.pendingHistorySkips === 0) {

@@ -33,6 +33,7 @@ import {
   useAutoSave,
 } from "../hooks";
 import { PresentationPageProps } from "../types";
+import type { Slide } from "../../types/slide";
 import { applyPresentationThemeToElement } from "../utils/applyPresentationThemeDom";
 
 import { replaceSlidesWithBlankFallback } from "@/store/slices/presentationGeneration";
@@ -759,7 +760,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   } else if (isPresentMode) {
     pageContent = (
       <PresentationMode
-        slides={presentationData?.slides!}
+        slides={(presentationData?.slides ?? []) as unknown as Slide[]}
         currentSlide={presentSlideFromUrl}
         theme={presentationData?.theme ?? undefined}
         fonts={presentationData?.fonts}

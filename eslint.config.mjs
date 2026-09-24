@@ -91,7 +91,6 @@ const noExplicitAnyAllowlist = [
   "components/slide-editor/model/template-v2-ungroup.ts",
   "components/slide-editor/tables/TemplateV2TableElement.tsx",
   "components/slide-editor/text/template-v2-text.ts",
-  "store/slices/presentationGenUpload.ts",
   "store/slices/presentationGeneration.ts",
 ];
 
