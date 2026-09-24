@@ -3,7 +3,20 @@ import katex from "katex";
 export const MAX_MATH_LATEX_LENGTH = 4000;
 const MATH_RENDER_PIXEL_RATIO = 3;
 
+const MATH_MEASUREMENT_CACHE_LIMIT = 256;
 const mathMeasurementCache = new Map<string, { width: number; height: number }>();
+
+function rememberMathMeasurement(
+  cacheKey: string,
+  measurement: { width: number; height: number },
+) {
+  mathMeasurementCache.delete(cacheKey);
+  mathMeasurementCache.set(cacheKey, measurement);
+  if (mathMeasurementCache.size > MATH_MEASUREMENT_CACHE_LIMIT) {
+    const oldest = mathMeasurementCache.keys().next().value;
+    if (oldest !== undefined) mathMeasurementCache.delete(oldest);
+  }
+}
 
 type MathRenderOptions = {
   displayMode?: boolean;
@@ -48,7 +61,10 @@ export function measureMathLatex(
 
   const cacheKey = `${safeFontSize}:${displayMode ? 1 : 0}:${normalized}`;
   const cached = mathMeasurementCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    rememberMathMeasurement(cacheKey, cached);
+    return cached;
+  }
 
   let measurement = {
     width: Math.max(safeFontSize * 0.75, normalized.length * safeFontSize * 0.5),
@@ -76,7 +92,7 @@ export function measureMathLatex(
     }
   }
 
-  mathMeasurementCache.set(cacheKey, measurement);
+  rememberMathMeasurement(cacheKey, measurement);
   return measurement;
 }
 

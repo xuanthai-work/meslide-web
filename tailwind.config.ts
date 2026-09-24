@@ -4,11 +4,9 @@ const config: Config = {
   darkMode: ["class"],
 
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "!./app/privacy-policy/**/*.{js,ts,jsx,tsx,mdx}",
-    "./presentation-templates/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
