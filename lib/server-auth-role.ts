@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
+import { normalizeAuthStatus } from "@/lib/normalize-auth-status";
 
 export type ServerAuthStatus = {
   configured: boolean;
@@ -42,12 +43,7 @@ export async function authStatusForRequest(): Promise<ServerAuthStatus> {
       return unauthenticatedStatus();
     }
     const payload = (await response.json()) as Partial<ServerAuthStatus>;
-    return {
-      configured: Boolean(payload.configured),
-      authenticated: Boolean(payload.authenticated),
-      username: payload.username ?? null,
-      user_id: payload.user_id ?? null,
-    };
+    return normalizeAuthStatus(payload);
   } catch {
     return unauthenticatedStatus();
   }

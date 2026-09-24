@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 
 import { marked } from "marked";
 import { cn } from "@/lib/utils";
+import { sanitizeMarkdownHtml } from "@/lib/sanitize-markdown-html";
 
 interface MarkdownRendererProps {
     content?: string | null;
@@ -24,7 +25,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
         const parseMarkdown = async () => {
             try {
                 const parsed = await marked.parse(safeContent);
-                setMarkdownContent(parsed);
+                setMarkdownContent(sanitizeMarkdownHtml(String(parsed)));
             } catch (error) {
                 console.error("Error parsing markdown:", error);
                 setMarkdownContent("");

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { setLLMConfig } from '@/store/slices/userConfig';
 import { hasValidLLMConfig, normalizeLLMConfig } from '@/utils/storeHelpers';
 import { fetchLocalProviderConfigJson, fetchUserConfigJsonWithRetries } from '@/lib/startup-llm-config';
@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux';
 import { LLMConfig } from '@/types/llm_config';
 import { GSlideSplashLoader, GSLIDE_SPLASH_MIN_DURATION_MS } from '@/components/gslide';
 import { useT } from '@/i18n/provider';
+import { startPathnameWait } from '@/lib/wait-for-pathname';
 
 function ConfigurationLoadingScreen() {
   const t = useT();
@@ -32,20 +33,19 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
     () => !shouldShowStartupSplash
   );
   const router = useRouter();
+  const cancelNavigationWait = useRef<(() => void) | null>(null);
 
   const setLoadingToFalseAfterNavigatingTo = (pathname: string) => {
-    if (window.location.pathname === pathname) {
-      setIsLoading(false);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      if (window.location.pathname === pathname) {
-        clearInterval(interval);
+    cancelNavigationWait.current?.();
+    cancelNavigationWait.current = startPathnameWait({
+      getPathname: () => window.location.pathname,
+      targetPathname: pathname,
+      onDone: () => {
+        cancelNavigationWait.current = null;
         setIsLoading(false);
-      }
-    }, 500);
-  }
+      },
+    });
+  };
 
   const asLlmConfig = (value: unknown): LLMConfig =>
     normalizeLLMConfig(
@@ -115,6 +115,13 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
     applyLoadedConfig(asLlmConfig(await fetchUserConfigJsonWithRetries()));
   };
+
+  useEffect(() => {
+    return () => {
+      cancelNavigationWait.current?.();
+      cancelNavigationWait.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     fetchUserConfigState();

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getEffectiveUserConfig } from "@/lib/effective-user-config";
+import { redactUserConfigSecrets } from "@/lib/redact-user-config";
 import { authStatusForRequest } from "@/lib/server-auth-role";
 import { hasValidLLMConfig } from "@/utils/storeHelpers";
 
 export const dynamic = "force-dynamic";
-
-const SECRET_FIELD = /(API_KEY|ACCESS_KEY|SECRET|TOKEN|PASSWORD)/i;
 
 export async function GET() {
   const auth = await authStatusForRequest();
@@ -21,15 +20,9 @@ export async function GET() {
   }
   try {
     const full = getEffectiveUserConfig(path);
-    const config = Object.fromEntries(
-      Object.entries(full).map(([key, value]) => [
-        key,
-        SECRET_FIELD.test(key) ? (value ? "__configured__" : "") : value,
-      ])
-    );
     return NextResponse.json({
       configured: hasValidLLMConfig(full),
-      config,
+      config: redactUserConfigSecrets(full as Record<string, unknown>),
     });
   } catch {
     return NextResponse.json(

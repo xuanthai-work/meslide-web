@@ -3,12 +3,12 @@ import os from "os";
 import path from "path";
 
 export class LocalFileAccessError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: 400 | 403 | 404,
-  ) {
+  readonly statusCode: 400 | 403 | 404;
+
+  constructor(message: string, statusCode: 400 | 403 | 404) {
     super(message);
     this.name = "LocalFileAccessError";
+    this.statusCode = statusCode;
   }
 }
 
@@ -26,46 +26,50 @@ type FileOwnerScope = {
   isAdmin: boolean;
 };
 
+function normalizeFileOwnerScope(scope?: FileOwnerScope): FileOwnerScope | undefined {
+  if (!scope) return undefined;
+  const userId = scope.userId?.trim() || null;
+  return { userId, isAdmin: scope.isAdmin };
+}
+
 function allowedReadableFileBaseDirs(scope?: FileOwnerScope): string[] {
+  const userId = scope?.userId?.trim() || "";
+  if (!scope || !userId) return [];
+
   const appDataDirectory =
     process.env.APP_DATA_DIRECTORY?.trim() || "/app/user_data";
   const tempDirectory =
     process.env.TEMP_DIRECTORY?.trim() || path.join(os.tmpdir(), "gslide");
+  const userRoots = [
+    "images",
+    "uploads",
+    "exports",
+    "pptx-to-html",
+    "pptx-to-json",
+  ].map((directory) =>
+    path.join(appDataDirectory, directory, "users", userId)
+  );
+  const sharedRoots = [
+    path.join(appDataDirectory, "fonts"),
+    path.join(appDataDirectory, "templates"),
+  ];
+  const legacyAdminRoots = scope.isAdmin
+    ? [
+        path.join(appDataDirectory, "images"),
+        path.join(appDataDirectory, "uploads"),
+        path.join(appDataDirectory, "exports"),
+        path.join(appDataDirectory, "pptx-to-html"),
+        path.join(appDataDirectory, "pptx-to-json"),
+        tempDirectory,
+      ]
+    : [];
 
-  if (scope?.userId) {
-    const userId = scope.userId;
-    const userRoots = [
-      "images",
-      "uploads",
-      "exports",
-      "pptx-to-html",
-      "pptx-to-json",
-    ].map((directory) =>
-      path.join(appDataDirectory, directory, "users", userId)
-    );
-    const sharedRoots = [
-      path.join(appDataDirectory, "fonts"),
-      path.join(appDataDirectory, "templates"),
-    ];
-    const legacyAdminRoots = scope.isAdmin
-      ? [
-          path.join(appDataDirectory, "images"),
-          path.join(appDataDirectory, "uploads"),
-          path.join(appDataDirectory, "exports"),
-          path.join(appDataDirectory, "pptx-to-html"),
-          path.join(appDataDirectory, "pptx-to-json"),
-          tempDirectory,
-        ]
-      : [];
-    return [
-      ...userRoots,
-      path.join(tempDirectory, userId),
-      ...sharedRoots,
-      ...legacyAdminRoots,
-    ].map(resolveBaseDir);
-  }
-
-  return [appDataDirectory, tempDirectory].map(resolveBaseDir);
+  return [
+    ...userRoots,
+    path.join(tempDirectory, userId),
+    ...sharedRoots,
+    ...legacyAdminRoots,
+  ].map(resolveBaseDir);
 }
 
 function assertNotAnotherUsersFile(
@@ -102,11 +106,11 @@ export function resolveReadableLocalFile(
     throw new LocalFileAccessError("Invalid file path", 400);
   }
 
+  const ownerScope = normalizeFileOwnerScope(scope);
   const requestedPath = path.resolve(filePath);
-  const allowedBaseDirs = allowedReadableFileBaseDirs(scope);
-  assertNotAnotherUsersFile(requestedPath, scope);
+  const allowedBaseDirs = allowedReadableFileBaseDirs(ownerScope);
+  assertNotAnotherUsersFile(requestedPath, ownerScope);
   assertPathAllowed(requestedPath, allowedBaseDirs);
-
 
   let resolvedPath: string;
   try {
@@ -115,7 +119,7 @@ export function resolveReadableLocalFile(
     throw new LocalFileAccessError("File not found", 404);
   }
 
-  assertNotAnotherUsersFile(resolvedPath, scope);
+  assertNotAnotherUsersFile(resolvedPath, ownerScope);
   assertPathAllowed(resolvedPath, allowedBaseDirs);
   return resolvedPath;
 }
