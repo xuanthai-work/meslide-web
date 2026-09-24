@@ -4,6 +4,11 @@ import {
 import { ApiResponseHandler } from "@/app/(presentation-generator)/services/api/api-error-handler";
 import type { Slide } from "@/app/(presentation-generator)/types/slide";
 import { getApiUrl } from "@/utils/api";
+import {
+  presentationDeletePath,
+  presentationDuplicatePath,
+  presentationsListPath,
+} from "./dashboard-list";
 
 export type PresentationVersion = "v1-standard" | "v2-standard";
 
@@ -38,16 +43,8 @@ export class DashboardApi {
     options?: { includeSlides?: boolean }
   ): Promise<PresentationResponse[]> {
     try {
-      const params = new URLSearchParams();
-      if (version) {
-        params.set("version", version);
-      }
-      if (options?.includeSlides === false) {
-        params.set("include_slides", "false");
-      }
-      const query = params.toString();
       const response = await fetch(
-        getApiUrl(`/api/v1/ppt/presentation/all${query ? `?${query}` : ""}`),
+        getApiUrl(presentationsListPath(version, options)),
         {
           method: "GET",
         }
@@ -90,7 +87,7 @@ export class DashboardApi {
   static async deletePresentation(presentation_id: string) {
     try {
       const response = await fetch(
-        getApiUrl(`/api/v1/ppt/presentation/${presentation_id}`),
+        getApiUrl(presentationDeletePath(presentation_id)),
         {
           method: "DELETE",
           headers: getHeader(),
@@ -110,7 +107,7 @@ export class DashboardApi {
   static async duplicatePresentation(presentation_id: string) {
     try {
       const response = await fetch(
-        getApiUrl(`/api/v1/ppt/presentation/${presentation_id}/duplicate`),
+        getApiUrl(presentationDuplicatePath(presentation_id)),
         {
           method: "POST",
           headers: getHeader(),

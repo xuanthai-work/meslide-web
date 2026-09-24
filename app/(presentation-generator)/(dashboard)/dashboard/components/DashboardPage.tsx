@@ -12,6 +12,10 @@ import {
   DashboardApi,
   type PresentationResponse,
 } from "@/app/(presentation-generator)/services/api/dashboard";
+import {
+  removePresentationsById,
+  sortPresentationsNewestFirst,
+} from "@/app/(presentation-generator)/services/api/dashboard-list";
 import { PresentationGrid } from "@/app/(presentation-generator)/(dashboard)/dashboard/components/PresentationGrid";
 import { LegacyPresentationsTable } from "@/app/(presentation-generator)/(dashboard)/dashboard/components/LegacyPresentationsTable";
 import { PresentationGenerationApi } from "@/app/(presentation-generator)/services/api/presentation-generation";
@@ -174,17 +178,6 @@ const ListViewIcon = () => (
   />
 );
 
-const sortPresentationsNewestFirst = (presentations: PresentationResponse[]) =>
-  [...presentations].sort((a, b) => {
-    
-    const createdAtA = Date.parse(a.created_at);
-    const createdAtB = Date.parse(b.created_at);
-
-    return (
-      (Number.isNaN(createdAtB) ? 0 : createdAtB) -
-      (Number.isNaN(createdAtA) ? 0 : createdAtA)
-    );
-  });
 
 function DashboardHeader() {
   return (
@@ -266,16 +259,15 @@ const DashboardPage: React.FC = () => {
   }, [router, t]);
 
   const removePresentation = (presentationId: string) => {
-    setPresentations((prev) => prev.filter((p) => p.id !== presentationId));
+    setPresentations((prev) => removePresentationsById(prev, [presentationId]));
     setLegacyPresentations((prev) =>
-      prev.filter((p) => p.id !== presentationId),
+      removePresentationsById(prev, [presentationId]),
     );
   };
 
   const removeLegacyPresentations = (presentationIds: string[]) => {
-    const deletedIds = new Set(presentationIds);
     setLegacyPresentations((prev) =>
-      prev.filter((presentation) => !deletedIds.has(presentation.id)),
+      removePresentationsById(prev, presentationIds),
     );
   };
 
