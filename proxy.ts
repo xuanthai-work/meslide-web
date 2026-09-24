@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveServerFastApiOrigin } from "@/lib/fastapi-origin";
+import { decideProxyRoute, isFastApiApiPath } from "@/lib/proxy-route";
+
 /**
  * This proxy is the single browser-routing layer now that the bundled
  * nginx proxy has been removed. The browser stays same-origin against the web
@@ -8,35 +11,9 @@ import { NextRequest, NextResponse } from "next/server";
  * Session auth is enforced by FastAPI; this layer only rewrites paths.
  */
 function getFastApiBaseUrl(): string {
-  const internal = process.env.FAST_API_INTERNAL_URL?.trim();
-  if (internal) {
-    return internal.replace(/\/+$/, "");
-  }
-  const configured = process.env.NEXT_PUBLIC_FAST_API?.trim();
-  if (configured) {
-    return configured.replace(/\/+$/, "");
-  }
-  if (process.env.NODE_ENV === "development") {
-    return "http://127.0.0.1:8000";
-  }
-  return "http://127.0.0.1:8000";
-}
-
-function isFastApiApiPath(pathname: string): boolean {
-  return (
-    pathname === "/api/v1" ||
-    pathname.startsWith("/api/v1/") ||
-    pathname === "/api/v2" ||
-    pathname.startsWith("/api/v2/")
-  );
-}
-
-function isFastApiAssetPath(pathname: string): boolean {
-  return (
-    pathname === "/app_data" ||
-    pathname.startsWith("/app_data/") ||
-    pathname === "/static" ||
-    pathname.startsWith("/static/")
+  return resolveServerFastApiOrigin(
+    process.env.FAST_API_INTERNAL_URL,
+    process.env.NEXT_PUBLIC_FAST_API,
   );
 }
 
@@ -56,62 +33,52 @@ function continueRequest(request: NextRequest): NextResponse {
 
 const SESSION_COOKIE_NAME = "gslide_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const SERVICE_API_KEY_PREFIXES = ["sk-gslide-", "sk-presenton-"] as const;
+
+function proxyInput(request: NextRequest) {
+  return {
+    pathname: request.nextUrl.pathname,
+    method: request.method,
+    exportSession: request.nextUrl.searchParams.get("exportSession"),
+    authorization: request.headers.get("authorization"),
+    forwardedProto: request.headers.get("x-forwarded-proto"),
+    protocol: request.nextUrl.protocol,
+    apiKeyPrefixes: SERVICE_API_KEY_PREFIXES,
+  };
+}
 
 export default async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const input = proxyInput(request);
+  const decision = decideProxyRoute(input);
 
-  // These asset paths are served by FastAPI; rewrite them at request time
-  // rather than baking a build-time destination into the Next.js routes
-  // manifest. FastAPI's SessionAuthMiddleware still enforces auth on
-  // /app_data/*, so removing the former nginx auth_request gate is safe.
-  if (isFastApiAssetPath(pathname)) {
-    return rewriteToFastApi(request);
+  if (decision.action === "pdf-session") {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.searchParams.delete("exportSession");
+
+    const response = NextResponse.redirect(redirectUrl);
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
+      value: input.exportSession ?? "",
+      maxAge: SESSION_TTL_SECONDS,
+      httpOnly: true,
+      secure: decision.secure,
+      sameSite: "lax",
+      path: "/",
+    });
+    return response;
   }
 
-  if (pathname === "/pdf-maker") {
-    const exportSession = request.nextUrl.searchParams.get("exportSession");
-    if (exportSession) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.searchParams.delete("exportSession");
-
-      const response = NextResponse.redirect(redirectUrl);
-      response.cookies.set({
-        name: SESSION_COOKIE_NAME,
-        value: exportSession,
-        maxAge: SESSION_TTL_SECONDS,
-        httpOnly: true,
-        secure:
-          request.headers.get("x-forwarded-proto")?.toLowerCase() === "https" ||
-          request.nextUrl.protocol === "https:",
-        sameSite: "lax",
-        path: "/",
-      });
-      return response;
-    }
-
-    return NextResponse.next();
-  }
-
-  if (request.method === "OPTIONS") {
-    return continueRequest(request);
-  }
-
-  const authorization = request.headers.get("authorization") || "";
-  const bearer = authorization.toLowerCase().startsWith("bearer ")
-    ? authorization.slice(7).trim()
-    : "";
-  if (
-    bearer.startsWith("sk-gslide-") ||
-    bearer.startsWith("sk-presenton-")
-  ) {
+  if (decision.action === "reject-api-key") {
     // FastAPI validates admin-owned API keys. Do not treat them as browser
     // sessions or expose them to local Next.js configuration routes.
-    return isFastApiApiPath(pathname)
-      ? rewriteToFastApi(request)
-      : NextResponse.json(
-          { detail: "API keys are only accepted by the GSlide API" },
-          { status: 403 }
-        );
+    return NextResponse.json(
+      { detail: "API keys are only accepted by the GSlide API" },
+      { status: 403 }
+    );
+  }
+
+  if (decision.action === "rewrite") {
+    return rewriteToFastApi(request);
   }
 
   return continueRequest(request);
