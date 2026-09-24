@@ -3,12 +3,13 @@ import {
   LocalFileAccessError,
   readReadableLocalFile,
 } from '@/lib/readable-local-file';
+import { canReadScopedLocalFiles } from '@/lib/normalize-auth-status';
 import { authStatusForRequest } from '@/lib/server-auth-role';
 
 export async function POST(request: Request) {
   try {
     const auth = await authStatusForRequest();
-    if (!auth.authenticated) {
+    if (!canReadScopedLocalFiles(auth)) {
       return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
     }
     const { filePath } = await request.json();

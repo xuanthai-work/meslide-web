@@ -14,6 +14,7 @@ test("markdown renderer never passes nullish content to marked", async () => {
     /const safeContent = typeof content === "string" \? content : ""/
   );
   assert.match(source, /marked\.parse\(safeContent\)/);
+  assert.match(source, /sanitizeMarkdownHtml\(String\(parsed\)\)/);
 });
 
 test("dashboard cards provide a fallback title", async () => {

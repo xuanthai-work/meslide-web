@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getFastApiBaseUrl } from "@/lib/fastapi-internal";
 import { getEffectiveUserConfig } from "@/lib/effective-user-config";
+import { redactUserConfigSecrets } from "@/lib/redact-user-config";
+import { authStatusForRequest } from "@/lib/server-auth-role";
 
 export const dynamic = "force-dynamic";
 
@@ -34,16 +36,25 @@ function readLocalProviderConfig(): Record<string, unknown> {
   }
 }
 
+async function localConfigResponse() {
+  const auth = await authStatusForRequest();
+  if (!auth.authenticated) {
+    return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json(redactUserConfigSecrets(readLocalProviderConfig()));
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   if (url.searchParams.get("source") === "local") {
-    return NextResponse.json(readLocalProviderConfig());
+    return localConfigResponse();
   }
 
   try {
     return await forwardProviderSettings(request);
   } catch {
-    // FastAPI is not required to open the app: instance file/env is enough.
-    return NextResponse.json(readLocalProviderConfig());
+    // Provider settings are unreachable. Still require a session, and never
+    // send file/env secrets back to the browser.
+    return localConfigResponse();
   }
 }

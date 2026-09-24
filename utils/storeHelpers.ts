@@ -1,4 +1,4 @@
-import { LLMConfig } from "@/types/llm_config";
+import type { LLMConfig } from "@/types/llm_config";
 
 function isProvided(value: unknown): boolean {
   return value !== "" && value !== null && value !== undefined;
