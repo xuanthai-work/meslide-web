@@ -1,4 +1,11 @@
 import { getApiUrl } from "@/utils/api";
+import {
+  processingTemplateTasksPath,
+  templateClonePath,
+  templateDeletePath,
+  templateDetailsPath,
+  templateSummariesPath,
+} from "./template-list";
 import type { TemplateV2Layout } from "@/components/slide-editor/importing/template-v2-import";
 import { ApiResponseHandler } from "./api-error-handler";
 import { getHeader } from "./header";
@@ -110,7 +117,7 @@ class TemplateService {
 
     static async getCustomTemplateSummaries() {
         try {
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/all?page_size=100&default=false`),);
+            const response = await fetch(getApiUrl(templateSummariesPath(false)));
             return await ApiResponseHandler.handleResponse(response, "Failed to get custom template summaries");
         } catch (error) {
             console.error("Failed to get custom template summaries", error);
@@ -132,11 +139,7 @@ class TemplateService {
         isDefault?: boolean,
     ): Promise<TemplateListResponse> {
         try {
-            const params = new URLSearchParams({ page_size: "100" });
-            if (typeof isDefault === "boolean") {
-                params.set("default", String(isDefault));
-            }
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/all?${params.toString()}`));
+            const response = await fetch(getApiUrl(templateSummariesPath(isDefault)));
             return await ApiResponseHandler.handleResponse(response, "Failed to get Templates summaries");
         } catch (error) {
             console.error("Failed to get Templates summaries", error);
@@ -146,8 +149,7 @@ class TemplateService {
 
     static async getTemplateDetails(templateId: string): Promise<TemplateDetailsResponse> {
         try {
-            const apiTemplateId = templateId.replace(/^template-v2-/, "");
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/${encodeURIComponent(apiTemplateId)}`));
+            const response = await fetch(getApiUrl(templateDetailsPath(templateId)));
             return await ApiResponseHandler.handleResponse(response, "Failed to get template details");
         } catch (error) {
             console.error("Failed to get Templates v1 details", error);
@@ -171,16 +173,7 @@ class TemplateService {
 
     static async getProcessingTemplateCreateTasks(createdAtFrom: Date): Promise<TemplateCreateTaskResponse[]> {
         try {
-            const params = new URLSearchParams({
-                type: "template.create",
-                status: "pending",
-                order_by: "created_at",
-                order: "desc",
-                limit: "50",
-                offset: "0",
-                created_at: createdAtFrom.toISOString(),
-            });
-            const response = await fetch(getApiUrl(`/api/v1/async-tasks?${params.toString()}`));
+            const response = await fetch(getApiUrl(processingTemplateTasksPath(createdAtFrom)));
             return await ApiResponseHandler.handleResponse(response, "Failed to get processing template tasks");
         } catch (error) {
             console.error("Failed to get processing template tasks", error);
@@ -190,7 +183,7 @@ class TemplateService {
 
     static async deleteTemplate(templateId: string) {
         try {
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/${encodeURIComponent(templateId)}`), {
+            const response = await fetch(getApiUrl(templateDeletePath(templateId)), {
                 method: "DELETE",
                 headers: getHeader(),
             });
@@ -305,7 +298,7 @@ class TemplateService {
 
     static async cloneCustomTemplate(payload: CloneTemplatePayload) {
         try {
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/clone`), {
+            const response = await fetch(getApiUrl(templateClonePath()), {
                 method: "POST",
                 headers: getHeader(),
                 body: JSON.stringify(payload),
