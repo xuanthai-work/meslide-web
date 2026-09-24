@@ -64,11 +64,10 @@ import {
   formatTraceActivity,
   inferStatusState,
   isAbortError,
+  decideSlideFollow,
   MIN_SLIDE_FOCUS_DWELL_MS,
   MUTATING_TOOLS,
   readTraceSlideIndex,
-  SLIDE_FOCUS_STATUSES,
-  SLIDE_FOCUS_TOOLS,
 } from "./chat/chat-activity";
 import { translateBackendStatus } from "@/i18n/backend-messages";
 import { useChatSession } from "./chat/useChatSession";
@@ -320,33 +319,19 @@ const Chat = ({
 
   const maybeFollowAgentSlide = useCallback(
     (trace: ChatStreamTrace) => {
-      if (!trace.tool || !SLIDE_FOCUS_TOOLS.has(trace.tool)) {
+      const decision = decideSlideFollow({
+        trace,
+        lastSignature: lastFollowedTraceRef.current,
+        activeSlide: activeFocusedSlideRef.current,
+        elapsedMs: Date.now() - lastFocusDispatchAtRef.current,
+      });
+      if (decision.action === "ignore") {
         return;
       }
-      if (!trace.status || !SLIDE_FOCUS_STATUSES.has(trace.status)) {
-        return;
-      }
+      lastFollowedTraceRef.current = decision.signature;
+      const targetSlideIndex = decision.slideIndex;
 
-      const targetSlideIndex = readTraceSlideIndex(trace);
-      if (targetSlideIndex === null) {
-        return;
-      }
-
-      const traceSignature = `${trace.round ?? "?"}:${trace.tool}:${trace.status
-        }:${targetSlideIndex}`;
-      if (lastFollowedTraceRef.current === traceSignature) {
-        return;
-      }
-      lastFollowedTraceRef.current = traceSignature;
-
-      const activeFocusedSlide = activeFocusedSlideRef.current;
-      const elapsed = Date.now() - lastFocusDispatchAtRef.current;
-      const shouldDispatchImmediately =
-        activeFocusedSlide === null ||
-        activeFocusedSlide === targetSlideIndex ||
-        elapsed >= MIN_SLIDE_FOCUS_DWELL_MS;
-
-      if (shouldDispatchImmediately) {
+      if (decision.action === "focus-now") {
         pendingFocusTraceRef.current = null;
         if (focusDispatchTimerRef.current !== null) {
           window.clearTimeout(focusDispatchTimerRef.current);

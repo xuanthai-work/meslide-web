@@ -1,3 +1,4 @@
+import { readChatStreamChunk } from "./chat-stream";
 import { buildAbsoluteApiRequestUrl, getApiUrl } from "@/utils/api";
 import { ApiResponseHandler } from "./api-error-handler";
 import { getHeader } from "./header";
@@ -172,10 +173,8 @@ async function streamChatMessage(
 
     const payloadType = parsedData.type;
     if (payloadType === "chunk") {
-      const chunk = parsedData.chunk;
-      if (typeof chunk === "string" && chunk.length > 0) {
-        handlers.onChunk?.(chunk);
-      }
+      const chunk = readChatStreamChunk(parsedData);
+      if (chunk) handlers.onChunk?.(chunk);
       return;
     }
 
