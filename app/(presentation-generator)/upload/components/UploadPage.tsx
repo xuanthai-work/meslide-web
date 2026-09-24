@@ -26,6 +26,7 @@ import {
   decompositionKeyFor,
   documentPathsOf,
   fileFingerprint,
+  planDocumentPreparation,
 } from "../services/document-preparation";
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
@@ -164,11 +165,17 @@ const UploadPage = () => {
     const decompositionKeyValue = decompositionKeyFor(fingerprint, config.language);
 
     const cached = preparedDocumentsRef.current;
-    if (cached && cached.decompositionKey === decompositionKeyValue) {
+    const step = planDocumentPreparation({
+      fileFingerprint: fingerprint,
+      decompositionKey: decompositionKeyValue,
+      cachedDecompositionKey: cached?.decompositionKey ?? null,
+      uploadedFingerprint: uploadedOriginalsRef.current?.fileFingerprint ?? null,
+    });
+    if (step === "use-cache" && cached) {
       return cached;
     }
 
-    if (uploadedOriginalsRef.current?.fileFingerprint !== fingerprint) {
+    if (step === "upload-and-decompose") {
       onPhase?.("uploading_documents");
       const uploadedPaths = (await PresentationGenerationApi.uploadDoc(
         files,
