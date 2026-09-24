@@ -4,15 +4,18 @@ import { resolveBackendAssetUrl } from "./api";
  * Normalizes DOM image URLs through the shared backend asset resolver.
  * Keeps web on same-origin proxy paths so NextJS image optimization works.
  */
-export function convertImageUrlsForEnvironment() {
+function convertImageElement(img: HTMLImageElement) {
+  if (!img.src) return;
+  img.src = resolveBackendAssetUrl(img.src);
+}
+
+export function convertImageUrlsForEnvironment(root?: ParentNode) {
   if (typeof document === "undefined") return;
+  const scope = root ?? document;
 
-  const images = document.querySelectorAll("img[src]");
-
-  images.forEach((img) => {
-    const htmlImg = img as HTMLImageElement;
-    if (!htmlImg.src) return;
-    htmlImg.src = resolveBackendAssetUrl(htmlImg.src);
+  if (scope instanceof HTMLImageElement) convertImageElement(scope);
+  scope.querySelectorAll("img[src]").forEach((img) => {
+    convertImageElement(img as HTMLImageElement);
   });
 }
 
@@ -29,15 +32,7 @@ export function setupImageUrlConverter() {
         if (node.nodeType === Node.ELEMENT_NODE) {
           const element = node as Element;
           
-          // Any new <img> or descendants with src should be normalized
-          if (element.tagName === "IMG") {
-            convertImageUrlsForEnvironment();
-          }
-          
-          const imgs = element.querySelectorAll?.("img[src]");
-          if (imgs && imgs.length > 0) {
-            convertImageUrlsForEnvironment();
-          }
+          convertImageUrlsForEnvironment(element);
         }
       });
     });
