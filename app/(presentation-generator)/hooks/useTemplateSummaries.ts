@@ -6,49 +6,17 @@ import TemplateService, {
   TemplateCreateTaskResponse,
   TemplateListItem,
 } from "../services/api/template";
+import {
+  filterTemplatesWithLayouts,
+  shouldRefreshTemplatesAfterPoll,
+  splitTemplatesByDefault,
+  TEMPLATE_SUMMARY_POLL_MS,
+  TEMPLATE_TASK_LOOKBACK_MS,
+} from "../services/api/template-list";
 import { useT } from "@/i18n/provider";
 
 export type TemplateTab = "custom" | "default";
-
-const FEATURED_BUILT_IN_TEMPLATE_ORDER = [
-  "momentum",
-  "dynamic",
-  "executive",
-] as const;
-
-function orderBuiltInTemplates(templates: TemplateListItem[]) {
-  const priorityByName = new Map<string, number>(
-    FEATURED_BUILT_IN_TEMPLATE_ORDER.map((name, index) => [name, index]),
-  );
-
-  return templates
-    .map((template, index) => ({ template, index }))
-    .sort((left, right) => {
-      const leftPriority =
-        priorityByName.get(left.template.name.trim().toLowerCase()) ??
-        FEATURED_BUILT_IN_TEMPLATE_ORDER.length;
-      const rightPriority =
-        priorityByName.get(right.template.name.trim().toLowerCase()) ??
-        FEATURED_BUILT_IN_TEMPLATE_ORDER.length;
-
-      return leftPriority - rightPriority || left.index - right.index;
-    })
-    .map(({ template }) => template);
-}
-
-export function splitTemplatesByDefault(templates: TemplateListItem[]) {
-  const defaultTemplates = orderBuiltInTemplates(
-    templates.filter((template) => template.is_default)
-  );
-  const customTemplates = templates.filter((template) => !template.is_default);
-  return { defaultTemplates, customTemplates };
-}
-
-function filterTemplatesWithLayouts(templates: TemplateListItem[]) {
-  return templates.filter(
-    (template) => template.layout_count == null || template.layout_count > 0
-  );
-}
+export { splitTemplatesByDefault };
 
 export function useTemplateSummaries({
   includeProcessingTemplateTasks = false,
@@ -73,7 +41,7 @@ export function useTemplateSummaries({
         return [];
       }
 
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const oneHourAgo = new Date(Date.now() - TEMPLATE_TASK_LOOKBACK_MS);
       try {
         return await TemplateService.getProcessingTemplateCreateTasks(oneHourAgo);
       } catch (error) {
@@ -130,8 +98,10 @@ export function useTemplateSummaries({
         loadProcessingTemplateTasks().then((processingTasks) => {
           if (!cancelled) {
             const nextProcessingTasks = processingTasks ?? [];
-            const shouldRefreshTemplates =
-              hadProcessingTemplateTasks || nextProcessingTasks.length > 0;
+            const shouldRefreshTemplates = shouldRefreshTemplatesAfterPoll(
+              hadProcessingTemplateTasks,
+              nextProcessingTasks.length,
+            );
             hadProcessingTemplateTasks = nextProcessingTasks.length > 0;
             setProcessingTemplateTasks(nextProcessingTasks);
 
@@ -148,7 +118,7 @@ export function useTemplateSummaries({
             }
           }
         });
-      }, 30000);
+      }, TEMPLATE_SUMMARY_POLL_MS);
     }
 
     return () => {
