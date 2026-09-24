@@ -2,6 +2,7 @@ import {
   getHeader,
 } from "@/app/(presentation-generator)/services/api/header";
 import { ApiResponseHandler } from "@/app/(presentation-generator)/services/api/api-error-handler";
+import type { Slide } from "@/app/(presentation-generator)/types/slide";
 import { getApiUrl } from "@/utils/api";
 
 export type PresentationVersion = "v1-standard" | "v2-standard";
@@ -12,22 +13,22 @@ export interface PresentationResponse {
   title: string;
   created_at: string;
   updated_at: string;
-  data: any | null;
+  data: unknown | null;
   file: string;
   n_slides: number;
   prompt: string;
   summary: string | null;
-  theme: Record<string, any> | null;
+  theme: Record<string, unknown> | null;
   titles: string[];
   user_id: string;
-  vector_store: any;
+  vector_store: unknown;
 
   thumbnail: string;
-  layout?: any;
-  structure?: any;
-  components?: any;
-  fonts?: any;
-  slides: any[];
+  layout?: unknown;
+  structure?: unknown;
+  components?: unknown;
+  fonts?: unknown;
+  slides: Slide[];
 }
 
 export class DashboardApi {

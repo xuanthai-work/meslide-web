@@ -76,9 +76,9 @@ const DocumentsPreviewPage: React.FC = () => {
   // Memoized computed values
   const fileItems: FileItem[] = useMemo(() => {
     if (!files || !Array.isArray(files) || files.length === 0) return [];
-    return files
-      .flat()
-      .filter((item: any) => item && item.name && item.file_path);
+    return files.flat().filter((item): item is FileItem =>
+      Boolean(item && item.name && item.file_path)
+    );
   }, [files]);
 
   const documentKeys = useMemo(() => {
