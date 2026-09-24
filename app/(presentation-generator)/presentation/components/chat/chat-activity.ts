@@ -156,21 +156,13 @@ export const inferStatusState = (
   return "info";
 };
 
+export { stripBackendContextFromUserMessage } from "./chat-utils";
+
 export const isAbortError = (error: unknown) =>
   (error instanceof DOMException && error.name === "AbortError") ||
   (error instanceof Error &&
     error.message.toLowerCase().includes("aborted") &&
     error.message.toLowerCase().includes("request"));
-
-export const stripBackendContextFromUserMessage = (rawMessage: string) => {
-  const message = rawMessage ?? "";
-  if (!message.startsWith("UI context:")) return message;
-
-  const marker = "\nUser message:";
-  const markerIndex = message.indexOf(marker);
-  if (markerIndex === -1) return message;
-  return message.slice(markerIndex + marker.length).trimStart();
-};
 
 const humanActivityForTool = (
   tool: string | undefined,
@@ -309,3 +301,41 @@ export const readTraceSlideIndex = (trace: ChatStreamTrace) => {
   }
   return null;
 };
+
+export type SlideFollowDecision =
+  | { action: "ignore" }
+  | { action: "focus-now"; slideIndex: number; signature: string }
+  | { action: "defer"; slideIndex: number; signature: string; waitMs: number };
+
+/** Follow mode only jumps on mutating slide tools, and not faster than the dwell. */
+export function decideSlideFollow(input: {
+  trace: ChatStreamTrace;
+  lastSignature: string | null;
+  activeSlide: number | null;
+  elapsedMs: number;
+}): SlideFollowDecision {
+  const { trace, lastSignature, activeSlide, elapsedMs } = input;
+  if (!trace.tool || !SLIDE_FOCUS_TOOLS.has(trace.tool)) return { action: "ignore" };
+  if (!trace.status || !SLIDE_FOCUS_STATUSES.has(trace.status)) return { action: "ignore" };
+
+  const slideIndex = readTraceSlideIndex(trace);
+  if (slideIndex === null) return { action: "ignore" };
+
+  const signature = `${trace.round ?? "?"}:${trace.tool}:${trace.status}:${slideIndex}`;
+  if (lastSignature === signature) return { action: "ignore" };
+
+  if (
+    activeSlide === null ||
+    activeSlide === slideIndex ||
+    elapsedMs >= MIN_SLIDE_FOCUS_DWELL_MS
+  ) {
+    return { action: "focus-now", slideIndex, signature };
+  }
+
+  return {
+    action: "defer",
+    slideIndex,
+    signature,
+    waitMs: Math.max(MIN_SLIDE_FOCUS_DWELL_MS - elapsedMs, 0),
+  };
+}

@@ -4,33 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { notify } from "@/components/ui/sonner";
 import { useT } from "@/i18n/provider";
 import type { ChatHistoryMessage } from "../../../services/api/chat";
-import { stripBackendContextFromUserMessage } from "./chat-activity";
 import type { ChatApiAdapter, ChatMessage } from "./chat-types";
 import {
   conversationStorageKey,
-  createMessageId,
+  historyMessagesToChatMessages,
   readStoredConversationId,
   removeStoredConversationId,
   storeConversationId,
 } from "./chat-utils";
 
-export function historyMessagesToChatMessages(
-  rows: ChatHistoryMessage[],
-): ChatMessage[] {
-  return rows.map((message) => ({
-    id: createMessageId(),
-    role:
-      message.role === "assistant"
-        ? "assistant"
-        : message.role === "user"
-          ? "user"
-          : "user",
-    content:
-      message.role === "user"
-        ? stripBackendContextFromUserMessage(message.content)
-        : message.content,
-  }));
-}
+export { historyMessagesToChatMessages };
 
 export async function loadChatConversation({
   resourceId,

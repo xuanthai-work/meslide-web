@@ -1,4 +1,5 @@
 import type { DragEvent } from "react";
+import type { ChatMessage } from "./chat-types";
 import type { ChatAttachment } from "../../../services/api/chat";
 import type {
   ChatDocumentAttachment,
@@ -91,6 +92,28 @@ export function shouldReadAttachedImages(message: string) {
 export function trimAttachmentContent(content: string) {
   if (content.length <= ATTACHMENT_CONTENT_LIMIT) return content;
   return `${content.slice(0, ATTACHMENT_CONTENT_LIMIT)}\n[Attachment truncated]`;
+}
+
+export function stripBackendContextFromUserMessage(rawMessage: string) {
+  const message = rawMessage ?? "";
+  if (!message.startsWith("UI context:")) return message;
+  const marker = "\nUser message:";
+  const markerIndex = message.indexOf(marker);
+  if (markerIndex === -1) return message;
+  return message.slice(markerIndex + marker.length).trimStart();
+}
+
+export function historyMessagesToChatMessages(
+  rows: Array<{ role: string; content: string }>,
+): ChatMessage[] {
+  return rows.map((message) => ({
+    id: createMessageId(),
+    role: message.role === "assistant" ? "assistant" as const : "user" as const,
+    content:
+      message.role === "user"
+        ? stripBackendContextFromUserMessage(message.content)
+        : message.content,
+  }));
 }
 
 export function buildChatDocumentAttachments(
