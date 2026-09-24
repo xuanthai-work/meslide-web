@@ -6,6 +6,7 @@ import { File, Paperclip, X } from "lucide-react";
 import { notify } from "@/components/ui/sonner";
 import { useT } from "@/i18n/provider";
 import { PromptComposerBoundaryContext } from "./PromptInput";
+import { exceedsPresentationUploadLimit } from "../services/document-preparation";
 
 /**
  * How the selected documents participate in the upload flow. The parent owns
@@ -65,8 +66,15 @@ export default function SupportingDoc({
         t("upload.files.supportedDescription"),
       );
     }
+    const withinLimit = allowed.filter((file) => !exceedsPresentationUploadLimit(file.size));
+    if (withinLimit.length < allowed.length) {
+      notify.error(
+        t("templateStudio.upload.tooLargeTitle"),
+        t("templateStudio.upload.tooLargeDescription"),
+      );
+    }
 
-    const next = multiple ? [...files, ...allowed] : allowed.slice(0, 1);
+    const next = multiple ? [...files, ...withinLimit] : withinLimit.slice(0, 1);
     const limited = next.slice(0, MAX_SUPPORTED_FILES);
     if (next.length > MAX_SUPPORTED_FILES) {
       notify.warning(

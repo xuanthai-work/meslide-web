@@ -14,6 +14,10 @@ import type { PresentationVersion } from "./dashboard";
 import type { Slide } from "../../types/slide";
 import { LanguageType } from "../../upload/type";
 import { toLegacyLanguageValue } from "../../upload/language";
+import {
+  BLANK_PRESENTATION_PATH,
+  buildCreatePresentationBody,
+} from "../../upload/services/document-preparation";
 
 export type BlankPresentationResponse = {
   id: string;
@@ -118,27 +122,23 @@ export class PresentationGenerationApi {
     web_search?: boolean;
   }) {
     try {
-      const limitedSlideCount =
-        typeof n_slides === "number"
-          ? Math.min(Math.max(n_slides, 1), MAX_NUMBER_OF_SLIDES)
-          : null;
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/presentation/create`),
         {
           method: "POST",
           headers: getHeader(),
-          body: JSON.stringify({
-            content,
-            n_slides: limitedSlideCount,
-            file_paths,
-            language: toLegacyLanguageValue(language),
-            tone,
-            verbosity,
-            instructions,
-            include_table_of_contents: true,
-            include_title_slide: true,
-            web_search,
-          }),
+          body: JSON.stringify(
+            buildCreatePresentationBody({
+              content,
+              n_slides,
+              file_paths,
+              language,
+              tone,
+              verbosity,
+              instructions,
+              web_search,
+            }),
+          ),
           cache: "no-cache",
         }
       );
@@ -207,7 +207,7 @@ export class PresentationGenerationApi {
   static async createBlankPresentation(): Promise<BlankPresentationResponse> {
     try {
       const response = await fetch(
-        getApiUrl(`/api/v1/ppt/presentation/create/blank`),
+        getApiUrl(BLANK_PRESENTATION_PATH),
         {
           method: "POST",
           headers: getHeader(),
