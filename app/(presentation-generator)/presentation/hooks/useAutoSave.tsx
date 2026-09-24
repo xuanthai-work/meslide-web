@@ -8,9 +8,12 @@ import type { PresentationData } from '@/store/slices/presentationGeneration';
 import type { Slide } from '../../types/slide';
 import type { AutoSaveSnapshot } from '../utils/autoSaveDiff';
 import {
+    acknowledgeSavedMetadata,
+    acknowledgeSavedSlide,
     createAutoSaveSnapshot,
-    fingerprintValue,
     getAutoSaveChanges,
+    nextAutoSaveTick,
+    queueAutoSaveTimer,
 } from '../utils/autoSaveDiff';
 
 interface UseAutoSaveOptions {
@@ -81,7 +84,7 @@ export const useAutoSave = ({
                 acknowledgedDataRef.current = createAutoSaveSnapshot(data);
             } else {
                 let firstError: unknown = null;
-                const nextAcknowledged: AutoSaveSnapshot = {
+                let nextAcknowledged: AutoSaveSnapshot = {
                     ...acknowledged,
                     slideFingerprints: { ...acknowledged.slideFingerprints },
                 };
@@ -93,10 +96,7 @@ export const useAutoSave = ({
                             title: data.title,
                             theme: data.theme,
                         });
-                        nextAcknowledged.metadataFingerprint = fingerprintValue({
-                            title: data.title,
-                            theme: data.theme,
-                        });
+                        nextAcknowledged = acknowledgeSavedMetadata(nextAcknowledged, data);
                         acknowledgedDataRef.current = nextAcknowledged;
                     } catch (error) {
                         firstError = error;
@@ -106,10 +106,9 @@ export const useAutoSave = ({
                 for (const slide of changes.changedSlides) {
                     try {
                         await PresentationGenerationApi.updatePresentationSlide(
-                            slide as Slide
+                            slide as unknown as Slide
                         );
-                        nextAcknowledged.slideFingerprints[slide.id] =
-                            fingerprintValue(slide);
+                        nextAcknowledged = acknowledgeSavedSlide(nextAcknowledged, slide);
                         acknowledgedDataRef.current = nextAcknowledged;
                     } catch (error) {
                         firstError ??= error;
@@ -129,9 +128,13 @@ export const useAutoSave = ({
 
             if (pendingSaveRef.current && !autoSavePausedRef.current) {
                 pendingSaveRef.current = false;
-                saveTimeoutRef.current = setTimeout(() => {
-                    void saveLatestRef.current();
-                }, 250);
+                saveTimeoutRef.current = queueAutoSaveTimer(
+                    saveTimeoutRef.current,
+                    250,
+                    () => {
+                        void saveLatestRef.current();
+                    },
+                );
             }
         }
     }, []);
@@ -144,14 +147,21 @@ export const useAutoSave = ({
     useEffect(() => {
         if (!presentationData) return;
 
-        if (autoSavePaused) {
+        const decision = nextAutoSaveTick({
+            data: presentationData,
+            paused: autoSavePaused,
+            wasPaused: wasAutoSavePausedRef.current,
+            saving: isSavingRef.current,
+            acknowledged: acknowledgedDataRef.current,
+        });
+        wasAutoSavePausedRef.current = decision.wasPaused;
+        const tick = decision.tick;
+
+        if (tick.kind === "paused") {
             // Changes arriving while editing is paused are server-originated
             // hydration/streaming updates and are already persisted.
-            wasAutoSavePausedRef.current = true;
             pendingSaveRef.current = false;
-            if (!isSavingRef.current) {
-                acknowledgedDataRef.current = createAutoSaveSnapshot(presentationData);
-            }
+            if (tick.snapshot) acknowledgedDataRef.current = tick.snapshot;
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
                 saveTimeoutRef.current = null;
@@ -159,19 +169,20 @@ export const useAutoSave = ({
             return;
         }
 
-        // History is updated immediately from immutable Redux snapshots. It is
-        // independent from network debounce, so even the first edit can undo.
-        dispatch(addToHistory({
-            slides: presentationData.slides,
-            actionType: "AUTO_SAVE"
-        }));
+        if (tick.recordHistory) {
+            // History is updated immediately from immutable Redux snapshots. It is
+            // independent from network debounce, so even the first edit can undo.
+            dispatch(addToHistory({
+                slides: presentationData.slides,
+                actionType: "AUTO_SAVE"
+            }));
+        }
 
-        if (wasAutoSavePausedRef.current) {
+        if (tick.kind === "resumed") {
             // The final streaming/loading payload can land in the same render
             // that flips editing back on. Treat that first active snapshot as
             // already persisted instead of issuing slide updates for it.
-            wasAutoSavePausedRef.current = false;
-            acknowledgedDataRef.current = createAutoSaveSnapshot(presentationData);
+            acknowledgedDataRef.current = tick.snapshot;
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
                 saveTimeoutRef.current = null;
@@ -179,22 +190,19 @@ export const useAutoSave = ({
             return;
         }
 
-        if (
-            !acknowledgedDataRef.current ||
-            acknowledgedDataRef.current.presentationId !== presentationData.id
-        ) {
-            acknowledgedDataRef.current = createAutoSaveSnapshot(presentationData);
+        if (tick.kind === "baseline") {
+            acknowledgedDataRef.current = tick.snapshot;
             return;
         }
-        
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-        saveTimeoutRef.current = setTimeout(() => {
-            void saveLatestRef.current();
-        }, debounceMs);
-       
-        // Cleanup timeout on unmount
+
+        saveTimeoutRef.current = queueAutoSaveTimer(
+            saveTimeoutRef.current,
+            debounceMs,
+            () => {
+                void saveLatestRef.current();
+            },
+        );
+
         return () => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
