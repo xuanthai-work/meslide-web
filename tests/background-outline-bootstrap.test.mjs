@@ -17,14 +17,14 @@ test("background bootstrap hydrates, streams, and prepares exactly once", async 
   assert.match(source, /layout:\s*templateId/);
 });
 
-test("cancel returns to the presentation picker and discards outlines", async () => {
+test("cancel returns to upload and discards outlines", async () => {
   const source = await read(
     "app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts",
   );
   const cancelBlock = source.slice(source.indexOf("const cancel = useCallback"));
   assert.match(cancelBlock, /await outlineStream\.cancel\(\)/);
   assert.match(cancelBlock, /clearOutlines/);
-  assert.match(cancelBlock, /`\/presentation\?id=\$\{presentationId\}&auto=1`/);
+  assert.match(cancelBlock, /router\.replace\("\/upload"\)/);
   assert.doesNotMatch(cancelBlock, /\/outline/);
 });
 

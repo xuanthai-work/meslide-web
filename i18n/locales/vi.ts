@@ -271,7 +271,7 @@ const vi = {
       description: "Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI.",
     },
     hero: {
-      title: "Tạo",
+      title: "G-SLIDE",
       subtitle: "Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI",
     },
     template: {
@@ -1145,37 +1145,19 @@ const vi = {
     },
     create: {
       buildTemplate: "Tạo mẫu",
-      buildTemplates: "Tạo mẫu",
-      buildYourTemplate: "Tạo mẫu của bạn",
       buildYourOwnTemplate: "Tạo mẫu riêng của bạn",
     },
+    tabs: {
+      custom: "Tùy chỉnh",
+      builtin: "Có sẵn",
+    },
     card: {
-      suggested: "Đề xuất",
       openAria: (p) => `Mở mẫu ${p.name}`,
-      selectAria: (p) => `Chọn mẫu ${p.name}`,
       thumbnailAria: (p) => `Hình thu nhỏ của ${p.name}`,
       newTemplate: "Mẫu mới",
       preparingLayouts: "Đang chuẩn bị bố cục",
       layoutsProgress: (p) => `${p.done} / ${p.total} bố cục`,
       processingAria: (p) => `${p.name} đang được tạo`,
-    },
-    selection: {
-      title: "Chọn mẫu",
-      error: {
-        loadFailed: (p) => `Không thể tải mẫu: ${p.error}`,
-      },
-      suggestion: {
-        selected: "Đã chọn mẫu gợi ý.",
-        continueHint: "Nhấp vào mẫu được tô đậm để tiếp tục.",
-      },
-      section: {
-        templates: "Mẫu",
-        custom: "Tùy chỉnh",
-        builtin: "Có sẵn",
-      },
-      empty: {
-        noBuiltin: "Không có mẫu có sẵn.",
-      },
     },
   },
 

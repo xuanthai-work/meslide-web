@@ -1,4 +1,5 @@
 'use client'
+import { useEffect } from "react";
 import PresentationPage from "./components/PresentationPage";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +10,12 @@ const Page = () => {
   const router = useRouter();
   const params = useSearchParams();
   const queryId = params.get("id");
+  const missingTemplate = params.get("auto") === "1" && !params.get("template")?.trim();
+
+  useEffect(() => {
+    if (queryId && missingTemplate) router.replace("/upload");
+  }, [queryId, missingTemplate, router]);
+
   if (!queryId) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[var(--gslide-bg)]">
@@ -20,6 +27,8 @@ const Page = () => {
       </div>
     );
   }
+  if (missingTemplate) return null;
+
   return (
 
     <PresentationPage presentation_id={queryId} />

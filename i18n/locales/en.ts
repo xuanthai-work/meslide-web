@@ -273,7 +273,7 @@ const en = {
       createTitle: "Create Data Presentation | GSlide",
       description: "Turn prompts or documents into presentations with AI.",
     },
-    hero: { title: "Generate", subtitle: "Turn prompts or documents into presentations with AI" },
+    hero: { title: "G-SLIDE", subtitle: "Turn prompts or documents into presentations with AI" },
     template: {
       label: "Template",
       loading: "Loading templates...",
@@ -911,37 +911,19 @@ const en = {
     },
     create: {
       buildTemplate: "Build Template",
-      buildTemplates: "Build Templates",
-      buildYourTemplate: "Build Your Template",
       buildYourOwnTemplate: "Build Your Own Template",
     },
+    tabs: {
+      custom: "Custom",
+      builtin: "Built-In",
+    },
     card: {
-      suggested: "Suggested",
       openAria: (p) => `Open ${p.name} template`,
-      selectAria: (p) => `Select ${p.name} template`,
       thumbnailAria: (p) => `${p.name} thumbnail`,
       newTemplate: "New template",
       preparingLayouts: "Preparing layouts",
       layoutsProgress: (p) => `${p.done} of ${p.total} layouts`,
       processingAria: (p) => `${p.name} template is processing`,
-    },
-    selection: {
-      title: "Select Template",
-      error: {
-        loadFailed: (p) => `Templates could not be loaded: ${p.error}`,
-      },
-      suggestion: {
-        selected: "Suggested template selected.",
-        continueHint: "Click the highlighted template to continue.",
-      },
-      section: {
-        templates: "Templates",
-        custom: "Custom",
-        builtin: "Built-In",
-      },
-      empty: {
-        noBuiltin: "No built-in templates available.",
-      },
     },
   },
 
