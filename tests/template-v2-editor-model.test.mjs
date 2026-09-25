@@ -93,6 +93,26 @@ function sampleUi() {
   };
 }
 
+test("chart font survives conversion to an editable slide", async () => {
+  const { adaptTemplateV2LayoutToSlide } = await import(
+    "../components/slide-editor/importing/template-v2-import.ts"
+  );
+  const slide = adaptTemplateV2LayoutToSlide({
+    id: "chart-slide",
+    elements: [{
+      type: "chart",
+      chart_type: "bar",
+      font: { family: "Be Vietnam Pro" },
+      categories: ["A"],
+      series: [{ name: "Sales", values: [1] }],
+      decorative: false,
+      name: "revenue",
+    }],
+  });
+
+  assert.equal(slide.elements[0].font?.family, "Be Vietnam Pro");
+});
+
 test("grouping two components preserves child content and selects the new group", async () => {
   const { groupTemplateV2ComponentsInUi, isTemplateV2GroupShortcut } = await import(
     "../components/slide-editor/model/template-v2-group.ts"

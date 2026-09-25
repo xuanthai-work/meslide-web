@@ -14,8 +14,10 @@ import {
   markdownToPlainChartText,
   normalizeChartTypeName,
 } from "@/components/slide-editor/charts/chart-data";
+import { ensureGoogleFontLoaded } from "@/components/slide-editor/text/google-fonts";
 import type { DataLabelPosition } from "@/components/slide-editor/types";
 import { translate } from "@/i18n/translate";
+import { applyChartFontFamily } from "@/lib/chart-font";
 import {
   asRecord,
   clamp,
@@ -132,8 +134,14 @@ export function TemplateV2ChartJsElement({
 
     let chart: ChartInstanceLike | null = null;
     let disposed = false;
-    void loadChartBrowserRuntime()
-      .then(({ Chart }) => {
+    const fontFamily = readString(asRecord(renderInput.element.font)?.family);
+    const fontReady = fontFamily
+      ? Promise.resolve(ensureGoogleFontLoaded(fontFamily))
+          .then(() => document.fonts?.load(`12px "${fontFamily}"`))
+          .catch(() => undefined)
+      : Promise.resolve();
+    void Promise.all([loadChartBrowserRuntime(), fontReady])
+      .then(([{ Chart }]) => {
         if (disposed) return;
         chart = new Chart(nextCanvas, config);
         chart.update("none");
@@ -185,6 +193,7 @@ function chartRenderSignature(
     data: element.data,
     data_labels: element.data_labels,
     dataLabels: element.dataLabels,
+    font: element.font,
     grid_color: element.grid_color,
     gridColor: element.gridColor,
     height,
@@ -308,7 +317,7 @@ function createChartJsConfig(
       "legend" in element ? element.legend : element.showLegend,
     ) ?? autoShowLegend;
 
-  return {
+  return applyChartFontFamily({
     type: kind.chartJsType,
     data: {
       labels: categories.map((category) => displayChartCategoryLabel(category)),
@@ -405,7 +414,7 @@ function createChartJsConfig(
         yAxisTitle,
       }),
     } as Record<string, unknown>,
-  };
+  }, readString(asRecord(element.font)?.family));
 }
 
 function createChartJsDatasets(

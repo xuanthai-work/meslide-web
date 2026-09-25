@@ -2,6 +2,7 @@
 
 import { Group, Text } from "react-konva";
 import { effectiveLineHeight } from "@/components/slide-editor/text/text-line-height";
+import { verticalGlyphClipBounds } from "@/components/slide-editor/text/template-v2-text-fit.mjs";
 import { textRunsContent } from "@/components/slide-editor/text/text-runs";
 import {
   displayText,
@@ -80,6 +81,7 @@ export function RawRichTextElement({
     (sum, metric) => sum + metric.height,
     0,
   );
+  const clip = verticalGlyphClipBounds(lines, height);
   const startY =
     verticalAlign === "middle"
       ? Math.max(0, (height - totalHeight) / 2)
@@ -143,9 +145,9 @@ export function RawRichTextElement({
     <Group
       listening={interactive}
       clipX={0}
-      clipY={0}
+      clipY={clip.y}
       clipWidth={width}
-      clipHeight={height}
+      clipHeight={clip.height}
     >
       {laidOutSegments.map(
         ({ lineIndex, segmentIndex, segment, segmentX, lineY, lineHeight }) => {
@@ -231,6 +233,7 @@ export function RawTextListElement({
     (sum, metric) => sum + metric.height,
     0,
   );
+  const clip = verticalGlyphClipBounds(lines, height);
   let y =
     verticalAlign === "middle"
       ? Math.max(0, (height - contentHeight) / 2)
@@ -264,9 +267,9 @@ export function RawTextListElement({
     <Group
       listening={interactive}
       clipX={0}
-      clipY={0}
+      clipY={clip.y}
       clipWidth={width}
-      clipHeight={height}
+      clipHeight={clip.height}
     >
       {tokens.map((token, tokenIndex) => (
         token.type === "latex" && token.latex ? (

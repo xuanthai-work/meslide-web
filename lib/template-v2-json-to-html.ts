@@ -516,7 +516,7 @@ function renderText(item: JsonRecord, mode: RenderMode): string {
   )};justify-content:${horizontalAlign(horizontal)};${lineHeightStyle(
     font,
     1.1
-  )}${textOverflowStyle()}text-align:${textAlign(horizontal)};"><span style="display:block;width:100%">${lineHtml}</span></div>`;
+  )}overflow:visible;white-space:pre-wrap;text-align:${textAlign(horizontal)};"><span style="display:block;width:100%">${lineHtml}</span></div>`;
 }
 
 function renderTextList(item: JsonRecord, mode: RenderMode): string {

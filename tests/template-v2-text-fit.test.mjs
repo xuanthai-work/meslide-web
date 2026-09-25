@@ -17,6 +17,7 @@ import {
   layoutFitTextRuns,
   measureTextByUnits,
   textUnits,
+  verticalGlyphClipBounds,
   visualCapacityUnits,
 } from "../components/slide-editor/text/template-v2-text-fit.mjs";
 
@@ -84,6 +85,16 @@ test("short copy in a wide box does not shrink", () => {
   assert.equal(result.fontScale, 1);
   assert.equal(result.ellipsis, false);
   assert.ok(result.height <= 80);
+});
+
+test("large title glyphs can paint beyond a short line box", () => {
+  const clip = verticalGlyphClipBounds(
+    [[{ text: "Hành Động Ngay", font: { size: 121.6 } }]],
+    104,
+  );
+
+  assert.ok(clip.y < 0);
+  assert.ok(clip.y + clip.height > 104 + 20);
 });
 
 test("oversized unspaced token never exceeds box width", () => {
@@ -369,7 +380,7 @@ test("text-list continuation lines indent by marker width", () => {
 
 const read = (relative) => readFile(path.resolve(relative), "utf8");
 
-test("html text overflow is hidden, not visible", async () => {
+test("html text lists keep overflow hidden", async () => {
   const source = await read("lib/template-v2-json-to-html.ts");
   const overflowFn = source.slice(
     source.indexOf("function textOverflowStyle("),
@@ -405,7 +416,7 @@ test("konva text segments pad paint width so wrap=none does not clip glyphs", as
   assert.match(source, /width=\{konvaTextPaintWidth\(segment.width\)\}/);
   assert.match(source, /width=\{konvaTextPaintWidth\(token.width\)\}/);
   assert.match(source, /clipWidth=\{width\}/);
-  assert.match(source, /clipHeight=\{height\}/);
+  assert.match(source, /clipHeight=\{clip\.height\}/);
 });
 
 test("canvas-less measure uses the unit table", async () => {

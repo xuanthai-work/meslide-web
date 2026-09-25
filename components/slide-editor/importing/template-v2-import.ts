@@ -980,6 +980,7 @@ function adaptChart(raw: UnknownRecord): SlideElement {
   return {
     ...baseElement(raw),
     type: "chart",
+    font: adaptFont(readRecord(raw, "font")),
     chart_type: chartType,
     data: data.length > 0 ? data : [{ label: "Data", value: 0 }],
     title: truncateString(readString(raw.title) ?? "", 80) || null,

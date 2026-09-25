@@ -296,6 +296,7 @@ export type SvgElement = ElementBase & {
 
 export type ChartElement = ElementBase & {
   type: "chart";
+  font?: Font | null;
   chart_type: ChartType;
   data: ChartDatum[];
   title?: string | null;
