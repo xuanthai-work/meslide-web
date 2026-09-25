@@ -87,7 +87,7 @@ const vi = {
   dashboard: {
     section: {
       actions: "Hành động",
-      decks: "Bộ slide",
+      decks: "Slide của tôi",
     },
     loading: {
       title: "Bài thuyết trình slide",
@@ -1126,11 +1126,6 @@ const vi = {
     page: {
       title: "Mẫu",
     },
-    actions: {
-      newTemplate: "Mẫu mới",
-      newTemplateShort: "Mới",
-      createNewAria: "Tạo mẫu mới",
-    },
     error: {
       loadFailed: (p) => `Không thể tải mẫu: ${p.error}`,
       loadTitle: "Không thể tải mẫu",
@@ -1143,21 +1138,9 @@ const vi = {
       noBuiltin: "Không có mẫu có sẵn.",
       noTemplates: "Không có mẫu nào.",
     },
-    create: {
-      buildTemplate: "Tạo mẫu",
-      buildYourOwnTemplate: "Tạo mẫu riêng của bạn",
-    },
-    tabs: {
-      custom: "Tùy chỉnh",
-      builtin: "Có sẵn",
-    },
     card: {
       openAria: (p) => `Mở mẫu ${p.name}`,
       thumbnailAria: (p) => `Hình thu nhỏ của ${p.name}`,
-      newTemplate: "Mẫu mới",
-      preparingLayouts: "Đang chuẩn bị bố cục",
-      layoutsProgress: (p) => `${p.done} / ${p.total} bố cục`,
-      processingAria: (p) => `${p.name} đang được tạo`,
     },
   },
 

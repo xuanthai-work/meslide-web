@@ -58,12 +58,12 @@ test("dashboard action cards use 12px radius and token hairline", async () => {
   assert.match(source, /GSlideHeader/);
 });
 
-test("templates page header uses GSlideHeader or Unbounded plus pill create", async () => {
+test("templates page shows the built-in library without custom-template controls", async () => {
   const source = await read(
     "app/(presentation-generator)/(dashboard)/templates/components/TemplatePanel.tsx",
   );
   assert.match(source, /GSlideHeader|font-unbounded/);
-  assert.match(source, /rounded-full/);
+  assert.doesNotMatch(source, /custom-template|TemplateTabSwitcher|CreateCustomTemplate/);
   assert.doesNotMatch(source, /font-syne/);
 });
 

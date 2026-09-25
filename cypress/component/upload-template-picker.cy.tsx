@@ -150,25 +150,37 @@ describe("template selection on upload", () => {
     cy.get('[data-testid="template-retry-button"]').should("be.visible");
   });
 
-  it("shows templates beyond the first API page", () => {
-    const manyCustom = Array.from({ length: 101 }, (_, index) => ({
-      id: `custom-${index + 1}`,
-      name: `Custom ${index + 1}`,
-      is_default: false,
+  it("shows built-in templates beyond the first API page", () => {
+    const manyBuiltIn = Array.from({ length: 101 }, (_, index) => ({
+      id: `built-in-${index + 1}`,
+      name: `Built-in ${index + 1}`,
+      is_default: true,
       layout_count: 3,
     }));
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
       const params = new URL(request.url).searchParams;
       const isDefault = params.get("default") === "true";
       const page = Number(params.get("page") ?? "1");
-      const items = isDefault ? templates : manyCustom.slice((page - 1) * 100, page * 100);
-      request.reply({ body: { ...response(items), total: isDefault ? templates.length : manyCustom.length, page } });
+      const items = isDefault ? manyBuiltIn.slice((page - 1) * 100, page * 100) : [];
+      request.reply({ body: { ...response(items), total: isDefault ? manyBuiltIn.length : 0, page } });
     });
     mountUpload();
     cy.get('[data-testid="upload-template-trigger"]').click();
     cy.get('[role="dialog"]').scrollTo("bottom");
-    cy.get('[data-testid="template-rail-item-custom-101"]').scrollIntoView().click();
-    cy.get('[data-testid="template-active-name"]').should("contain", "Custom 101");
+    cy.get('[data-testid="template-rail-item-built-in-101"]').scrollIntoView().click();
+    cy.get('[data-testid="template-active-name"]').should("contain", "Built-in 101");
+  });
+
+  it("does not offer personal templates", () => {
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
+      request.reply({ body: response([
+        ...templates,
+        { id: "personal", name: "Personal", is_default: false, layout_count: 3 },
+      ]) });
+    });
+    mountUpload();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-rail-item-personal"]').should("not.exist");
   });
 
   it("keeps the picker usable on a narrow screen", () => {

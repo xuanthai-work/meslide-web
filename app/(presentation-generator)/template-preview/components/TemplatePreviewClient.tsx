@@ -146,6 +146,12 @@ const GroupLayoutPreview = ({
 
   const { template, layouts, fonts, loading, error } =
     useTemplateDetails(templateId);
+  const isPersonalTemplate = template?.is_default === false;
+
+  useEffect(() => {
+    if (isPersonalTemplate) router.replace("/templates");
+  }, [isPersonalTemplate, router]);
+
   const [editableLayouts, setEditableLayouts] = useState<TemplateV2Layout[]>([]);
   const editableLayoutsRef = useRef<TemplateV2Layout[]>([]);
   const [activeLayoutIndex, setActiveLayoutIndex] = useState(0);
@@ -940,6 +946,8 @@ const GroupLayoutPreview = ({
       <TemplatePreviewNotFoundState onBack={() => router.push("/templates")} />
     );
   }
+
+  if (isPersonalTemplate) return null;
 
   return (
     <div className="flex h-screen min-h-[764px] flex-col overflow-hidden bg-[#FBFBFA] font-syne text-[#191919]">

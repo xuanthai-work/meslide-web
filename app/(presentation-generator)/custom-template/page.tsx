@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
 import CustomTemplatePage from "./CustomTemplatePage";
 
-export const dynamic = "force-dynamic";
+const PERSONAL_TEMPLATES_ENABLED = false;
 
 export default function Page() {
-    return <CustomTemplatePage />;
+  if (!PERSONAL_TEMPLATES_ENABLED) redirect("/templates");
+  return <CustomTemplatePage />;
 }

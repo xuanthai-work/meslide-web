@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type TouchEvent } from "react";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Layers3 } from "lucide-react";
 import {
   Dialog,
@@ -28,8 +28,7 @@ export function UploadTemplatePicker({
   disabled = false,
 }: UploadTemplatePickerProps) {
   const { locale, t } = useI18n();
-  const { defaultTemplates, customTemplates, loading, error, retry } = useTemplateSummaries();
-  const templates = useMemo(() => [...defaultTemplates, ...customTemplates], [defaultTemplates, customTemplates]);
+  const { defaultTemplates: templates, loading, error, retry } = useTemplateSummaries();
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);

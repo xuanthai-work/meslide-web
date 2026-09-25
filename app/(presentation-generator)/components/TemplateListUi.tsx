@@ -5,15 +5,11 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, Loader2 } from "lucide-react";
 import { resolveBackendAssetUrl } from "@/utils/api";
-import {
-  TemplateCreateTaskResponse,
-  TemplateListItem,
-} from "../services/api/template";
+import { TemplateListItem } from "../services/api/template";
 import {
   TemplatePreviewStage,
   LayoutsBadge,
 } from "./TemplatePreviewComponents";
-import { TemplateTab } from "../hooks/useTemplateSummaries";
 import { useI18n, useT } from "@/i18n/provider";
 import { translate } from "@/i18n/translate";
 import { templateCardCopy } from "./builtin-template-copy";
@@ -136,133 +132,6 @@ export const TemplateListCard = memo(function TemplateListCard({
     </Card>
   );
 });
-
-export const ProcessingTemplateListCard = memo(
-  function ProcessingTemplateListCard({
-    task,
-  }: {
-    task: TemplateCreateTaskResponse;
-  }) {
-    const t = useT();
-    const templateName = task.data?.name?.trim() || t("templates.card.newTemplate");
-    const createdLayouts = task.data?.created_layouts ?? 0;
-    const remainingLayouts = task.data?.remaining_layouts ?? 0;
-    const totalLayouts = createdLayouts + remainingLayouts;
-    const progressPercent =
-      totalLayouts > 0
-        ? Math.min(
-            95,
-            Math.max(0, Math.round((createdLayouts / totalLayouts) * 100))
-          )
-        : 0;
-    const overlayWidth = `${100 - progressPercent}%`;
-    const visibilityOverlayOpacity = Math.max(
-      0.1,
-      0.72 - progressPercent / 150
-    );
-    const progressLabel =
-      totalLayouts > 0
-        ? t("templates.card.layoutsProgress", { done: createdLayouts, total: totalLayouts })
-        : t("templates.card.preparingLayouts");
-
-    return (
-      <Card
-        role="group"
-        aria-disabled="true"
-        aria-label={t("templates.card.processingAria", { name: templateName })}
-        className={cn(
-          "relative overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-white",
-          "cursor-not-allowed opacity-90 shadow-sm"
-        )}
-      >
-        <TemplatePreviewStage>
-          <LayoutsBadge count={totalLayouts} />
-          <TemplateThumbnailPreview
-            thumbnail={task.data?.thumbnail}
-            templateName={templateName}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-5 z-20 rounded-xl bg-white transition-opacity duration-500 ease-out"
-            style={{ opacity: visibilityOverlayOpacity }}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-5 right-5 top-5 z-20 rounded-r-xl bg-[#DBEAFE]/70 transition-[width] duration-500 ease-out"
-            style={{ width: overlayWidth }}
-          />
-          <div className="absolute right-8 top-8 z-30 inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-white/90 px-2.5 py-1.5 text-xs font-bold text-[#1D6FE8] shadow-sm backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#1D6FE8]" />
-            {progressPercent}%
-          </div>
-          <div className="absolute inset-x-5 bottom-5 z-30 h-1.5 overflow-hidden rounded-full bg-white/70">
-            <div
-              className="h-full rounded-full bg-[#1D6FE8] transition-[width] duration-500 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </TemplatePreviewStage>
-        <div className="relative z-40 flex items-center justify-between gap-4 border-t border-[#EDEEEF] bg-white px-6 py-5">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-syne text-base font-bold capitalize text-gray-900">
-              {templateName}
-            </h3>
-            <p className="mt-1 text-xs font-medium text-[#60636F]">
-              {progressLabel}
-            </p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-);
-
-export function TemplateTabSwitcher({
-  tab,
-  onTabChange,
-}: {
-  tab: TemplateTab;
-  onTabChange: (tab: TemplateTab) => void;
-}) {
-  const t = useT();
-  return (
-    <div className="p-1 rounded-[40px] bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center">
-      <button
-        type="button"
-        className="px-5 py-2 text-xs font-medium text-[#3A3A3A] rounded-[70px]"
-        onClick={() => onTabChange("custom")}
-        style={{
-          background: tab === "custom" ? "#DBEAFE" : "transparent",
-          color: tab === "custom" ? "#1D6FE8" : "#3A3A3A",
-        }}
-      >
-        {t("templates.tabs.custom")}
-      </button>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="mx-1"
-        width="2"
-        height="17"
-        viewBox="0 0 2 17"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
-      </svg>
-      <button
-        type="button"
-        className="px-5 py-2 text-xs font-medium text-[#3A3A3A] rounded-[70px]"
-        onClick={() => onTabChange("default")}
-        style={{
-          background: tab === "default" ? "#DBEAFE" : "transparent",
-          color: tab === "default" ? "#1D6FE8" : "#3A3A3A",
-        }}
-      >
-        {t("templates.tabs.builtin")}
-      </button>
-    </div>
-  );
-}
 
 export function TemplateListLoadingState({ message = translate("templates.loading.default") }: { message?: string }) {
   return (
