@@ -24,6 +24,10 @@ test("template list requests keep the current default and custom queries", () =>
     templateSummariesPath(false),
     "/api/v1/ppt/template/all?page_size=100&default=false",
   );
+  assert.equal(
+    templateSummariesPath(false, 2),
+    "/api/v1/ppt/template/all?page_size=100&default=false&page=2",
+  );
   assert.equal(templateDetailsPath("template-v2-abc/def"), "/api/v1/ppt/template/abc%2Fdef");
   assert.equal(templateDeletePath("my template"), "/api/v1/ppt/template/my%20template");
   assert.equal(templateClonePath(), "/api/v1/ppt/template/clone");

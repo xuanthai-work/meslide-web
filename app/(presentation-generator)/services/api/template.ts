@@ -137,9 +137,10 @@ class TemplateService {
 
     static async getTemplateSummaries(
         isDefault?: boolean,
+        page = 1,
     ): Promise<TemplateListResponse> {
         try {
-            const response = await fetch(getApiUrl(templateSummariesPath(isDefault)));
+            const response = await fetch(getApiUrl(templateSummariesPath(isDefault, page)));
             return await ApiResponseHandler.handleResponse(response, "Failed to get Templates summaries");
         } catch (error) {
             console.error("Failed to get Templates summaries", error);

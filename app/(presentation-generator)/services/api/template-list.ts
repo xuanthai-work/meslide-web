@@ -9,11 +9,12 @@ export type TemplateListSortItem = {
   layout_count?: number | null;
 };
 
-export function templateSummariesPath(isDefault?: boolean): string {
+export function templateSummariesPath(isDefault?: boolean, page = 1): string {
   const params = new URLSearchParams({ page_size: "100" });
   if (typeof isDefault === "boolean") {
     params.set("default", String(isDefault));
   }
+  if (page > 1) params.set("page", String(page));
   return `/api/v1/ppt/template/all?${params.toString()}`;
 }
 

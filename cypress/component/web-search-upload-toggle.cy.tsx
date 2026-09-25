@@ -78,6 +78,20 @@ const mountUploadPage = (llmConfig?: LLMConfig) => {
   );
 };
 
+beforeEach(() => {
+  cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
+    const isDefault = new URL(request.url).searchParams.get("default") === "true";
+    request.reply({
+      body: {
+        items: isDefault ? [{ id: "momentum", name: "Momentum", is_default: true, layout_count: 3 }] : [],
+        total: isDefault ? 1 : 0,
+        page: 1,
+        page_size: 100,
+      },
+    });
+  });
+});
+
 describe("per-presentation web search toggle", () => {
   it("toggles web search from the upload config row", () => {
     const onConfigChange = cy.stub().as("onConfigChange");
