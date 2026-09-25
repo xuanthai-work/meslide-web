@@ -352,7 +352,7 @@ function renderText(element: TemplateV2Element, key: string, mode: RenderMode) {
         display: "flex",
         justifyContent: horizontalAlign(horizontal),
         lineHeight: readLineHeight(element.font) ?? 1.1,
-        overflow: "hidden",
+        overflow: "visible",
         textAlign: textAlign(horizontal),
         whiteSpace: "pre-wrap",
         wordBreak: "break-word",

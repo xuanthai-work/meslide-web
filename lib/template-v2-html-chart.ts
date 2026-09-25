@@ -1,4 +1,5 @@
 import { markdownToPlainChartText } from "@/components/slide-editor/charts/chart-data";
+import { applyChartFontFamily } from "@/lib/chart-font";
 import {
   CHART_BROWSER_SCRIPT_URL,
   CHART_DATALABELS_SCRIPT_URL,
@@ -250,7 +251,7 @@ export function chartConfig(item: JsonRecord, height: number): JsonRecord {
     });
   }
 
-  return config;
+  return applyChartFontFamily(config, readString(readRecord(item.font).family));
 }
 
 export function chartDatasets(chartKind: ChartKind, data: NormalizedChartData): JsonRecord[] {

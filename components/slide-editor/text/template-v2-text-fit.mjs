@@ -12,6 +12,18 @@ export const ELLIPSIS = "…";
 export const FIT_SCALE_EPSILON = 0.001;
 export const PAINT_SAFETY = 1.1;
 
+export function verticalGlyphClipBounds(lines, boxHeight) {
+  const largestFont = Math.max(
+    0,
+    ...(lines ?? []).flatMap((line) =>
+      line.map((segment) => Number(segment.font?.size) || 0),
+    ),
+  );
+  // Konva paints glyph ink outside compact line boxes (notably accented titles).
+  const padding = Math.ceil(largestFont * 0.25);
+  return { y: -padding, height: boxHeight + padding * 2 };
+}
+
 const VIETNAMESE_RE =
   /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/u;
 const COMBINING_RE = /\p{M}/u;
