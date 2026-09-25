@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { templateCardCopy } from "../app/(presentation-generator)/components/builtin-template-copy.ts";
 
 import {
   TEMPLATE_SUMMARY_POLL_MS,
@@ -60,4 +61,33 @@ test("the template poll reloads while a task is active and once after it finishe
   assert.equal(shouldRefreshTemplatesAfterPoll(false, 2), true);
   assert.equal(shouldRefreshTemplatesAfterPoll(true, 0), true);
   assert.equal(shouldRefreshTemplatesAfterPoll(true, 1), true);
+});
+
+test("built-in template cards show Vietnamese names and descriptions", () => {
+  const names = {
+    momentum: "Bứt phá",
+    dynamic: "Năng động",
+    executive: "Điều hành",
+    swift: "Nhanh gọn",
+    standard: "Tiêu chuẩn",
+    modern: "Hiện đại",
+    general: "Cơ bản",
+    editorial: "Biên tập",
+  };
+
+  for (const [id, name] of Object.entries(names)) {
+    const copy = templateCardCopy({ id, name: id, description: "English description", is_default: true }, "vi-VN");
+    assert.equal(copy.name, name);
+    assert.ok(copy.description && copy.description !== "English description");
+  }
+});
+
+test("English locale and custom templates keep their saved copy", () => {
+  const builtIn = { id: "momentum", name: "Momentum", description: "English description", is_default: true };
+  const custom = { ...builtIn, name: "My Momentum", is_default: false };
+
+  assert.deepEqual(templateCardCopy(builtIn, "en-US"), { name: "Momentum", description: "English description" });
+  assert.deepEqual(templateCardCopy(custom, "vi-VN"), { name: "My Momentum", description: "English description" });
+  assert.deepEqual(templateCardCopy({ ...builtIn, id: "unknown" }, "vi-VN"), { name: "Momentum", description: "English description" });
+  assert.deepEqual(templateCardCopy({ ...builtIn, id: "__proto__" }, "vi-VN"), { name: "Momentum", description: "English description" });
 });
