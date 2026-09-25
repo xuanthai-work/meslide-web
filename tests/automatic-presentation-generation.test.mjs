@@ -4,13 +4,14 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("new presentations carry the selected template from upload", async () => {
+test("new presentations carry the resolved template from upload", async () => {
   const upload = await read("app/(presentation-generator)/upload/components/UploadPage.tsx");
   const documents = await read("app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx");
 
   assert.match(upload, /return `\/presentation\?\$\{params\.toString\(\)\}`/);
   assert.match(upload, /auto:\s*"1"/);
-  assert.match(upload, /params\.set\("template", selectedTemplateId\)/);
+  assert.match(upload, /template: templateId/);
+  assert.match(upload, /getGenerationDestination\(createResponse\.id, templateId\)/);
   assert.match(documents, /router\.replace\(`\/presentation\?/);
   assert.doesNotMatch(`${upload}\n${documents}`, /\/outline\?/);
 });
