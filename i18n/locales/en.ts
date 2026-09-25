@@ -285,8 +285,6 @@ const en = {
       dialogDescription: "Browse the designs, then choose one for your presentation.",
       carouselAria: "Template previews. Use left and right arrow keys to browse.",
       railAria: "All templates",
-      previous: "Previous template",
-      next: "Next template",
       choose: "Use this template",
       chooseAria: (p) => `Use ${p.name} template`,
       previewAria: (p) => `Preview ${p.name} template`,

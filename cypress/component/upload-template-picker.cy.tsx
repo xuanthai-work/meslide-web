@@ -69,7 +69,7 @@ describe("template selection on upload", () => {
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=presentation-123&auto=1&template=momentum");
   });
 
-  it("navigates the cover flow by keyboard and chooses a different template", () => {
+  it("previews by keyboard and chooses a different template", () => {
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
       const isDefault = new URL(request.url).searchParams.get("default") === "true";
       request.reply({ body: response(isDefault ? templates : []) });
@@ -104,7 +104,7 @@ describe("template selection on upload", () => {
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Hiện đại");
   });
 
-  it("previews a side card and closes without changing the choice on a wide screen", () => {
+  it("previews on hover and closes without changing the choice on a wide screen", () => {
     cy.viewport(1280, 720);
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
       const isDefault = new URL(request.url).searchParams.get("default") === "true";
@@ -113,9 +113,14 @@ describe("template selection on upload", () => {
     mountUpload();
     cy.get('[data-testid="upload-template-trigger"]').invoke("text").should("include", "Bứt phá");
     cy.get('[data-testid="upload-template-trigger"]').click();
-    cy.get('[data-testid="template-carousel"] button[aria-label="Xem mẫu Điều hành"]').click();
+    cy.get('[data-testid="template-main-preview"]').should("be.visible");
+    cy.get('[role="dialog"] button[aria-label="Mẫu trước"]').should("not.exist");
+    cy.get('[role="dialog"] button[aria-label="Mẫu tiếp theo"]').should("not.exist");
+    cy.get('[data-testid="template-rail-item-executive"]').trigger("mouseover");
     cy.get('[data-testid="template-active-name"]').should("contain", "Điều hành");
     cy.get('[data-testid="template-rail-item-executive"]').should("have.attr", "aria-pressed", "true");
+    cy.get('[data-testid="template-rail-item-modern"]').focus();
+    cy.get('[data-testid="template-active-name"]').should("contain", "Hiện đại");
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
     cy.get('[data-testid="template-carousel"]').focus().type("{esc}");
     cy.get('[role="dialog"]').should("not.exist");

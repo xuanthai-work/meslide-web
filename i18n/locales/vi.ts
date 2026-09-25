@@ -285,8 +285,6 @@ const vi = {
       dialogDescription: "Xem các mẫu và chọn phong cách cho bài thuyết trình.",
       carouselAria: "Xem trước mẫu. Dùng phím mũi tên trái và phải để duyệt.",
       railAria: "Tất cả mẫu",
-      previous: "Mẫu trước",
-      next: "Mẫu tiếp theo",
       choose: "Dùng mẫu này",
       chooseAria: (p) => `Dùng mẫu ${p.name}`,
       previewAria: (p) => `Xem mẫu ${p.name}`,
