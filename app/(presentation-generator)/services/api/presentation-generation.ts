@@ -204,6 +204,27 @@ export class PresentationGenerationApi {
     }
   }
 
+  static async recommendTemplate(
+    prompt: string,
+    candidateIds: string[],
+    signal?: AbortSignal,
+  ): Promise<string> {
+    const response = await fetch(getApiUrl("/api/v1/ppt/prompt/select-template"), {
+      method: "POST",
+      headers: getHeader(),
+      body: JSON.stringify({ prompt, candidate_ids: candidateIds }),
+      cache: "no-cache",
+      signal,
+    });
+    const data = await ApiResponseHandler.handleResponse(
+      response, "Failed to recommend a template",
+    ) as { template_id?: unknown };
+    if (typeof data?.template_id !== "string" || !data.template_id.trim()) {
+      throw new Error("Recommendation response omitted a template ID");
+    }
+    return data.template_id;
+  }
+
   static async createBlankPresentation(): Promise<BlankPresentationResponse> {
     try {
       const response = await fetch(

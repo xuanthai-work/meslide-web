@@ -52,12 +52,44 @@ const mountUpload = () => {
 };
 
 describe("template selection on upload", () => {
-  it("defaults to the first template and sends it into automatic generation", () => {
+  it("previews without confirmation until Choose is pressed", () => {
+    cy.viewport(1280, 720);
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    mountUpload();
+    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá").click();
+    cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("not.exist");
+    cy.get('[data-testid="template-rail-item-executive"]').click();
+    cy.get('[data-testid="template-rail-item-executive"] .lucide-check').should("not.exist");
+    cy.get('[data-testid="template-carousel"]').focus().type("{esc}");
+    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá").click();
+    cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("not.exist");
+    cy.get('[data-testid="template-rail-item-executive"]').click();
+    cy.get('[data-testid="template-choose-button"]').click();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-rail-item-executive"] .lucide-check').should("exist");
+  });
+
+  it("confirms the initial preview when Choose is pressed", () => {
+    cy.viewport(1280, 720);
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    mountUpload();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-choose-button"]').click();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("exist");
+  });
+
+  it("recommends a template when the first preview is not confirmed", () => {
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
       const isDefault = new URL(request.url).searchParams.get("default") === "true";
       request.reply({ body: response(isDefault ? templates : []) });
     });
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "presentation-123" } });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
+      expect(request.body.prompt).to.equal("Prompt đã tối ưu");
+      expect(request.body.candidate_ids).to.deep.equal(["momentum", "executive", "editorial", "modern"]);
+      request.reply({ body: { template_id: "executive" } });
+    }).as("recommendTemplate");
 
     mountUpload();
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
@@ -66,7 +98,146 @@ describe("template selection on upload", () => {
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Prompt đã tối ưu" } });
     cy.get('[data-testid="rewrite-action-button"]').click();
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled").click();
-    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=presentation-123&auto=1&template=momentum");
+    cy.wait("@recommendTemplate");
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=presentation-123&auto=1&template=executive");
+  });
+
+  it("uses the edited final brief to recommend a template", () => {
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "First draft" } });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
+      expect(request.body.prompt).to.equal("Final board update for directors");
+      request.reply({ body: { template_id: "executive" } });
+    }).as("recommendTemplate");
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
+      expect(request.body.content).to.equal("Final board update for directors");
+      request.reply({ body: { id: "deck-1" } });
+    });
+    mountUpload();
+    cy.get('[data-testid="prompt-input"]').type("Board update");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="rewritten-prompt-output"]').clear().type("Final board update for directors");
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.wait("@recommendTemplate");
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=deck-1&auto=1&template=executive");
+  });
+
+  it("skips recommendation after confirming the initial preview", () => {
+    let recommendations = 0;
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
+      recommendations += 1;
+      request.reply({ body: { template_id: "executive" } });
+    });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Board update" } });
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "manual-deck" } });
+    mountUpload();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-choose-button"]').click();
+    cy.get('[data-testid="prompt-input"]').type("Board update");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=manual-deck&auto=1&template=momentum");
+    cy.then(() => expect(recommendations).to.equal(0));
+  });
+
+  it("uses a fallback without recommendation for document-only creation", () => {
+    let recommendations = 0;
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
+      recommendations += 1;
+      request.reply({ body: { template_id: "executive" } });
+    });
+    cy.intercept("POST", "**/api/v1/ppt/files/upload", { body: ["tmp-notes.txt"] });
+    cy.intercept("POST", "**/api/v1/ppt/files/decompose", {
+      body: [{ name: "notes.txt", file_path: "tmp-notes-decomposed.txt" }],
+    });
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "document-deck" } });
+    mountUpload();
+    cy.get('[data-testid="file-upload-input"]').selectFile({
+      contents: Cypress.Buffer.from("notes"), fileName: "notes.txt", mimeType: "text/plain",
+    }, { force: true });
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=document-deck&auto=1&template=momentum");
+    cy.then(() => expect(recommendations).to.equal(0));
+  });
+
+  for (const recommendation of [
+    { statusCode: 200, body: { template_id: "personal" } },
+    { statusCode: 200, body: {} },
+    { statusCode: 503, body: {} },
+  ]) {
+    it(`uses General for an unusable recommendation (${recommendation.statusCode}, ${JSON.stringify(recommendation.body)})`, () => {
+      const withGeneral = [...templates, { id: "general", name: "General", is_default: true, layout_count: 3 }];
+      cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(withGeneral) });
+      cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Simple overview" } });
+      cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", recommendation);
+      cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "fallback-deck" } });
+      mountUpload();
+      cy.get('[data-testid="prompt-input"]').type("Simple overview");
+      cy.get('[data-testid="rewrite-action-button"]').click();
+      cy.get('[data-testid="generate-presentation-button"]').click();
+      cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=fallback-deck&auto=1&template=general");
+    });
+  }
+
+  it("uses the first fallback when General is unavailable", () => {
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Project update" } });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", { statusCode: 503, body: {} });
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "first-fallback" } });
+    mountUpload();
+    cy.get('[data-testid="prompt-input"]').type("Project update");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=first-fallback&auto=1&template=momentum");
+  });
+
+  it("keeps one creation and the clicked prompt while recommendation is pending", () => {
+    let recommendations = 0;
+    let creations = 0;
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Clicked brief" } });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
+      recommendations += 1;
+      expect(request.body.prompt).to.equal("Clicked brief");
+      request.reply({ delay: 300, body: { template_id: "executive" } });
+    });
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
+      creations += 1;
+      expect(request.body.content).to.equal("Clicked brief");
+      request.reply({ body: { id: "snapshot-deck" } });
+    });
+    mountUpload();
+    cy.get('[data-testid="prompt-input"]').type("Initial prompt");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.get('[data-testid="prompt-input"]').trigger("keydown", { key: "Enter", ctrlKey: true, force: true });
+    cy.get('[data-testid="rewritten-prompt-output"]').clear({ force: true }).type("Later edit", { force: true });
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=snapshot-deck&auto=1&template=executive");
+    cy.then(() => { expect(recommendations).to.equal(1); expect(creations).to.equal(1); });
+  });
+
+  it("uses fallback for a long edited brief while preserving its content", () => {
+    const longBrief = "x".repeat(8001);
+    let recommendations = 0;
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Draft" } });
+    cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
+      recommendations += 1;
+      request.reply({ body: { template_id: "executive" } });
+    });
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
+      expect(request.body.content).to.equal(longBrief);
+      request.reply({ body: { id: "long-deck" } });
+    });
+    mountUpload();
+    cy.get('[data-testid="prompt-input"]').type("Initial prompt");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="rewritten-prompt-output"]').clear().type(longBrief, { delay: 0, parseSpecialCharSequences: false });
+    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=long-deck&auto=1&template=momentum");
+    cy.then(() => expect(recommendations).to.equal(0));
   });
 
   it("previews by keyboard and chooses a different template", () => {

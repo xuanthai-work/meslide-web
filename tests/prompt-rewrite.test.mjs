@@ -427,8 +427,9 @@ test("UploadPage validates freshness and snapshots the rewritten prompt for gene
     generation,
     /const generationConfig: PresentationConfig = \{[\s\S]*prompt: promptRequiresRewrite \? rewrittenPrompt\.trim\(\) : ""/,
   );
-  assert.match(generation, /handleDocumentProcessing\(generationConfig\)/);
-  assert.match(generation, /handleDirectPresentationGeneration\(generationConfig\)/);
+  assert.match(generation, /handleDocumentProcessing\(generationConfig, templateId\)/);
+  assert.match(generation, /handleDirectPresentationGeneration\(generationConfig, templateId\)/);
+  assert.match(generation, /resolveTemplateForCreate\(/);
 
   // Selected documents are always prepared for generation. The rollout flag
   // gates rewrite grounding only and must never remove Create file paths.
@@ -582,7 +583,7 @@ test("rewrite progress surfaces preparation phases accessibly", async () => {
   }
 
   // Duplicate submissions are prevented while a rewrite or Create is active.
-  assert.match(page, /if \(isRewriting \|\| loadingState\.isLoading \|\| !templateReady \|\| !selectedTemplateId\) return;/);
+  assert.match(page, /if \(createInFlightRef\.current \|\| isRewriting \|\| loadingState\.isLoading \|\| !templateReady\) return;/);
 
   // Aborting an in-flight rewrite clears the phase along with the flag.
   const filesHandlerStart = page.indexOf("const handleFilesChange");
