@@ -3,7 +3,7 @@
 import React, { memo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowUpRight, Loader2 } from "lucide-react";
 import { resolveBackendAssetUrl } from "@/utils/api";
 import {
   TemplateCreateTaskResponse,
@@ -21,11 +21,9 @@ import { templateCardCopy } from "./builtin-template-copy";
 export function TemplateThumbnailPreview({
   thumbnail,
   templateName,
-  selectionPage = false,
 }: {
   thumbnail?: string | null;
   templateName: string;
-  selectionPage?: boolean;
 }) {
   const t = useT();
   const resolvedThumbnail = thumbnail ? resolveBackendAssetUrl(thumbnail) : "";
@@ -33,10 +31,7 @@ export function TemplateThumbnailPreview({
   if (!resolvedThumbnail) {
     return (
       <div
-        className={cn(
-          "relative z-10 flex w-full items-center justify-center rounded-[12px] border border-[#EDEEEF] bg-white/80",
-          selectionPage ? "h-full" : "aspect-video"
-        )}
+        className="relative z-10 flex aspect-video w-full items-center justify-center rounded-[12px] border border-[#EDEEEF] bg-white/80"
       >
         <div className="h-10 w-16 rounded-md border border-dashed border-[#C9CDD8] bg-[#F7F8FB]" />
       </div>
@@ -45,17 +40,11 @@ export function TemplateThumbnailPreview({
 
   return (
     <div
-      className={cn(
-        "relative z-10 flex w-full items-center justify-center",
-        selectionPage ? "h-full" : "aspect-video"
-      )}
+      className="relative z-10 flex aspect-video w-full items-center justify-center"
     >
       <div
         aria-label={t("templates.card.thumbnailAria", { name: templateName })}
-        className={cn(
-          "h-full w-full rounded-[12px] border border-[#EDEEEF] bg-white bg-contain bg-center bg-no-repeat",
-          !selectionPage && "shadow-sm"
-        )}
+        className="h-full w-full rounded-[12px] border border-[#EDEEEF] bg-white bg-contain bg-center bg-no-repeat shadow-sm"
         role="img"
         style={{ backgroundImage: `url(${JSON.stringify(resolvedThumbnail)})` }}
       />
@@ -66,17 +55,9 @@ export function TemplateThumbnailPreview({
 export const TemplateListCard = memo(function TemplateListCard({
   template,
   onClick,
-  isSelected = false,
-  isSuggested = false,
-  showArrow = false,
-  selectionPage = false,
 }: {
   template: TemplateListItem;
   onClick: () => void;
-  isSelected?: boolean;
-  isSuggested?: boolean;
-  showArrow?: boolean;
-  selectionPage?: boolean;
 }) {
   const { locale, t } = useI18n();
   const cardCopy = templateCardCopy(template, locale);
@@ -111,83 +92,30 @@ export const TemplateListCard = memo(function TemplateListCard({
     <Card
       role="button"
       tabIndex={0}
-      aria-pressed={isSelected}
-      aria-label={showArrow ? t("templates.card.openAria", { name: cardCopy.name }) : t("templates.card.selectAria", { name: cardCopy.name })}
+      aria-label={t("templates.card.openAria", { name: cardCopy.name })}
       className={cn(
-        "group relative overflow-hidden border bg-white shadow-none outline-none transition-all duration-200",
-        selectionPage ? "rounded-[12px]" : "rounded-[22px]",
+        "group relative overflow-hidden rounded-[22px] border bg-white shadow-none outline-none transition-all duration-200",
         "cursor-pointer hover:-translate-y-1 hover:border-[#1D6FE8] hover:ring-2 hover:ring-[#1D6FE8]/20 hover:shadow-[0_18px_40px_rgba(34,31,54,0.12)] focus-visible:-translate-y-1 focus-visible:border-[#1D6FE8] focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/30 focus-visible:shadow-[0_18px_40px_rgba(34,31,54,0.12)]",
-        isSelected
-          ? cn(
-              "ring-2 ring-[#1D6FE8]/25 shadow-[0_14px_34px_rgba(34,31,54,0.12)]",
-              selectionPage ? "!border-0" : "border-[#1D6FE8]"
-            )
-          : selectionPage
-            ? "!border-0 !shadow-[inset_0_0_0_1px_#EDEEEF]"
-            : "border-[#E8E9EC]"
+        "border-[#E8E9EC]"
       )}
       onClick={onClick}
       onKeyDown={handleKeyDown}
     >
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-0 z-30 bg-[#1D6FE8]/[0.04] opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100",
-          selectionPage ? "rounded-[12px]" : "rounded-[22px]"
-        )}
-      />
-      {isSelected && (
-        <span className="absolute right-4 top-3.5 z-50 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#1D6FE8] text-white shadow-sm">
-          <CheckCircle2 className="h-4 w-4" />
-        </span>
-      )}
-      {isSuggested && (
-        <span className="absolute right-3.5 top-[52px] z-50 rounded-full border border-[#DDD7FF] bg-white/95 px-2.5 py-1 font-syne text-[10px] font-semibold text-[#6553E8] shadow-sm backdrop-blur">
-          {t("templates.card.suggested")}
-        </span>
-      )}
-      <TemplatePreviewStage selectionPage={selectionPage}>
-        <LayoutsBadge
-          count={template.layout_count ?? 0}
-          selectionPage={selectionPage}
-        />
+      <div className="pointer-events-none absolute inset-0 z-30 rounded-[22px] bg-[#1D6FE8]/[0.04] opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100" />
+      <TemplatePreviewStage>
+        <LayoutsBadge count={template.layout_count ?? 0} />
         <TemplateThumbnailPreview
           thumbnail={template.thumbnail}
           templateName={cardCopy.name}
-          selectionPage={selectionPage}
         />
       </TemplatePreviewStage>
-      <div
-        className={cn(
-          "relative z-40 flex items-center justify-between gap-4 border-t border-[#EDEEEF] bg-white",
-          selectionPage ? "h-20 px-5 py-2.5" : "px-6 py-5"
-        )}
-      >
+      <div className="relative z-40 flex items-center justify-between gap-4 border-t border-[#EDEEEF] bg-white px-6 py-5">
         <div className="min-w-0 flex-1">
-          <h3
-            className={cn(
-              "font-syne capitalize",
-              selectionPage
-                ? "text-sm font-semibold tracking-[0.14px] text-[#191919]"
-                : cn(
-                    "font-bold text-gray-900",
-                    showArrow ? "text-base" : "text-sm"
-                  )
-            )}
-          >
+          <h3 className="font-syne text-base font-bold capitalize text-gray-900">
             {cardCopy.name}
           </h3>
           {cardCopy.description && (
-            <p
-              className={cn(
-                "line-clamp-2 font-syne",
-                selectionPage
-                  ? "mt-1 text-[11px] font-semibold leading-3 tracking-[0.11px] text-[#808080]"
-                  : cn(
-                      "text-gray-600",
-                      showArrow ? "mt-1 text-sm text-gray-500" : "text-xs"
-                    )
-              )}
-            >
+            <p className="mt-1 line-clamp-2 font-syne text-sm text-gray-500">
               {cardCopy.description}
             </p>
           )}
@@ -199,18 +127,11 @@ export const TemplateListCard = memo(function TemplateListCard({
             </span>
           )}
         </div>
-        {showArrow && (
-          <ArrowUpRight
-            aria-hidden="true"
-            strokeWidth={selectionPage ? 1.67 : 2}
-            className={cn(
-              "shrink-0",
-              selectionPage
-                ? "h-5 w-5 text-[#808080]"
-                : "h-4 w-4 text-gray-400 transition-colors group-hover:text-purple-600"
-            )}
-          />
-        )}
+        <ArrowUpRight
+          aria-hidden="true"
+          strokeWidth={2}
+          className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-purple-600"
+        />
       </div>
     </Card>
   );
@@ -296,30 +217,6 @@ export const ProcessingTemplateListCard = memo(
   }
 );
 
-export function TemplateListSection({
-  label,
-  children,
-  selectionPage = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  selectionPage?: boolean;
-}) {
-  return (
-    <section className={selectionPage ? "space-y-3" : "space-y-4"}>
-      <h3
-        className={cn(
-          "font-syne text-sm text-[#3A3A3A]",
-          selectionPage ? "text-base font-medium" : "font-semibold"
-        )}
-      >
-        {label}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
 export function TemplateTabSwitcher({
   tab,
   onTabChange,
@@ -339,7 +236,7 @@ export function TemplateTabSwitcher({
           color: tab === "custom" ? "#1D6FE8" : "#3A3A3A",
         }}
       >
-        {t("templates.selection.section.custom")}
+        {t("templates.tabs.custom")}
       </button>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -361,7 +258,7 @@ export function TemplateTabSwitcher({
           color: tab === "default" ? "#1D6FE8" : "#3A3A3A",
         }}
       >
-        {t("templates.selection.section.builtin")}
+        {t("templates.tabs.builtin")}
       </button>
     </div>
   );

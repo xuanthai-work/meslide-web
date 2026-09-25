@@ -233,8 +233,8 @@ export function useAutomaticPresentationGeneration(
     setHasPersistedOutline(false);
     setOutlineStreamEnabled(false);
     setPhase("idle");
-    router.replace(`/presentation?id=${presentationId}&auto=1`);
-  }, [dispatch, outlineStream, presentationId, router]);
+    router.replace("/upload");
+  }, [dispatch, outlineStream, router]);
 
   let lifecycle: GenerationLifecycleState = outlineStream.lifecycle;
   let statusMessage = outlineStream.statusMessage;

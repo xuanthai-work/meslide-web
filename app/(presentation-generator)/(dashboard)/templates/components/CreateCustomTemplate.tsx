@@ -3,21 +3,13 @@
 
 import { Plus, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/provider";
 
-const CreateCustomTemplate = ({
-  selectionPage = false,
-  onClick,
-}: {
-  selectionPage?: boolean;
-  onClick?: () => void;
-}) => {
+const CreateCustomTemplate = () => {
     const t = useT();
     const router = useRouter();
 
     const handleOpenTemplateBuilder = () => {
-        onClick?.();
         router.push("/custom-template");
     };
 
@@ -32,80 +24,31 @@ const CreateCustomTemplate = ({
             }}
             role="button"
             tabIndex={0}
-            className={cn(
-              "w-full cursor-pointer overflow-hidden border border-[var(--gslide-border)] bg-white",
-              selectionPage
-                ? "rounded-[12px]"
-                : "rounded-[28px]"
-            )}
+            className="w-full cursor-pointer overflow-hidden rounded-[28px] border border-[var(--gslide-border)] bg-white"
         >
-            <div
-              className={cn(
-                "relative bg-white p-5",
-                selectionPage && "h-[249px]"
-              )}
-            >
+            <div className="relative bg-white p-5">
                 <img src="/card_bg.svg" alt="" className="absolute left-0 top-0 z-[1] h-full w-full object-cover" />
-                <div
-                  className={cn(
-                    "relative z-[4] flex w-full items-center justify-center",
-                    selectionPage ? "h-full" : "aspect-video"
-                  )}
-                >
-                    <div
-                      className={cn(
-                        "flex items-center justify-center rounded-full bg-[var(--gslide-accent)]",
-                        selectionPage ? "h-12 w-12" : "h-[36px] w-[36px]"
-                      )}
-                    >
-                        <div
-                          className={cn(
-                            "flex items-center justify-center rounded-full bg-white",
-                            selectionPage ? "h-9 w-9" : "h-[26px] w-[26px]"
-                          )}
-                        >
+                <div className="relative z-[4] flex aspect-video w-full items-center justify-center">
+                    <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-[var(--gslide-accent)]">
+                        <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white">
                             <Plus
-                              strokeWidth={selectionPage ? 3 : 2}
-                              className={cn(
-                                "text-[#A2A0A1]",
-                                selectionPage
-                                  ? "h-[22.395px] w-[22.395px]"
-                                  : "h-4 w-4"
-                              )}
+                              strokeWidth={2}
+                              className="h-4 w-4 text-[#A2A0A1]"
                             />
                         </div>
                     </div>
                 </div>
             </div>
-            <div
-              className={cn(
-                "flex items-center overflow-hidden border-t border-[#EDEEEF] bg-white px-5",
-                selectionPage ? "h-20 gap-[15px] py-2.5" : "gap-4 py-4"
-              )}
-            >
-                <div
-                  className={cn(
-                    "flex items-center justify-center rounded-lg bg-[var(--gslide-accent)] p-2",
-                    selectionPage ? "h-[46px] w-[45px]" : "h-[45px] w-[45px]"
-                  )}
-                >
+            <div className="flex items-center gap-4 overflow-hidden border-t border-[#EDEEEF] bg-white px-5 py-4">
+                <div className="flex h-[45px] w-[45px] items-center justify-center rounded-lg bg-[var(--gslide-accent)] p-2">
                     <Sparkles className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
                     <h4 className="text-sm font-semibold tracking-[0.14px] text-[#191919]">
-                      {selectionPage ? t("templates.create.buildTemplates") : t("templates.create.buildTemplate")}
+                      {t("templates.create.buildTemplate")}
                     </h4>
-                    <p
-                      className={cn(
-                        "flex items-center gap-2 font-medium text-[#808080]",
-                        selectionPage
-                          ? "text-sm tracking-[0.14px]"
-                          : "text-sm"
-                      )}
-                    >
-                      {selectionPage
-                        ? t("templates.create.buildYourTemplate")
-                        : t("templates.create.buildYourOwnTemplate")}
+                    <p className="flex items-center gap-2 text-sm font-medium text-[#808080]">
+                      {t("templates.create.buildYourOwnTemplate")}
                     </p>
                 </div>
             </div>

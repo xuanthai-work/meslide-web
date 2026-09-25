@@ -4,27 +4,27 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("new presentations enter the template stage on /presentation", async () => {
+test("new presentations carry the selected template from upload", async () => {
   const upload = await read("app/(presentation-generator)/upload/components/UploadPage.tsx");
   const documents = await read("app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx");
 
   assert.match(upload, /return `\/presentation\?\$\{params\.toString\(\)\}`/);
   assert.match(upload, /auto:\s*"1"/);
+  assert.match(upload, /params\.set\("template", selectedTemplateId\)/);
   assert.match(documents, /router\.replace\(`\/presentation\?/);
   assert.doesNotMatch(`${upload}\n${documents}`, /\/outline\?/);
 });
 
-test("presentation owns template selection before automatic generation", async () => {
+test("legacy automatic links without a template return to upload", async () => {
+  const route = await read("app/(presentation-generator)/presentation/page.tsx");
   const page = await read("app/(presentation-generator)/presentation/components/PresentationPage.tsx");
-  const picker = await read("app/(presentation-generator)/presentation/components/PresentationTemplatePicker.tsx");
   const bootstrap = await read("app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration.ts");
 
-  assert.match(page, /autoGenerate\s*&&\s*!automaticTemplateId/);
-  assert.match(page, /<PresentationTemplatePicker/);
-  assert.match(picker, /template:\s*template\.id/);
-  assert.match(picker, /router\.replace\(`\/presentation\?/);
+  assert.match(route, /params\.get\("auto"\) === "1" && !params\.get\("template"\)\?\.trim\(\)/);
+  assert.match(route, /router\.replace\("\/upload"\)/);
+  assert.doesNotMatch(page, /PresentationTemplatePicker|showTemplatePicker|suggested_template/);
   assert.doesNotMatch(
-    `${picker}\n${bootstrap}`,
+    `${route}\n${bootstrap}`,
     /router\.(?:push|replace)\([^)]*["'`]\/outline/,
   );
 });

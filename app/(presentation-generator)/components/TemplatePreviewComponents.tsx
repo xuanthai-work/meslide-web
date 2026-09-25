@@ -1,22 +1,14 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import React, { memo } from "react";
-import { cn } from "@/lib/utils";
 
 export function TemplatePreviewStage({
   children,
-  selectionPage = false,
 }: {
   children: React.ReactNode;
-  selectionPage?: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden bg-[#F8FBFB]",
-        selectionPage ? "h-[249px] px-[34px] py-5" : "p-5"
-      )}
-    >
+    <div className="relative overflow-hidden bg-[#F8FBFB] p-5">
       <img
         src="/card_bg.svg"
         alt=""
@@ -29,20 +21,11 @@ export function TemplatePreviewStage({
 
 export const LayoutsBadge = memo(function LayoutsBadge({
   count,
-  selectionPage = false,
 }: {
   count: number;
-  selectionPage?: boolean;
 }) {
     return (
-      <span
-        className={cn(
-          "absolute z-40 inline-flex items-center rounded-full font-syne text-xs text-white",
-          selectionPage
-            ? "left-2 top-2 bg-[rgba(58,58,58,0.96)] px-2.5 py-1 font-medium"
-            : "left-4 top-3.5 bg-[#333333] px-3 py-1 font-semibold"
-        )}
-      >
+      <span className="absolute left-4 top-3.5 z-40 inline-flex items-center rounded-full bg-[#333333] px-3 py-1 font-syne text-xs font-semibold text-white">
         Layouts-{count}
       </span>
     );

@@ -85,7 +85,6 @@ const LayoutPreview = () => {
                 <TemplateListCard
                   key={template.id}
                   template={template}
-                  showArrow
                   onClick={() => handleOpenTemplate(template.id)}
                 />
               ))}
@@ -98,7 +97,6 @@ const LayoutPreview = () => {
                 <TemplateListCard
                   key={template.id}
                   template={template}
-                  showArrow
                   onClick={() => handleOpenTemplate(template.id)}
                 />
               ))}
