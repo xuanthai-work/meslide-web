@@ -12,31 +12,36 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { templateCardCopy } from "../../components/builtin-template-copy";
 import { TemplateThumbnailPreview } from "../../components/TemplateListUi";
-import { useTemplateSummaries } from "../../hooks/useTemplateSummaries";
+import type { TemplateListItem } from "../../services/api/template";
 
 type UploadTemplatePickerProps = {
+  templates: TemplateListItem[];
+  loading: boolean;
+  error: string | null;
+  retry: () => void;
   selectedTemplateId: string | null;
+  isConfirmed: boolean;
   onSelectionChange: (id: string | null) => void;
-  onAvailabilityChange: (available: boolean) => void;
+  onConfirmSelection: (id: string) => void;
   disabled?: boolean;
 };
 
 export function UploadTemplatePicker({
+  templates,
+  loading,
+  error,
+  retry,
   selectedTemplateId,
+  isConfirmed,
   onSelectionChange,
-  onAvailabilityChange,
+  onConfirmSelection,
   disabled = false,
 }: UploadTemplatePickerProps) {
   const { locale, t } = useI18n();
-  const { defaultTemplates: templates, loading, error, retry } = useTemplateSummaries();
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
-
-  useEffect(() => {
-    onAvailabilityChange(!loading && !error && selectedTemplate !== null);
-  }, [loading, error, selectedTemplate, onAvailabilityChange]);
 
   useEffect(() => {
     if (loading) return;
@@ -60,7 +65,7 @@ export function UploadTemplatePicker({
   const chooseActive = () => {
     const active = templates[activeIndex];
     if (!active) return;
-    onSelectionChange(active.id);
+    onConfirmSelection(active.id);
     setOpen(false);
   };
 
@@ -175,7 +180,7 @@ export function UploadTemplatePicker({
                       >
                         <span className="block aspect-video w-[54px] shrink-0 overflow-hidden rounded border border-[#EDEEF4] bg-white"><TemplateThumbnailPreview thumbnail={template.thumbnail} templateName={copy.name} /></span>
                         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[#101323]">{copy.name}</span>
-                        {selectedTemplateId === template.id && <Check aria-hidden="true" size={15} className="hidden shrink-0 text-[#1D6FE8] md:block" />}
+                        {isConfirmed && selectedTemplateId === template.id && <Check aria-hidden="true" size={15} className="hidden shrink-0 text-[#1D6FE8] md:block" />}
                       </button>
                     );
                   })}

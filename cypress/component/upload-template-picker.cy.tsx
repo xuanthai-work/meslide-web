@@ -52,6 +52,33 @@ const mountUpload = () => {
 };
 
 describe("template selection on upload", () => {
+  it("previews without confirmation until Choose is pressed", () => {
+    cy.viewport(1280, 720);
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    mountUpload();
+    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá").click();
+    cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("not.exist");
+    cy.get('[data-testid="template-rail-item-executive"]').click();
+    cy.get('[data-testid="template-rail-item-executive"] .lucide-check').should("not.exist");
+    cy.get('[data-testid="template-carousel"]').focus().type("{esc}");
+    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá").click();
+    cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("not.exist");
+    cy.get('[data-testid="template-rail-item-executive"]').click();
+    cy.get('[data-testid="template-choose-button"]').click();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-rail-item-executive"] .lucide-check').should("exist");
+  });
+
+  it("confirms the initial preview when Choose is pressed", () => {
+    cy.viewport(1280, 720);
+    cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
+    mountUpload();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-choose-button"]').click();
+    cy.get('[data-testid="upload-template-trigger"]').click();
+    cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("exist");
+  });
+
   it("defaults to the first template and sends it into automatic generation", () => {
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
       const isDefault = new URL(request.url).searchParams.get("default") === "true";

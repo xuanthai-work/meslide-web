@@ -10,7 +10,7 @@
  */
 
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { clearOutlines, setPresentationId } from "@/store/slices/presentationGeneration";
@@ -40,6 +40,7 @@ import { useT } from "@/i18n/provider";
 import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 import { GSlideButton, GSlideStudioTitle } from "@/components/gslide";
 import { UploadTemplatePicker } from "./UploadTemplatePicker";
+import { useTemplateSummaries } from "../../hooks/useTemplateSummaries";
 
 // Types for loading state
 interface LoadingState {
@@ -75,8 +76,19 @@ const UploadPage = () => {
   const dispatch = useDispatch();
 
   const [files, setFiles] = useState<File[]>([]);
+  const { defaultTemplates, loading: templatesLoading, error: templatesError, retry: retryTemplates } = useTemplateSummaries();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [templateReady, setTemplateReady] = useState(false);
+  const [confirmedTemplateId, setConfirmedTemplateId] = useState<string | null>(null);
+  const templateReady = !templatesLoading && !templatesError &&
+    defaultTemplates.some((item) => item.id === selectedTemplateId);
+  const handlePreviewSelection = useCallback((id: string | null) => {
+    setSelectedTemplateId(id);
+    setConfirmedTemplateId((confirmed) => confirmed === id ? confirmed : null);
+  }, []);
+  const handleConfirmSelection = useCallback((id: string) => {
+    setSelectedTemplateId(id);
+    setConfirmedTemplateId(id);
+  }, []);
   const [config, setConfig] = useState<PresentationConfig>({
     slides: null,
     language: LanguageType.Vietnamese,
@@ -694,9 +706,14 @@ const UploadPage = () => {
             />
             <div className="flex w-full justify-center pt-2">
               <UploadTemplatePicker
+                templates={defaultTemplates}
+                loading={templatesLoading}
+                error={templatesError}
+                retry={retryTemplates}
                 selectedTemplateId={selectedTemplateId}
-                onSelectionChange={setSelectedTemplateId}
-                onAvailabilityChange={setTemplateReady}
+                isConfirmed={confirmedTemplateId !== null && confirmedTemplateId === selectedTemplateId}
+                onSelectionChange={handlePreviewSelection}
+                onConfirmSelection={handleConfirmSelection}
                 disabled={loadingState.isLoading}
               />
             </div>
