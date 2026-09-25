@@ -14,8 +14,9 @@ import {
   LayoutsBadge,
 } from "./TemplatePreviewComponents";
 import { TemplateTab } from "../hooks/useTemplateSummaries";
-import { useT } from "@/i18n/provider";
+import { useI18n, useT } from "@/i18n/provider";
 import { translate } from "@/i18n/translate";
+import { templateCardCopy } from "./builtin-template-copy";
 
 export function TemplateThumbnailPreview({
   thumbnail,
@@ -77,7 +78,8 @@ export const TemplateListCard = memo(function TemplateListCard({
   showArrow?: boolean;
   selectionPage?: boolean;
 }) {
-  const t = useT();
+  const { locale, t } = useI18n();
+  const cardCopy = templateCardCopy(template, locale);
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (event.currentTarget.getAttribute("aria-disabled") === "true") {
@@ -110,7 +112,7 @@ export const TemplateListCard = memo(function TemplateListCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      aria-label={showArrow ? t("templates.card.openAria", { name: template.name }) : t("templates.card.selectAria", { name: template.name })}
+      aria-label={showArrow ? t("templates.card.openAria", { name: cardCopy.name }) : t("templates.card.selectAria", { name: cardCopy.name })}
       className={cn(
         "group relative overflow-hidden border bg-white shadow-none outline-none transition-all duration-200",
         selectionPage ? "rounded-[12px]" : "rounded-[22px]",
@@ -150,7 +152,7 @@ export const TemplateListCard = memo(function TemplateListCard({
         />
         <TemplateThumbnailPreview
           thumbnail={template.thumbnail}
-          templateName={template.name}
+          templateName={cardCopy.name}
           selectionPage={selectionPage}
         />
       </TemplatePreviewStage>
@@ -172,9 +174,9 @@ export const TemplateListCard = memo(function TemplateListCard({
                   )
             )}
           >
-            {template.name}
+            {cardCopy.name}
           </h3>
-          {template.description && (
+          {cardCopy.description && (
             <p
               className={cn(
                 "line-clamp-2 font-syne",
@@ -186,7 +188,7 @@ export const TemplateListCard = memo(function TemplateListCard({
                     )
               )}
             >
-              {template.description}
+              {cardCopy.description}
             </p>
           )}
           {statusLabel && (
