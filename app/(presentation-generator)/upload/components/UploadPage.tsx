@@ -39,6 +39,7 @@ import {
 import { useT } from "@/i18n/provider";
 import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 import { GSlideButton, GSlideStudioTitle } from "@/components/gslide";
+import { UploadTemplatePicker } from "./UploadTemplatePicker";
 
 // Types for loading state
 interface LoadingState {
@@ -74,6 +75,8 @@ const UploadPage = () => {
   const dispatch = useDispatch();
 
   const [files, setFiles] = useState<File[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [templateReady, setTemplateReady] = useState(false);
   const [config, setConfig] = useState<PresentationConfig>({
     slides: null,
     language: LanguageType.Vietnamese,
@@ -231,6 +234,8 @@ const UploadPage = () => {
       preparedDocuments.decompositionKey ===
         decompositionKeyFor(fileFingerprint(files), config.language));
   const isCreateDisabled =
+    !templateReady ||
+    !selectedTemplateId ||
     isRewriting ||
     (promptRequiresRewrite
       ? !isRewriteFresh || !preparedDocumentsMatchSelection
@@ -422,6 +427,7 @@ const UploadPage = () => {
       id: presentationId,
       auto: "1",
     });
+    if (selectedTemplateId) params.set("template", selectedTemplateId);
     return `/presentation?${params.toString()}`;
   };
 
@@ -470,7 +476,7 @@ const UploadPage = () => {
   const handleGeneratePresentation = async () => {
     // Keyboard submissions run the same eligibility checks as the button:
     // never start a Create while a rewrite or a previous Create is active.
-    if (isRewriting || loadingState.isLoading) return;
+    if (isRewriting || loadingState.isLoading || !templateReady || !selectedTemplateId) return;
     if (!validateConfiguration()) return;
 
     // Capture the exact configuration being submitted. From this point on,
@@ -686,6 +692,14 @@ const UploadPage = () => {
                   : 0
               }
             />
+            <div className="flex w-full justify-center pt-2">
+              <UploadTemplatePicker
+                selectedTemplateId={selectedTemplateId}
+                onSelectionChange={setSelectedTemplateId}
+                onAvailabilityChange={setTemplateReady}
+                disabled={loadingState.isLoading}
+              />
+            </div>
             {/* Explicit, visible Create action below the composer, centered.
                 Ctrl/Cmd+Enter still calls handleGeneratePresentation. */}
             <div className="flex w-full justify-center">

@@ -582,7 +582,7 @@ test("rewrite progress surfaces preparation phases accessibly", async () => {
   }
 
   // Duplicate submissions are prevented while a rewrite or Create is active.
-  assert.match(page, /if \(isRewriting \|\| loadingState\.isLoading\) return;/);
+  assert.match(page, /if \(isRewriting \|\| loadingState\.isLoading \|\| !templateReady \|\| !selectedTemplateId\) return;/);
 
   // Aborting an in-flight rewrite clears the phase along with the flag.
   const filesHandlerStart = page.indexOf("const handleFilesChange");

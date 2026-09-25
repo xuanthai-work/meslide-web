@@ -54,6 +54,20 @@ const mountUploadPage = ({
   );
 };
 
+beforeEach(() => {
+  cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
+    const isDefault = new URL(request.url).searchParams.get("default") === "true";
+    request.reply({
+      body: {
+        items: isDefault ? [{ id: "momentum", name: "Momentum", is_default: true, layout_count: 3 }] : [],
+        total: isDefault ? 1 : 0,
+        page: 1,
+        page_size: 100,
+      },
+    });
+  });
+});
+
 describe("upload prompt rewrite flow", () => {
   it("sizes the prompt input from its content instead of manual resizing", () => {
     mountUploadPage();
@@ -220,7 +234,7 @@ describe("upload prompt rewrite flow", () => {
     cy.wait("@createPresentation");
     cy.get("@routerPush").should(
       "have.been.calledWith",
-      "/presentation?id=presentation-123&auto=1",
+      "/presentation?id=presentation-123&auto=1&template=momentum",
     );
   });
 
@@ -527,7 +541,7 @@ describe("document-aware rewrite flow", () => {
     });
     cy.get("@routerPush").should(
       "have.been.calledWith",
-      "/presentation?id=presentation-123&auto=1",
+      "/presentation?id=presentation-123&auto=1&template=momentum",
     );
   });
 
@@ -700,6 +714,7 @@ describe("document-aware rewrite flow", () => {
     const state = counters();
 
     mountUploadPage({ documentAwareRewrite: true });
+    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
     attach("notes.txt");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
     cy.get('[data-testid="rewrite-action-button"]').should("be.disabled");
@@ -715,7 +730,7 @@ describe("document-aware rewrite flow", () => {
       });
     cy.get("@routerPush").should(
       "have.been.calledWith",
-      "/presentation?id=presentation-123&auto=1",
+      "/presentation?id=presentation-123&auto=1&template=momentum",
     );
     cy.then(() => {
       expect(state.rewrite, "no rewrite happens without a prompt").to.equal(0);

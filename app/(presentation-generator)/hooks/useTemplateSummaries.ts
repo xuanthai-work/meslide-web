@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import TemplateService, {
   TemplateCreateTaskResponse,
@@ -30,6 +30,8 @@ export function useTemplateSummaries({
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
+  const retry = useCallback(() => setRetryToken((value) => value + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,14 +52,27 @@ export function useTemplateSummaries({
       }
     };
 
+    const loadAllPages = async (isDefault: boolean) => {
+      const items: TemplateListItem[] = [];
+      let page = 1;
+      while (true) {
+        const response = await TemplateService.getTemplateSummaries(isDefault, page);
+        const pageItems = response.items ?? [];
+        items.push(...pageItems);
+        if (items.length >= response.total || pageItems.length < response.page_size) break;
+        page += 1;
+      }
+      return items;
+    };
+
     const loadTemplateSummaries = async () => {
-      const [defaultResponse, customResponse] = await Promise.all([
-        TemplateService.getTemplateSummaries(true),
-        TemplateService.getTemplateSummaries(false),
+      const [defaults, customs] = await Promise.all([
+        loadAllPages(true),
+        loadAllPages(false),
       ]);
       return [
-        ...filterTemplatesWithLayouts(defaultResponse.items ?? []),
-        ...filterTemplatesWithLayouts(customResponse.items ?? []),
+        ...filterTemplatesWithLayouts(defaults),
+        ...filterTemplatesWithLayouts(customs),
       ];
     };
 
@@ -127,7 +142,7 @@ export function useTemplateSummaries({
         clearInterval(intervalId);
       }
     };
-  }, [includeProcessingTemplateTasks, t]);
+  }, [includeProcessingTemplateTasks, retryToken, t]);
 
   const { defaultTemplates, customTemplates } = useMemo(
     () => splitTemplatesByDefault(templates),
@@ -141,5 +156,6 @@ export function useTemplateSummaries({
     processingTemplateTasks,
     loading,
     error,
+    retry,
   };
 }
