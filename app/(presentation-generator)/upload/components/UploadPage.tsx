@@ -41,6 +41,7 @@ import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 import { GSlideButton, GSlideStudioTitle } from "@/components/gslide";
 import { UploadTemplatePicker } from "./UploadTemplatePicker";
 import { useTemplateSummaries } from "../../hooks/useTemplateSummaries";
+import { resolveTemplateForCreate } from "../services/template-selection";
 
 // Types for loading state
 interface LoadingState {
@@ -79,6 +80,7 @@ const UploadPage = () => {
   const { defaultTemplates, loading: templatesLoading, error: templatesError, retry: retryTemplates } = useTemplateSummaries();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [confirmedTemplateId, setConfirmedTemplateId] = useState<string | null>(null);
+  const createInFlightRef = useRef(false);
   const templateReady = !templatesLoading && !templatesError &&
     defaultTemplates.some((item) => item.id === selectedTemplateId);
   const handlePreviewSelection = useCallback((id: string | null) => {
@@ -434,12 +436,12 @@ const UploadPage = () => {
     }
   };
 
-  const getGenerationDestination = (presentationId: string) => {
+  const getGenerationDestination = (presentationId: string, templateId: string) => {
     const params = new URLSearchParams({
       id: presentationId,
       auto: "1",
+      template: templateId,
     });
-    if (selectedTemplateId) params.set("template", selectedTemplateId);
     return `/presentation?${params.toString()}`;
   };
 
@@ -488,8 +490,14 @@ const UploadPage = () => {
   const handleGeneratePresentation = async () => {
     // Keyboard submissions run the same eligibility checks as the button:
     // never start a Create while a rewrite or a previous Create is active.
-    if (isRewriting || loadingState.isLoading || !templateReady || !selectedTemplateId) return;
+    if (createInFlightRef.current || isRewriting || loadingState.isLoading || !templateReady) return;
     if (!validateConfiguration()) return;
+    createInFlightRef.current = true;
+    setLoadingState({
+      isLoading: true,
+      message: t("upload.status.preparingOutline"),
+      showProgress: true,
+    });
 
     // Capture the exact configuration being submitted. From this point on,
     // neither a source edit nor another settings change can alter the prompt
@@ -498,17 +506,26 @@ const UploadPage = () => {
       ...config,
       prompt: promptRequiresRewrite ? rewrittenPrompt.trim() : "",
     };
+    const candidateSnapshot = [...defaultTemplates];
+    const confirmedSnapshot = confirmedTemplateId;
 
     try {
+      const templateId = await resolveTemplateForCreate({
+        prompt: generationConfig.prompt,
+        confirmedTemplateId: confirmedSnapshot,
+        templates: candidateSnapshot,
+      });
       const hasUploadedAssets = files.length > 0;
 
       if (hasUploadedAssets) {
-        await handleDocumentProcessing(generationConfig);
+        await handleDocumentProcessing(generationConfig, templateId);
       } else {
-        await handleDirectPresentationGeneration(generationConfig);
+        await handleDirectPresentationGeneration(generationConfig, templateId);
       }
     } catch (error) {
       handleGenerationError(error);
+    } finally {
+      createInFlightRef.current = false;
     }
   };
 
@@ -519,6 +536,7 @@ const UploadPage = () => {
    */
   const handleDocumentProcessing = async (
     generationConfig: PresentationConfig,
+    templateId: string,
   ) => {
     setLoadingState({
       isLoading: true,
@@ -564,7 +582,7 @@ const UploadPage = () => {
       }));
       dispatch(clearOutlines());
       dispatch(setPresentationId(createResponse.id));
-      const destination = getGenerationDestination(createResponse.id);
+      const destination = getGenerationDestination(createResponse.id, templateId);
       router.push(destination);
     } catch (error) {
       // The prepared server-side files may be stale; drop the caches so the
@@ -579,6 +597,7 @@ const UploadPage = () => {
    */
   const handleDirectPresentationGeneration = async (
     generationConfig: PresentationConfig,
+    templateId: string,
   ) => {
       setLoadingState({
         isLoading: true,
@@ -607,7 +626,7 @@ const UploadPage = () => {
     }));
     dispatch(clearOutlines());
     dispatch(setPresentationId(createResponse.id));
-    const destination = getGenerationDestination(createResponse.id);
+    const destination = getGenerationDestination(createResponse.id, templateId);
     router.push(destination);
   };
 
