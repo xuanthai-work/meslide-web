@@ -84,7 +84,7 @@ const en = {
   dashboard: {
     section: {
       actions: "Actions",
-      decks: "Decks",
+      decks: "My Slides",
     },
     loading: {
       title: "Slide Presentation",
@@ -892,11 +892,6 @@ const en = {
     page: {
       title: "Templates",
     },
-    actions: {
-      newTemplate: "New Template",
-      newTemplateShort: "New",
-      createNewAria: "Create new template",
-    },
     error: {
       loadFailed: (p) => `Templates could not be loaded: ${p.error}`,
       loadTitle: "Could not load templates",
@@ -909,21 +904,9 @@ const en = {
       noBuiltin: "No built-in templates available.",
       noTemplates: "No templates available.",
     },
-    create: {
-      buildTemplate: "Build Template",
-      buildYourOwnTemplate: "Build Your Own Template",
-    },
-    tabs: {
-      custom: "Custom",
-      builtin: "Built-In",
-    },
     card: {
       openAria: (p) => `Open ${p.name} template`,
       thumbnailAria: (p) => `${p.name} thumbnail`,
-      newTemplate: "New template",
-      preparingLayouts: "Preparing layouts",
-      layoutsProgress: (p) => `${p.done} of ${p.total} layouts`,
-      processingAria: (p) => `${p.name} template is processing`,
     },
   },
 

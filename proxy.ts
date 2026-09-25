@@ -48,6 +48,13 @@ function proxyInput(request: NextRequest) {
 }
 
 export default async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === "/custom-template") {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/templates";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const input = proxyInput(request);
   const decision = decideProxyRoute(input);
 
@@ -85,5 +92,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/app_data/:path*", "/static/:path*", "/pdf-maker"],
+  matcher: ["/api/:path*", "/app_data/:path*", "/static/:path*", "/pdf-maker", "/custom-template"],
 };
