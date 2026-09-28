@@ -335,7 +335,7 @@ const vi = {
     },
     files: {
       unsupportedTitle: "Một số tệp không được hỗ trợ",
-      supportedDescription: "Hỗ trợ Word, PowerPoint, bảng tính, PDF/TXT và tệp ảnh.",
+      supportedDescription: "Hỗ trợ Word, PowerPoint, bảng tính, PDF/TXT/Markdown và tệp ảnh.",
       limitTitle: "Đã đạt giới hạn số tệp",
       selectedTitle: "Đã chọn tệp",
       limitDescription: (p) => `Bạn chỉ có thể tải lên tối đa ${p.max} tài liệu.`,

@@ -7,6 +7,10 @@ import { notify } from "@/components/ui/sonner";
 import { useT } from "@/i18n/provider";
 import { PromptComposerBoundaryContext } from "./PromptInput";
 import { exceedsPresentationUploadLimit } from "../services/document-preparation";
+import {
+  isAllowedDocumentName,
+  SUPPORTED_DOCUMENT_ACCEPT,
+} from "../services/supported-documents";
 
 /**
  * How the selected documents participate in the upload flow. The parent owns
@@ -39,13 +43,7 @@ interface SupportingDocProps {
 }
 
 const MAX_SUPPORTED_FILES = 8;
-const ALLOWED_EXTENSIONS = [
-  ".pdf", ".txt", ".docx", ".docm", ".odt",
-  ".pptx", ".pptm", ".odp", ".xlsx", ".xlsm",
-  ".ods", ".csv", ".tsv", ".jpg", ".jpeg", ".png", ".gif",
-  ".bmp", ".tiff", ".webp",
-];
-const ACCEPT = ALLOWED_EXTENSIONS.join(",");
+const ACCEPT = SUPPORTED_DOCUMENT_ACCEPT;
 
 export default function SupportingDoc({
   files,
@@ -212,6 +210,5 @@ export default function SupportingDoc({
 }
 
 function isAllowedFile(file: File) {
-  const name = (file.name || "").toLowerCase();
-  return ALLOWED_EXTENSIONS.some((extension) => name.endsWith(extension));
+  return isAllowedDocumentName(file.name);
 }

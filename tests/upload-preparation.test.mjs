@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import path from "node:path";
 import test from "node:test";
@@ -122,4 +122,61 @@ test("documents above 100 MB are rejected and the create body stays on the curre
     },
   );
   assert.equal(BLANK_PRESENTATION_PATH, "/api/v1/ppt/presentation/create/blank");
+});
+
+test("markdown attachments are accepted and the file input advertises them", async () => {
+  const {
+    SUPPORTED_DOCUMENT_ACCEPT,
+    SUPPORTED_DOCUMENT_EXTENSIONS,
+    isAllowedDocumentName,
+  } = await import(
+    "../app/(presentation-generator)/upload/services/supported-documents.ts"
+  );
+
+  for (const name of ["notes.md", "notes.markdown", "READ ME.MD", "a/b/c.markdown"]) {
+    assert.equal(isAllowedDocumentName(name), true, name);
+  }
+  // Every format the picker already accepted keeps working.
+  for (const name of [
+    "deck.pdf",
+    "notes.txt",
+    // Gating is on the real suffix, so a markdown file named .md.txt is a .txt.
+    "notes.md.txt",
+    "deck.pptx",
+    "report.xlsx",
+    "table.csv",
+    "photo.JPEG",
+    "scan.webp",
+  ]) {
+    assert.equal(isAllowedDocumentName(name), true, name);
+  }
+  for (const name of ["archive.zip", "legacy.doc", "movie.mp4", "archive.tar.gz", "md", ""]) {
+    assert.equal(isAllowedDocumentName(name), false, name);
+  }
+  assert.equal(isAllowedDocumentName(null), false);
+  assert.equal(isAllowedDocumentName(undefined), false);
+
+  assert.ok(SUPPORTED_DOCUMENT_EXTENSIONS.includes(".md"));
+  assert.ok(SUPPORTED_DOCUMENT_EXTENSIONS.includes(".markdown"));
+  assert.equal(
+    SUPPORTED_DOCUMENT_ACCEPT,
+    SUPPORTED_DOCUMENT_EXTENSIONS.join(","),
+  );
+  assert.ok(SUPPORTED_DOCUMENT_ACCEPT.includes(".md"));
+  assert.ok(SUPPORTED_DOCUMENT_ACCEPT.includes(".markdown"));
+});
+
+test("SupportingDoc gates attachments through the shared extension list", async () => {
+  const supportingDoc = readFileSync(
+    path.resolve(
+      "app/(presentation-generator)/upload/components/SupportingDoc.tsx",
+    ),
+    "utf8",
+  );
+  // The component must not keep a second, drifting copy of the whitelist.
+  assert.doesNotMatch(supportingDoc, /const ALLOWED_EXTENSIONS/);
+  assert.match(supportingDoc, /isAllowedDocumentName/);
+  assert.match(supportingDoc, /function isAllowedFile\([\s\S]*isAllowedDocumentName\(file\.name\)/);
+  assert.match(supportingDoc, /accept=\{ACCEPT\}/);
+  assert.match(supportingDoc, /candidates\.filter\(isAllowedFile\)/);
 });

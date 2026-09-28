@@ -335,7 +335,7 @@ const en = {
     },
     files: {
       unsupportedTitle: "Some files are not supported",
-      supportedDescription: "Supported: Word, PowerPoint, spreadsheets, PDF/TXT, and image files.",
+      supportedDescription: "Supported: Word, PowerPoint, spreadsheets, PDF/TXT/Markdown, and image files.",
       limitTitle: "Maximum file limit reached",
       selectedTitle: "Files selected",
       limitDescription: (p) => `You can upload up to ${p.max} documents only.`,
