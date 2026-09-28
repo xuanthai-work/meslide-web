@@ -2,6 +2,7 @@ import { resolveBackendAssetUrl } from "@/utils/api";
 import {
   fitRenderTextListToBox as fitTextListToBox,
   fitRenderTextToBox as fitTextToBox,
+  isSingleLineBox,
   normalizeRawTextMarkdownElement,
 } from "@/components/slide-editor/text/template-v2-text";
 import { isLatexTextRun } from "@/components/slide-editor/text/text-runs";
@@ -496,6 +497,20 @@ function renderUnfittedRunsHtml(runs: JsonRecord[]): string {
     .join("");
 }
 
+function htmlDesignedFontSize(runs: JsonRecord[]): number {
+  const sizes = runs
+    .map((run) => readNumber(readRecord(run.font).size))
+    .filter((size): size is number => size != null && size > 0);
+  return sizes.length ? Math.max(...sizes) : 18;
+}
+
+function htmlSingleLineBox(
+  box: { width: number; height: number } | null,
+  runs: JsonRecord[],
+): boolean {
+  return box ? isSingleLineBox(box, htmlDesignedFontSize(runs)) : false;
+}
+
 function renderText(item: JsonRecord, mode: RenderMode): string {
   const font = readRecord(item.font);
   const alignment = readRecord(item.alignment);
@@ -505,7 +520,7 @@ function renderText(item: JsonRecord, mode: RenderMode): string {
   const fitBox = htmlTextFitBox(item);
   const fitted = fitBox ? fitTextToBox(runs, fitBox) : null;
   const lineHtml = fitted
-    ? renderFittedLinesHtml(fitted.lines)
+    ? renderFittedLinesHtml(fitted.lines, htmlSingleLineBox(fitBox, runs))
     : renderUnfittedRunsHtml(runs);
 
   return `<div style="${frameStyle(item, mode)}${transformStyle(item)}${fontStyle(font, {
@@ -533,8 +548,9 @@ function renderTextList(item: JsonRecord, mode: RenderMode): string {
   });
   const fitBox = htmlTextFitBox(item);
   const fitted = fitBox ? fitTextListToBox(listItems, fitBox) : null;
+  const listRuns = listItems.flatMap((entry) => entry.runs);
   const lineHtml = fitted
-    ? renderFittedLinesHtml(fitted.lines)
+    ? renderFittedLinesHtml(fitted.lines, htmlSingleLineBox(fitBox, listRuns))
     : listItems
         .map((entry) =>
           `${escapeHtml(entry.marker)}${renderUnfittedRunsHtml(entry.runs)}`,
@@ -547,8 +563,13 @@ function renderTextList(item: JsonRecord, mode: RenderMode): string {
   )}${textOverflowStyle()}">${lineHtml}</div>`;
 }
 
-function renderFittedLinesHtml(lines: unknown): string {
-  return readArray(lines)
+function renderFittedLinesHtml(lines: unknown, singleLineBox = false): string {
+  const lineList = readArray(lines);
+  // A box designed for one line must never re-wrap in the DOM: subpixel glyph
+  // differences between the canvas fit and the browser paint would push the
+  // tail of the line onto a second line that overlaps the element below.
+  const singleLine = singleLineBox && lineList.length === 1;
+  return lineList
     .map((line) => {
       const segments = readArray(line).map(readRecord);
       const sizes = segments
@@ -581,7 +602,10 @@ function renderFittedLinesHtml(lines: unknown): string {
         .join("");
       const sizeStyle =
         fontSize != null ? `font-size:${cssNumber(fontSize)}px;` : "";
-      return `<span style="display:block;width:100%;white-space:pre;${sizeStyle}line-height:${cssNumber(lineHeight)};">${content}</span>`;
+      const singleLineStyle = singleLine
+        ? "white-space:nowrap;word-break:normal;overflow:hidden;text-overflow:ellipsis;"
+        : "white-space:pre-wrap;word-break:break-word;";
+      return `<span style="display:block;width:100%;${singleLineStyle}${sizeStyle}line-height:${cssNumber(lineHeight)};">${content}</span>`;
     })
     .join("");
 }

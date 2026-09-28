@@ -3,7 +3,7 @@ import React from "react";
 
 import { Card } from "@/components/ui/card";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
-import { Archive, AlertTriangle, Copy, EllipsisVertical, Loader2, Trash } from "lucide-react";
+import { Archive, AlertTriangle, Copy, EllipsisVertical, Loader2, Play, Trash } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -26,6 +26,7 @@ import {
   TemplateV2HtmlSlidePreview,
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import MarkdownRenderer from "@/components/MarkDownRender";
+import ToolTip from "@/components/ToolTip";
 import { useI18n, useT } from "@/i18n/provider";
 
 export const PresentationCard = ({
@@ -63,6 +64,23 @@ export const PresentationCard = ({
     }
     router.push(`/presentation?id=${id}`);
   };
+
+  // Present mode lives inside the editor route as a query-param state, so a
+  // quick present is the same navigation plus `mode=present`.
+  const handleQuickPresent = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isUnsupported) {
+      notify.warning(
+        t("dashboard.card.unsupported.title"),
+        t("dashboard.card.unsupported.description")
+      );
+      return;
+    }
+    router.push(`/presentation?id=${id}&mode=present&slide=0`);
+  };
+
+  const hasSlides = (presentation?.n_slides ?? presentation?.slides?.length ?? 0) > 0;
 
 
   const handleDelete = async () => {
@@ -163,6 +181,20 @@ export const PresentationCard = ({
               </p>
 
             </div>
+            <div className="flex items-center gap-1">
+            {!isUnsupported && hasSlides && (
+              <ToolTip content={t("dashboard.card.present")}>
+                <button
+                  type="button"
+                  aria-label={t("dashboard.card.presentAria")}
+                  data-testid={`quick-present-${id}`}
+                  onClick={handleQuickPresent}
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/40"
+                >
+                  <Play className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </ToolTip>
+            )}
             <Popover open={showActions} onOpenChange={setShowActions}>
               <PopoverTrigger className="w-6 h-6 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700" onClick={(e) => e.stopPropagation()}>
                 <EllipsisVertical className="w-6 h-6 text-gray-500" />
@@ -201,6 +233,7 @@ export const PresentationCard = ({
                 </button>
               </PopoverContent>
             </Popover>
+            </div>
           </div>
 
         </div>

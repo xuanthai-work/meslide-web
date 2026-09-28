@@ -245,8 +245,13 @@ export function TemplateV2HtmlSlidePreview({
       return undefined;
     }
     void fontSet.ready.then(markReady);
+    // Catch font variants (bold, italic) that finish loading after .ready
+    // resolves — without this, text measured with fallback metrics stays
+    // clipped because the fitted HTML is never rebuilt.
+    fontSet.addEventListener("loadingdone", markReady);
     return () => {
       cancelled = true;
+      fontSet.removeEventListener("loadingdone", markReady);
     };
   }, [fonts, slide]);
 

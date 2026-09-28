@@ -123,6 +123,8 @@ const vi = {
       },
       unsupportedTitle: "Không được hỗ trợ trong phiên bản GSlide này",
       previewUnavailable: "Không có bản xem trước",
+      present: "Trình chiếu nhanh",
+      presentAria: "Trình chiếu nhanh bộ slide này",
       deleted: {
         title: "Đã xóa bài thuyết trình",
         description: "Bài thuyết trình đã được xóa khỏi trang chủ của bạn.",

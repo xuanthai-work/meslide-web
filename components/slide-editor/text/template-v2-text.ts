@@ -12,12 +12,19 @@ import {
   fitTextToBox,
   measureTextByUnits,
 } from "./template-v2-text-fit.mjs";
+import {
+  canvasFontCss,
+  DEFAULT_FONT_FAMILY,
+} from "./template-v2-text-font.mjs";
 import { measureMathLatex, normalizeMathLatex } from "@/lib/math";
 
 export {
   fitTextListToBox,
   fitTextToBox,
+  isSingleLineBox,
+  singleLineMinScale,
 } from "./template-v2-text-fit.mjs";
+export { normalizeCanvasFontSpec } from "./template-v2-text-font.mjs";
 
 type UnknownRecord = Record<string, any>;
 
@@ -114,7 +121,7 @@ export function fitRenderTextListToBox(
 }
 
 const DEFAULT_FONT: RenderTextFont = {
-  family: "Arial",
+  family: DEFAULT_FONT_FAMILY,
   size: 18,
   color: "#111827",
   bold: false,
@@ -1642,17 +1649,6 @@ function sameTextRuns(left: TextRun[], right: TextRun[]) {
   );
 }
 
-function richFontCss(font: RenderTextFont): string {
-  const italic = font.italic ? "italic " : "";
-  const weight = font.bold ? "700 " : "400 ";
-  return `${italic}${weight}${font.size}px ${quotedFontFamily(font.family)}, Helvetica, sans-serif`;
-}
-
-function quotedFontFamily(family: string): string {
-  const name = (family || DEFAULT_FONT.family).trim() || DEFAULT_FONT.family;
-  return `"${name.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-}
-
 function measureRenderText(text: string, font: RenderTextFont) {
   if (typeof document === "undefined") {
     return measureTextByUnits(text, font);
@@ -1660,7 +1656,7 @@ function measureRenderText(text: string, font: RenderTextFont) {
   renderTextMeasureCanvas ??= document.createElement("canvas");
   const context = renderTextMeasureCanvas.getContext("2d");
   if (!context) return measureTextByUnits(text, font);
-  context.font = richFontCss(font);
+  context.font = canvasFontCss(font);
   return (
     context.measureText(text).width +
     (font.letterSpacing ?? 0) * Math.max(0, text.length - 1)

@@ -11,6 +11,22 @@ export declare const TITLE_SIZE_THRESHOLD: 24;
 export declare const ELLIPSIS: "…";
 export declare const FIT_SCALE_EPSILON: 0.001;
 export declare const PAINT_SAFETY: 1.1;
+export declare const UNICODE_PAINT_SAFETY: 1.14;
+export declare const DESIGN_LINE_HEIGHT: 1.25;
+export declare const SINGLE_LINE_TOLERANCE: 1.6;
+export declare const SINGLE_LINE_MIN_SCALE: 0.55;
+export declare const SINGLE_LINE_FLOOR_RATIO: 0.85;
+
+export declare function runsTextContent(
+  runs: Array<{ text?: string; type?: string }> | null | undefined,
+): string;
+export declare function isSingleLineBox(
+  box: { width?: number; height?: number } | null | undefined,
+  designedFontSize: number,
+  lineHeight?: number,
+): boolean;
+export declare function singleLineMinScale(designedSize: number): number;
+export declare function hasWideGlyphs(text: string): boolean;
 
 export declare function characterUnit(ch: string, bold?: boolean): number;
 export declare function textUnits(text: string, bold?: boolean): number;
