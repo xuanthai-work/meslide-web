@@ -180,3 +180,45 @@ test("SupportingDoc gates attachments through the shared extension list", async 
   assert.match(supportingDoc, /accept=\{ACCEPT\}/);
   assert.match(supportingDoc, /candidates\.filter\(isAllowedFile\)/);
 });
+
+test("an outline that numbers its own slides reports that count", async () => {
+  const { detectSlideCountFromText, MAX_NUMBER_OF_SLIDES } = await import(
+    "../utils/presentationLimits.ts"
+  );
+
+  // Every separator a pasted Markdown outline realistically uses.
+  for (const separator of ["\n", ":", " - ", " \u2014 ", "\r\n"]) {
+    const outline = ["## Slide 1", "## Slide 2", "## Slide 3"]
+      .map((line) => `${line}${separator}Body`)
+      .join("\n");
+    assert.equal(detectSlideCountFromText(outline), 3, JSON.stringify(separator));
+  }
+  // A marker alone on its line must count, not just one followed by text.
+  assert.equal(detectSlideCountFromText("## Slide 1\n## Slide 2\n"), 2);
+  assert.equal(detectSlideCountFromText("# Slide 01:\n## Slide 2:\n"), 2);
+  assert.equal(detectSlideCountFromText("Slide 1\nSlide 2\nSlide 3"), 3);
+
+  // Cross-references inside prose are not slide markers, so an incidental
+  // mention can never pin the count.
+  assert.equal(detectSlideCountFromText("See (Slide 3) and (Slide 10)."), null);
+  assert.equal(detectSlideCountFromText("- Slide 1 is a good start\n- Slide 2 too\n"), null);
+  // One marker is prose, not an outline.
+  assert.equal(detectSlideCountFromText("## Slide 1 - only one"), null);
+  assert.equal(detectSlideCountFromText("Build a quarterly deck"), null);
+  assert.equal(detectSlideCountFromText(""), null);
+  assert.equal(detectSlideCountFromText(null), null);
+  assert.equal(detectSlideCountFromText(undefined), null);
+
+  // Gapped or restarted numbering falls back to the number of markers seen
+  // rather than inventing the missing slides.
+  assert.equal(detectSlideCountFromText("Slide 1\nSlide 3\nSlide 7"), 3);
+  assert.equal(detectSlideCountFromText("Slide 1\nSlide 1\nSlide 2"), 2);
+
+  // The count is clamped like every other slide count on the page.
+  const huge = Array.from(
+    { length: MAX_NUMBER_OF_SLIDES + 30 },
+    (_, index) => `## Slide ${index + 1}`,
+  ).join("\n");
+  assert.equal(detectSlideCountFromText(huge), MAX_NUMBER_OF_SLIDES);
+});
+

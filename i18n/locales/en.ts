@@ -292,46 +292,41 @@ const en = {
       previewAria: (p) => `Preview ${p.name} template`,
     },
     prompt: {
-      write: "Write prompt",
-      placeholder: "Start with your idea... we'll handle the slides",
-      sourceLabel: "Your idea",
-      sourcePlaceholder: "Describe the presentation you want to create...",
       rewrite: {
-        action: "Rewrite with AI",
-        loading: "Rewriting...",
+        loading: "Generating outline...",
         phaseUploading: "Uploading documents...",
         phaseReading: "Reading documents...",
-        outputLabel: "AI-optimized prompt",
-        // Redesign 2026-09-16: compact empty-state heading that the panel
-        // shows before the first rewrite. Kept short so the panel itself
-        // does not dominate the composer before the user acts.
-        emptyTitle: "No rewrite yet",
-        emptyHint: "Your rewritten prompt will appear here",
-        // Shown only when a fresh result was grounded in documents, with the
-        // number of documents used. Not shown for prompt-only rewrites or
-        // while a stored result is stale.
-        groundedSummary: (p) =>
-          Number(p.count) <= 1
-            ? "Optimized from your idea and 1 document"
-            : `Optimized from your idea and ${p.count} documents`,
-        staleBadge: "Needs update",
-        staleHelper: "Your idea changed since the last rewrite. Update the rewrite before creating your presentation.",
-        updateAction: "Update rewrite",
         retryAction: "Try again",
-        errorTitle: "Couldn't rewrite the prompt",
-        errorFallback: "Something went wrong while rewriting the prompt. Try again; any previous result is kept.",
-        preparationErrorFallback: "Something went wrong while preparing your documents. Check your files and try again; any previous result is kept.",
-        requiredTitle: "Rewrite the prompt before creating",
-        requiredDescription: "Please rewrite the prompt with AI before creating your presentation.",
+        errorFallback: "Something went wrong while generating the outline. Try again; the content you entered is kept.",
+        preparationErrorFallback: "Something went wrong while preparing your documents. Check your files and try again; the content you entered is kept.",
         aria: {
-          loading: "Rewriting your prompt with AI.",
+          loading: "Generating your outline with AI.",
           uploading: "Uploading your documents.",
-          reading: "Reading your documents to ground the rewrite.",
-          success: "Prompt rewritten successfully.",
-          stale: "The rewritten prompt needs an update.",
-          error: "Prompt rewrite failed.",
+          reading: "Reading your documents to ground the outline.",
+          success: "Outline generated successfully.",
+          error: "Outline generation failed.",
         },
       },
+    },
+    // Two-box upload layout (2026-09-28): box 1 captures the idea and any
+    // extra instructions for the AI, box 2 holds the outline or detailed
+    // content that actually becomes the presentation. The AI outline action
+    // lives on box 1 and writes its result into box 2.
+    outline: {
+      ideaLabel: "1. Idea or instructions for AI (optional)",
+      ideaPlaceholder:
+        "Add special requirements for the AI (e.g. a technical deck for iOS engineers, focus on the pipeline, skip the basics)...",
+      contentLabel: "2. Outline or detailed presentation content",
+      contentPlaceholder:
+        "Paste your full outline, a Markdown file, or a detailed report here (e.g. ## Slide 1: Title... ## Slide 2: Content...)...",
+      action: "AI generate outline",
+      loading: "Generating outline...",
+      successTitle: "AI outline generated",
+      successDescription: "You can edit the content below before creating your slides.",
+      // Shown next to box 2 once the outline itself declares its slide count.
+      detectedCount: (p) => `${p.count} slides detected`,
+      strictLabel: "Follow the outline exactly (no merging or dropping slides)",
+      dropHint: "Drop a .md or .txt file here to load its content",
     },
     files: {
       unsupportedTitle: "Some files are not supported",
