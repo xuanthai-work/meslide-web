@@ -52,18 +52,21 @@ const mountUpload = () => {
 };
 
 describe("template selection on upload", () => {
-  it("previews without confirmation until Choose is pressed", () => {
+  it("selects on click but only confirms when Choose is pressed", () => {
     cy.viewport(1280, 720);
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
     mountUpload();
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá").click();
+    cy.get('[data-testid="template-rail-item-momentum"]').should("have.attr", "data-selected", "true");
     cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("not.exist");
+    // Clicking picks the template and moves the selected border without confirming it.
     cy.get('[data-testid="template-rail-item-executive"]').click();
+    cy.get('[data-testid="template-rail-item-executive"]').should("have.attr", "data-selected", "true");
+    cy.get('[data-testid="template-rail-item-momentum"]').should("not.have.attr", "data-selected");
     cy.get('[data-testid="template-rail-item-executive"] .lucide-check').should("not.exist");
     cy.get('[data-testid="template-carousel"]').focus().type("{esc}");
-    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá").click();
+    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Điều hành").click();
     cy.get('[data-testid="template-rail-item-momentum"] .lucide-check').should("not.exist");
-    cy.get('[data-testid="template-rail-item-executive"]').click();
     cy.get('[data-testid="template-choose-button"]').click();
     cy.get('[data-testid="upload-template-trigger"]').click();
     cy.get('[data-testid="template-rail-item-executive"] .lucide-check').should("exist");
@@ -290,8 +293,12 @@ describe("template selection on upload", () => {
     cy.get('[data-testid="template-rail-item-executive"]').trigger("mouseover");
     cy.get('[data-testid="template-active-name"]').should("contain", "Điều hành");
     cy.get('[data-testid="template-rail-item-executive"]').should("have.attr", "aria-pressed", "true");
+    // Browsing must not move the selected border off the current choice.
+    cy.get('[data-testid="template-rail-item-momentum"]').should("have.attr", "data-selected", "true");
+    cy.get('[data-testid="template-rail-item-executive"]').should("not.have.attr", "data-selected");
     cy.get('[data-testid="template-rail-item-modern"]').focus();
     cy.get('[data-testid="template-active-name"]').should("contain", "Hiện đại");
+    cy.get('[data-testid="template-rail-item-modern"]').should("not.have.attr", "data-selected");
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
     cy.get('[data-testid="template-carousel"]').focus().type("{esc}");
     cy.get('[role="dialog"]').should("not.exist");
