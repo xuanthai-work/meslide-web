@@ -3,19 +3,18 @@
  * 
  * This component handles the presentation generation upload process, allowing users to:
  * - Configure presentation settings (slides, language)
- * - Input prompts
+ * - Enter an idea plus optional AI instructions, or paste a full outline
  * - Upload supporting documents
  * 
  * @component
  */
 
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { clearOutlines, setPresentationId } from "@/store/slices/presentationGeneration";
-import { PromptInput } from "./PromptInput";
-import { RewrittenPrompt, type RewritePhase } from "./RewrittenPrompt";
+import { OutlineComposer, type OutlinePhase } from "./OutlineComposer";
 import { LanguageType, PresentationConfig, ToneType, VerbosityType } from "../type";
 import SupportingDoc from "./SupportingDoc";
 import { notify } from "@/components/ui/sonner";
@@ -34,6 +33,7 @@ import { setPptGenUploadState } from "@/store/slices/presentationGenUpload";
 import { ConfigurationSelects } from "./ConfigurationSelects";
 import {
   clampSlideCountValue,
+  detectSlideCountFromText,
   parseLimitedSlideCount,
 } from "@/utils/presentationLimits";
 import { useT } from "@/i18n/provider";
@@ -117,53 +117,44 @@ const UploadPage = () => {
     extra_info: "",
   });
 
-  // --- AI prompt rewrite orchestration ---------------------------------
-  // `config.prompt` stays the source idea and is never overwritten by a
-  // rewrite. The result below can be edited by hand; Create uses that text.
-  // Freshness is
-  // derived from a deterministic context key covering every input the
-  // rewrite consumes — normalized prompt, language, parsed slide count, and
-  // the selected file fingerprint. Tone, verbosity, theme, and other
-  // settings that are not inputs to the rewrite never invalidate it.
-  const [rewrittenPrompt, setRewrittenPrompt] = useState("");
-  const [rewrittenFromContextKey, setRewrittenFromContextKey] = useState("");
+  // --- AI outline generation ------------------------------------------
+  // `config.instructions` (box 1) is the idea and never overwritten by the
+  // AI. The result lands in `config.prompt` (box 2), the outline the user
+  // then edits by hand and creates from. Nothing here gates Create: the
+  // outline is an optional accelerator, not a required step.
   const [isRewriting, setIsRewriting] = useState(false);
-  const [rewritePhase, setRewritePhase] = useState<RewritePhase | null>(null);
+  const [rewritePhase, setRewritePhase] = useState<OutlinePhase | null>(null);
   const [rewriteError, setRewriteError] = useState<string | null>(null);
 
+  // "Follow the outline exactly" — the checkbox that promotes a slide count
+  // detected in box 2 over the slide-count dropdown.
+  const [strictOutline, setStrictOutline] = useState(false);
+
   // One AbortController for the latest in-flight request plus a
-  // monotonically increasing request ID. Starting a newer rewrite (or
+  // monotonically increasing request ID. Starting a newer generation (or
   // leaving the page) aborts the previous request, and the ID check below
   // discards its response even when the abort arrives too late for the
   // fetch to reject. The same controller covers the document preparation
-  // (upload + decompose) that a document-aware rewrite performs first.
+  // (upload + decompose) that a document-aware outline performs first.
   const rewriteAbortRef = useRef<AbortController | null>(null);
   const rewriteRequestIdRef = useRef(0);
 
   // --- Document preparation cache ---------------------------------------
-  // `preparedDocuments` holds the decomposed set for the current file
+  // `preparedDocumentsRef` holds the decomposed set for the current file
   // fingerprint and language; `uploadedOriginalsRef` holds the uploaded
   // originals per fingerprint so a language change re-decomposes without
-  // re-uploading. Both keys are derived, never stored as flags.
-  const [preparedDocuments, setPreparedDocuments] =
-    useState<PreparedDocumentSet | null>(null);
-  // Mirror ref: async flows (including the stale-document retry) must read
-  // the latest prepared set without waiting for a re-render.
+  // re-uploading. Both keys are derived, never stored as flags. A ref (not
+  // state) is enough: async flows only ever read the latest set, and nothing
+  // renders from it.
   const preparedDocumentsRef = useRef<PreparedDocumentSet | null>(null);
   const uploadedOriginalsRef = useRef<{
     fileFingerprint: string;
     paths: string[];
   } | null>(null);
 
-  const setPreparedDocumentsThroughRef = (prepared: PreparedDocumentSet) => {
-    preparedDocumentsRef.current = prepared;
-    setPreparedDocuments(prepared);
-  };
-
   const invalidatePreparedDocuments = () => {
     preparedDocumentsRef.current = null;
     uploadedOriginalsRef.current = null;
-    setPreparedDocuments(null);
   };
 
   /**
@@ -216,47 +207,32 @@ const UploadPage = () => {
       uploadedPaths: uploadedOriginalsRef.current?.paths ?? [],
       documents,
     };
-    setPreparedDocumentsThroughRef(prepared);
-    return prepared;
-  };
+    preparedDocumentsRef.current = prepared;
+    return prepared;  };
 
   const sourcePrompt = config.prompt.trim();
-  const hasRewriteResult = rewrittenPrompt.trim().length > 0;
-  // Deterministic context key over every input the rewrite consumes. Any
-  // change to one of these inputs makes the stored result stale by
-  // comparison; settings that are not rewrite inputs (tone, verbosity,
-  // theme, generation mode) are deliberately excluded so they never
-  // invalidate an otherwise valid result.
-  const rewriteContextKey = [
-    sourcePrompt,
-    (config.language ?? "").trim().toLowerCase(),
-    parseLimitedSlideCount(config.slides) ?? "auto",
-    documentAwareRewrite ? fileFingerprint(files) : "prompt-only",
-  ].join("::");
-  const isRewriteFresh =
-    hasRewriteResult && rewrittenFromContextKey === rewriteContextKey;
-  const isRewriteStale = hasRewriteResult && !isRewriteFresh;
-  const promptRequiresRewrite = sourcePrompt.length > 0;
-  const hasPromptlessGenerationInput = files.length > 0;
-  // Only a document-aware rewrite requires a prepared set before Create. If
-  // the flag is off, the rewrite is prompt-only and document preparation is
-  // deferred to the normal generation path.
-  const preparedDocumentsMatchSelection =
-    !documentAwareRewrite ||
-    files.length === 0 ||
-    (preparedDocuments !== null &&
-      preparedDocuments.decompositionKey ===
-        decompositionKeyFor(fileFingerprint(files), config.language));
+  const hasContentInput = sourcePrompt.length > 0;
+  const hasAttachedDocuments = files.length > 0;
+  // An outline that numbers its own slides is a better source of the slide
+  // count than the dropdown, but only when the user asks to follow it
+  // exactly — otherwise the configured count still wins.
+  const detectedSlidesCount = useMemo(
+    () => detectSlideCountFromText(sourcePrompt),
+    [sourcePrompt]
+  );
+  const effectiveSlides =
+    (strictOutline && detectedSlidesCount) || parseLimitedSlideCount(config.slides);
+  // The AI outline is an accelerator, never a prerequisite: Create opens as
+  // soon as box 2 has content or a document is attached.
   const isCreateDisabled =
     !templateReady ||
     !selectedTemplateId ||
     isRewriting ||
-    (promptRequiresRewrite
-      ? !isRewriteFresh || !preparedDocumentsMatchSelection
-      : !hasPromptlessGenerationInput);
+    loadingState.isLoading ||
+    (!hasContentInput && !hasAttachedDocuments);
 
   // The action label follows the active preparation phase so the user can
-  // tell what is actually happening before the rewrite itself runs.
+  // tell what is actually happening before the AI call itself runs.
   const rewriteActionLabel = isRewriting
     ? rewritePhase === "uploading_documents"
       ? t("upload.prompt.rewrite.phaseUploading")
@@ -265,9 +241,7 @@ const UploadPage = () => {
         : t("upload.prompt.rewrite.loading")
     : rewriteError
       ? t("upload.prompt.rewrite.retryAction")
-      : isRewriteStale
-        ? t("upload.prompt.rewrite.updateAction")
-        : t("upload.prompt.rewrite.action");
+      : t("upload.outline.action");
 
   // Abort the in-flight rewrite when the component unmounts.
   useEffect(() => {
@@ -285,28 +259,30 @@ const UploadPage = () => {
     setConfig((prev) => ({ ...prev, [key]: nextValue } as PresentationConfig));
   };
 
-  const handleSourcePromptChange = (value: string) => {
-    const nextSource = value.trim();
-
-    // A response for text that is no longer current must never become usable.
-    // Abort eagerly on edit and invalidate the request ID as a fallback for
-    // providers that cannot cancel an already-completed response.
-    if (isRewriting && nextSource !== sourcePrompt) {
+  /**
+   * Edits to either box retire an in-flight outline: a response computed
+   * from text the user has since changed must never land. The request ID is
+   * bumped as a fallback for providers that cannot cancel an already
+   * completed response, and a stale error is dropped so the next attempt
+   * starts clean.
+   */
+  const handleComposerTextChange = (
+    key: "prompt" | "instructions",
+    value: string
+  ) => {
+    if (isRewriting) {
       rewriteRequestIdRef.current += 1;
       rewriteAbortRef.current?.abort();
       rewriteAbortRef.current = null;
       setIsRewriting(false);
       setRewritePhase(null);
     }
-
-    if (nextSource !== sourcePrompt) {
-      setRewriteError(null);
-    }
-    handleConfigChange("prompt", value);
+    setRewriteError(null);
+    handleConfigChange(key, value);
   };
 
   /**
-   * A changed file set invalidates any in-flight rewrite: the active work
+   * A changed file set invalidates any in-flight outline: the active work
    * was grounded in files that are no longer selected, so it is aborted and
    * its request ID retired before the new selection lands. Preparation
    * caches invalidate themselves through their derived keys.
@@ -323,21 +299,24 @@ const UploadPage = () => {
   };
 
   /**
-   * Rewrites the current source prompt with AI. When documents are selected,
-   * they are prepared (upload + decompose) first and the decomposed texts
-   * ground the rewrite. The response only fills the read-only result panel
-   * below the source field — the source prompt itself is never overwritten.
-   * A previous result stays visible if a refresh fails; the user then sees a
-   * localized fallback, never the raw API error.
+   * Generates an outline with AI from box 1 (the idea and any instructions)
+   * plus the selected documents, and writes the result straight into box 2.
+   * Box 1 is never overwritten. The previous box-2 text is forwarded as
+   * `previousPrompt` so a second run refines the current outline instead of
+   * starting over. Documents are prepared (upload + decompose) first when the
+   * document-aware flag is on; the decomposed paths ground the request. On
+   * failure the user sees a localized fallback, never the raw API error.
    */
-  const handleRewritePrompt = async () => {
-    // Capture the context key at the START of the request: it covers the
-    // exact inputs this response is computed from, and freshness compares
-    // it against the live key once it is stored after success.
-    const source = config.prompt.trim();
-    const previous = rewrittenPrompt.trim();
-    const contextKey = rewriteContextKey;
-    if (!source || isRewriting) return;
+  const handleGenerateOutline = async () => {
+    if (isRewriting) return;
+
+    const idea = config.instructions.trim();
+    const previousOutline = config.prompt.trim();
+    // With no typed idea the attached file names are the only signal the
+    // user gave, so they seed the request instead of sending nothing.
+    const seedSource =
+      idea || files.map((file) => file.name).join(", ") || config.prompt.trim();
+    if (!seedSource) return;
 
     // Supersede any older request: abort it, and bump the ID so its late
     // response is discarded even if the abort arrives too late.
@@ -351,9 +330,9 @@ const UploadPage = () => {
     // The active phase drives the loading label, the live-region
     // announcement, and — on failure — which localized fallback the user
     // sees: a failed preparation is reported differently from a failed
-    // rewrite.
-    let phase: RewritePhase = "rewriting";
-    const applyPhase = (next: RewritePhase) => {
+    // outline generation.
+    let phase: OutlinePhase = "rewriting";
+    const applyPhase = (next: OutlinePhase) => {
       phase = next;
       setRewritePhase(next);
     };
@@ -361,10 +340,9 @@ const UploadPage = () => {
 
     try {
       // Prepare the selected documents once per file set and language; the
-      // decomposed text paths ground the rewrite on the server. When the
-      // document-aware flag is off, preparation is skipped and the
-      // request falls back to the prompt-only body that the API has
-      // always supported.
+      // decomposed text paths ground the outline on the server. When the
+      // document-aware flag is off, preparation is skipped and the request
+      // falls back to the prompt-only body that the API has always supported.
       let filePaths: string[] | undefined;
       if (hadDocuments && documentAwareRewrite) {
         const prepared = await ensureDocumentsPrepared(
@@ -375,21 +353,24 @@ const UploadPage = () => {
         filePaths = documentPathsOf(prepared);
       }
 
+      const requestOutline = (paths?: string[]) =>
+        PresentationGenerationApi.rewritePrompt({
+          prompt: seedSource,
+          previousPrompt: previousOutline || undefined,
+          language: config.language,
+          nSlides: effectiveSlides ?? null,
+          filePaths: paths,
+          signal: controller.signal,
+        });
+
       let result: string;
       try {
         applyPhase("rewriting");
-        result = await PresentationGenerationApi.rewritePrompt({
-          prompt: source,
-          previousPrompt: previous || undefined,
-          language: config.language,
-          nSlides: parseLimitedSlideCount(config.slides),
-          filePaths,
-          signal: controller.signal,
-        });
+        result = await requestOutline(filePaths);
       } catch (error) {
         // An expired server-side document is healed once through the
         // normal safe path: drop the caches, re-prepare the same local
-        // files, and retry the rewrite.
+        // files, and retry.
         if (!filePaths || !isStaleDocumentError(error)) throw error;
         invalidatePreparedDocuments();
         const prepared = await ensureDocumentsPrepared(
@@ -398,27 +379,21 @@ const UploadPage = () => {
         );
         if (requestId !== rewriteRequestIdRef.current) return;
         applyPhase("rewriting");
-        result = await PresentationGenerationApi.rewritePrompt({
-          prompt: source,
-          previousPrompt: previous || undefined,
-          language: config.language,
-          nSlides: parseLimitedSlideCount(config.slides),
-          filePaths: documentPathsOf(prepared),
-          signal: controller.signal,
-        });
+        result = await requestOutline(documentPathsOf(prepared));
       }
 
       if (requestId !== rewriteRequestIdRef.current) return;
-      setRewrittenPrompt(result);
-      // Store the captured context key only after success so freshness
-      // stays derived from what the current inputs actually are.
-      setRewrittenFromContextKey(contextKey);
+      handleConfigChange("prompt", result);
+      notify.success(
+        t("upload.outline.successTitle"),
+        t("upload.outline.successDescription")
+      );
     } catch (error: unknown) {
       if (requestId !== rewriteRequestIdRef.current) return;
       // Raw error text is for the console only; the UI gets the localized
-      // fallback and keeps any previous result visible. Preparation
+      // fallback and keeps whatever the user had already typed. Preparation
       // failures (upload/decompose) get their own message.
-      console.error("Error rewriting prompt", error);
+      console.error("Error generating outline", error);
       setRewriteError(
         t(
           phase === "rewriting"
@@ -460,24 +435,10 @@ const UploadPage = () => {
       return false;
     }
 
-    if (
-      !sourcePrompt &&
-      files.length === 0
-    ) {
+    if (!hasContentInput && !hasAttachedDocuments) {
       notify.warning(
         t("upload.validation.inputRequiredTitle"),
         t("upload.validation.inputRequiredDescription")
-      );
-      return false;
-    }
-
-    if (
-      promptRequiresRewrite &&
-      (!isRewriteFresh || !preparedDocumentsMatchSelection)
-    ) {
-      notify.warning(
-        t("upload.prompt.rewrite.requiredTitle"),
-        t("upload.prompt.rewrite.requiredDescription"),
       );
       return false;
     }
@@ -489,7 +450,8 @@ const UploadPage = () => {
    */
   const handleGeneratePresentation = async () => {
     // Keyboard submissions run the same eligibility checks as the button:
-    // never start a Create while a rewrite or a previous Create is active.
+    // never start a Create while an outline request or a previous Create is
+    // active.
     if (createInFlightRef.current || isRewriting || loadingState.isLoading || !templateReady) return;
     if (!validateConfiguration()) return;
     createInFlightRef.current = true;
@@ -500,11 +462,12 @@ const UploadPage = () => {
     });
 
     // Capture the exact configuration being submitted. From this point on,
-    // neither a source edit nor another settings change can alter the prompt
-    // used by the in-flight document/direct generation request.
+    // neither an edit to either box nor another settings change can alter
+    // the content used by the in-flight generation request. Box 2 becomes
+    // `content`, box 1 rides along as `instructions`.
     const generationConfig: PresentationConfig = {
       ...config,
-      prompt: promptRequiresRewrite ? rewrittenPrompt.trim() : "",
+      prompt: sourcePrompt,
     };
     const candidateSnapshot = [...defaultTemplates];
     const confirmedSnapshot = confirmedTemplateId;
@@ -551,7 +514,7 @@ const UploadPage = () => {
 
     try {
       // Generation always consumes selected documents. The feature flag only
-      // controls whether those documents also ground the earlier rewrite.
+      // controls whether those documents also ground the AI outline.
       const prepared = await ensureDocumentsPrepared(
         preparationController.signal,
       );
@@ -567,7 +530,7 @@ const UploadPage = () => {
 
       const createResponse = await PresentationGenerationApi.createPresentation({
         content: generationConfig.prompt,
-        n_slides: parseLimitedSlideCount(generationConfig.slides),
+        n_slides: effectiveSlides ?? null,
         file_paths: documentPaths,
         language: selectedLanguage,
         tone: generationConfig.tone,
@@ -610,8 +573,7 @@ const UploadPage = () => {
 
     const createResponse = await PresentationGenerationApi.createPresentation({
       content: generationConfig.prompt,
-
-      n_slides: parseLimitedSlideCount(generationConfig.slides),
+      n_slides: effectiveSlides ?? null,
       file_paths: [],
       language: selectedLanguage,
       tone: generationConfig.tone,
@@ -672,11 +634,27 @@ const UploadPage = () => {
         </div>
 
         <div className="mt-8 flex flex-col gap-2.5">
-            <PromptInput
-              value={config.prompt}
-              onChange={handleSourcePromptChange}
+            <OutlineComposer
+              idea={config.instructions}
+              onIdeaChange={(value) =>
+                handleComposerTextChange("instructions", value)
+              }
+              content={config.prompt}
+              onContentChange={(value) =>
+                handleComposerTextChange("prompt", value)
+              }
+              detectedSlidesCount={detectedSlidesCount}
+              strictOutline={strictOutline}
+              onStrictOutlineChange={setStrictOutline}
+              actionLabel={rewriteActionLabel}
+              isGenerating={isRewriting}
+              onGenerate={handleGenerateOutline}
+              canGenerate={!!(config.instructions.trim() || files.length > 0)}
+              phase={rewritePhase}
+              error={rewriteError}
+              onRetry={handleGenerateOutline}
               onSubmit={handleGeneratePresentation}
-              onRewrite={handleRewritePrompt}
+              disabled={loadingState.isLoading}
             >
               <SupportingDoc
                 files={files}
@@ -689,40 +667,8 @@ const UploadPage = () => {
                       ? "doc_aware"
                       : "presentation_only"
                 }
-                action={
-                  // Inside the composer, bottom-right. Bare Enter calls the
-                  // same handler. Ctrl/Cmd+Enter still creates the presentation.
-                  // The label follows the rewrite state machine: loading while
-                  // in flight, retry after an error, update when a stale result
-                  // exists, and the base action otherwise.
-                  <GSlideButton
-                    type="button"
-                    disabled={!promptRequiresRewrite || isRewriting}
-                    aria-busy={isRewriting}
-                    onClick={handleRewritePrompt}
-                    data-testid="rewrite-action-button"
-                    className="ml-auto h-8 shrink-0 whitespace-nowrap px-3.5 py-1.5"
-                  >
-                    {rewriteActionLabel}
-                  </GSlideButton>
-                }
               />
-            </PromptInput>
-            <RewrittenPrompt
-              value={rewrittenPrompt}
-              onChange={setRewrittenPrompt}
-              keptOpen={rewrittenFromContextKey.length > 0}
-              isLoading={isRewriting}
-              phase={rewritePhase}
-              isStale={isRewriteStale}
-              error={rewriteError}
-              onRetry={handleRewritePrompt}
-              groundedDocumentCount={
-                documentAwareRewrite && !isRewriteStale
-                  ? files.length
-                  : 0
-              }
-            />
+            </OutlineComposer>
             <div className="flex w-full justify-center pt-2">
               <UploadTemplatePicker
                 templates={defaultTemplates}

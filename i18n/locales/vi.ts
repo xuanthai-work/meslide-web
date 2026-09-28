@@ -292,46 +292,42 @@ const vi = {
       previewAria: (p) => `Xem mẫu ${p.name}`,
     },
     prompt: {
-      write: "Viết lời nhắc",
-      placeholder: "Bắt đầu với ý tưởng của bạn... chúng tôi sẽ lo phần slide",
-      sourceLabel: "Ý tưởng của bạn",
-      sourcePlaceholder: "Mô tả ý tưởng bài thuyết trình bạn muốn tạo...",
       rewrite: {
-        action: "Viết lại bằng AI",
-        loading: "Đang viết lại...",
+        loading: "Đang tạo dàn ý...",
         phaseUploading: "Đang tải tài liệu lên...",
         phaseReading: "Đang đọc tài liệu...",
-        outputLabel: "Prompt được AI tối ưu",
-        // Redesign 2026-09-16: compact empty-state heading that the panel
-        // shows before the first rewrite. Kept short so the panel itself
-        // does not dominate the composer before the user acts.
-        emptyTitle: "Chưa có bản viết lại",
-        emptyHint: "Bản viết lại sẽ xuất hiện ở đây",
-        // Shown only when a fresh result was grounded in documents, with the
-        // number of documents used. Not shown for prompt-only rewrites or
-        // while a stored result is stale.
-        groundedSummary: (p) =>
-          Number(p.count) <= 1
-            ? "Đã tối ưu từ ý tưởng và 1 tài liệu"
-            : `Đã tối ưu từ ý tưởng và ${p.count} tài liệu`,
-        staleBadge: "Cần cập nhật",
-        staleHelper: "Nội dung đã thay đổi từ lần viết lại gần nhất. Hãy cập nhật bản viết lại trước khi tạo bài thuyết trình.",
-        updateAction: "Cập nhật bản viết lại",
         retryAction: "Thử lại",
-        errorTitle: "Không thể viết lại prompt",
-        errorFallback: "Đã xảy ra lỗi khi viết lại prompt. Hãy thử lại; nếu đã có kết quả, kết quả trước đó vẫn được giữ nguyên.",
-        preparationErrorFallback: "Đã xảy ra lỗi khi chuẩn bị tài liệu. Hãy kiểm tra các tệp và thử lại; nếu đã có kết quả, kết quả trước đó vẫn được giữ nguyên.",
-        requiredTitle: "Cần viết lại prompt trước khi tạo",
-        requiredDescription: "Hãy viết lại prompt bằng AI trước khi tạo bài thuyết trình.",
+        errorFallback: "Đã xảy ra lỗi khi tạo dàn ý. Hãy thử lại; nội dung bạn đã nhập vẫn được giữ nguyên.",
+        preparationErrorFallback: "Đã xảy ra lỗi khi chuẩn bị tài liệu. Hãy kiểm tra các tệp và thử lại; nội dung bạn đã nhập vẫn được giữ nguyên.",
         aria: {
-          loading: "Đang viết lại prompt bằng AI.",
+          loading: "Đang tạo dàn ý bằng AI.",
           uploading: "Đang tải tài liệu của bạn lên.",
-          reading: "Đang đọc tài liệu để làm cơ sở cho bản viết lại.",
-          success: "Đã viết lại prompt thành công.",
-          stale: "Bản viết lại cần được cập nhật.",
-          error: "Viết lại prompt thất bại.",
+          reading: "Đang đọc tài liệu để làm cơ sở cho dàn ý.",
+          success: "Đã tạo dàn ý thành công.",
+          error: "Tạo dàn ý thất bại.",
         },
       },
+    },
+    // Two-box upload layout (2026-09-28): box 1 captures the idea and any
+    // extra instructions for the AI, box 2 holds the outline or detailed
+    // content that actually becomes the presentation. The AI outline action
+    // lives on box 1 and writes its result into box 2.
+    outline: {
+      ideaLabel: "1. Ý tưởng hoặc yêu cầu cho AI (Tùy chọn)",
+      ideaPlaceholder:
+        "Nhập yêu cầu đặc biệt cho AI (VD: Bài thuyết trình kỹ thuật cho dev iOS, nhấn mạnh vào pipeline, không giải thích khái niệm cơ bản)...",
+      contentLabel: "2. Dàn ý hoặc nội dung chi tiết bài thuyết trình",
+      contentPlaceholder:
+        "Dán toàn bộ dàn ý, file Markdown hoặc báo cáo chi tiết vào đây (VD: ## Slide 1: Tiêu đề... ## Slide 2: Nội dung...)...",
+      action: "AI tạo dàn ý",
+      loading: "Đang tạo dàn ý...",
+      successTitle: "Đã tạo dàn ý từ AI",
+      successDescription:
+        "Bạn có thể chỉnh sửa nội dung bên dưới trước khi tạo slide.",
+      // Shown next to box 2 once the outline itself declares its slide count.
+      detectedCount: (p) => `Phát hiện ${p.count} slide`,
+      strictLabel: "Bám sát cấu trúc từng slide (không gộp hay bỏ bớt slide)",
+      dropHint: "Kéo thả tệp .md hoặc .txt vào đây để tải nội dung",
     },
     files: {
       unsupportedTitle: "Một số tệp không được hỗ trợ",

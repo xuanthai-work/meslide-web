@@ -97,9 +97,7 @@ describe("template selection on upload", () => {
     mountUpload();
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
     cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
-    cy.get('[data-testid="prompt-input"]').type("Ý tưởng cho slide");
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Prompt đã tối ưu" } });
-    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="prompt-input"]').type("Prompt đã tối ưu");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled").click();
     cy.wait("@recommendTemplate");
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=presentation-123&auto=1&template=executive");
@@ -107,7 +105,6 @@ describe("template selection on upload", () => {
 
   it("uses the edited final brief to recommend a template", () => {
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "First draft" } });
     cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
       expect(request.body.prompt).to.equal("Final board update for directors");
       request.reply({ body: { template_id: "executive" } });
@@ -118,8 +115,7 @@ describe("template selection on upload", () => {
     });
     mountUpload();
     cy.get('[data-testid="prompt-input"]').type("Board update");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.get('[data-testid="rewritten-prompt-output"]').clear().type("Final board update for directors");
+    cy.get('[data-testid="prompt-input"]').clear().type("Final board update for directors");
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@recommendTemplate");
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=deck-1&auto=1&template=executive");
@@ -132,13 +128,11 @@ describe("template selection on upload", () => {
       recommendations += 1;
       request.reply({ body: { template_id: "executive" } });
     });
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Board update" } });
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "manual-deck" } });
     mountUpload();
     cy.get('[data-testid="upload-template-trigger"]').click();
     cy.get('[data-testid="template-choose-button"]').click();
     cy.get('[data-testid="prompt-input"]').type("Board update");
-    cy.get('[data-testid="rewrite-action-button"]').click();
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=manual-deck&auto=1&template=momentum");
     cy.then(() => expect(recommendations).to.equal(0));
@@ -173,12 +167,10 @@ describe("template selection on upload", () => {
     it(`uses General for an unusable recommendation (${recommendation.statusCode}, ${JSON.stringify(recommendation.body)})`, () => {
       const withGeneral = [...templates, { id: "general", name: "General", is_default: true, layout_count: 3 }];
       cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(withGeneral) });
-      cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Simple overview" } });
       cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", recommendation);
       cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "fallback-deck" } });
       mountUpload();
       cy.get('[data-testid="prompt-input"]').type("Simple overview");
-      cy.get('[data-testid="rewrite-action-button"]').click();
       cy.get('[data-testid="generate-presentation-button"]').click();
       cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=fallback-deck&auto=1&template=general");
     });
@@ -186,12 +178,10 @@ describe("template selection on upload", () => {
 
   it("uses the first fallback when General is unavailable", () => {
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Project update" } });
     cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", { statusCode: 503, body: {} });
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "first-fallback" } });
     mountUpload();
     cy.get('[data-testid="prompt-input"]').type("Project update");
-    cy.get('[data-testid="rewrite-action-button"]').click();
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=first-fallback&auto=1&template=momentum");
   });
@@ -200,7 +190,6 @@ describe("template selection on upload", () => {
     let recommendations = 0;
     let creations = 0;
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Clicked brief" } });
     cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
       recommendations += 1;
       expect(request.body.prompt).to.equal("Clicked brief");
@@ -212,11 +201,10 @@ describe("template selection on upload", () => {
       request.reply({ body: { id: "snapshot-deck" } });
     });
     mountUpload();
-    cy.get('[data-testid="prompt-input"]').type("Initial prompt");
-    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.get('[data-testid="prompt-input"]').type("Clicked brief");
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.get('[data-testid="prompt-input"]').trigger("keydown", { key: "Enter", ctrlKey: true, force: true });
-    cy.get('[data-testid="rewritten-prompt-output"]').clear({ force: true }).type("Later edit", { force: true });
+    cy.get('[data-testid="prompt-input"]').clear({ force: true }).type("Later edit", { force: true });
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=snapshot-deck&auto=1&template=executive");
     cy.then(() => { expect(recommendations).to.equal(1); expect(creations).to.equal(1); });
   });
@@ -225,7 +213,6 @@ describe("template selection on upload", () => {
     const longBrief = "x".repeat(8001);
     let recommendations = 0;
     cy.intercept("GET", "**/api/v1/ppt/template/all?*", { body: response(templates) });
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Draft" } });
     cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", (request) => {
       recommendations += 1;
       request.reply({ body: { template_id: "executive" } });
@@ -236,8 +223,7 @@ describe("template selection on upload", () => {
     });
     mountUpload();
     cy.get('[data-testid="prompt-input"]').type("Initial prompt");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.get('[data-testid="rewritten-prompt-output"]').clear().type(longBrief, { delay: 0, parseSpecialCharSequences: false });
+    cy.get('[data-testid="prompt-input"]').clear().type(longBrief, { delay: 0, parseSpecialCharSequences: false });
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=long-deck&auto=1&template=momentum");
     cy.then(() => expect(recommendations).to.equal(0));
@@ -258,9 +244,7 @@ describe("template selection on upload", () => {
     cy.get('[role="dialog"]').should("not.exist");
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Điều hành");
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", { body: { id: "presentation-custom" } });
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", { body: { rewritten_prompt: "Prompt đã tối ưu" } });
     cy.get('[data-testid="prompt-input"]').type("Báo cáo quý");
-    cy.get('[data-testid="rewrite-action-button"]').click();
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled").click();
     cy.get("@routerPush").should("have.been.calledWith", "/presentation?id=presentation-custom&auto=1&template=executive");
   });

@@ -10,6 +10,8 @@ const CLIENT_PATH =
   "app/(presentation-generator)/services/api/presentation-generation.ts";
 const UPLOAD_PAGE_PATH =
   "app/(presentation-generator)/upload/components/UploadPage.tsx";
+const OUTLINE_COMPOSER_PATH =
+  "app/(presentation-generator)/upload/components/OutlineComposer.tsx";
 const SUPPORTING_DOC_PATH =
   "app/(presentation-generator)/upload/components/SupportingDoc.tsx";
 
@@ -268,58 +270,35 @@ test("rewritePrompt rejects a response without rewritten_prompt", async () => {
 });
 
 /**
- * Task 6 — UploadPage rewrite orchestration contract (source assertions in
- * the established UploadPage test style; the behavioral interaction tests
- * land with the dedicated test task). Pins the load-bearing invariants:
+ * Task 6 — outline-generation orchestration contract (source assertions in
+ * the established UploadPage test style). Pins the load-bearing invariants:
  * one AbortController + a monotonically increasing request ID so a
- * superseded or too-late response is discarded, freshness derived from the
- * captured source, the user-safe localized error (raw error text goes to
- * the console only), and the source prompt never being overwritten.
+ * superseded or too-late response is discarded, the user-safe localized
+ * error (raw error text goes to the console only), and the idea in box 1
+ * never being overwritten by the result written into box 2.
  */
-test("UploadPage orchestrates the rewrite with abort and request-ID freshness guards", async () => {
+test("UploadPage orchestrates outline generation with abort and request-ID guards", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
-  const handlerStart = page.indexOf("const handleRewritePrompt");
+  const handlerStart = page.indexOf("const handleGenerateOutline");
   const handlerEnd = page.indexOf("const getGenerationDestination");
-  assert.ok(handlerStart !== -1, "handleRewritePrompt is missing");
+  assert.ok(handlerStart !== -1, "handleGenerateOutline is missing");
   const handler = page.slice(handlerStart, handlerEnd);
 
-  // Plan-mandated orchestration state.
-  assert.match(page, /const \[rewrittenPrompt, setRewrittenPrompt\] = useState\(""\)/);
-  assert.match(page, /const \[rewrittenFromContextKey, setRewrittenFromContextKey\] = useState\(""\)/);
+  // Plan-mandated orchestration state. There is no separate result buffer:
+  // the outline lands in `config.prompt` (box 2) and stays user-editable.
   assert.match(page, /const \[isRewriting, setIsRewriting\] = useState\(false\)/);
   assert.match(page, /const \[rewriteError, setRewriteError\] = useState<string \| null>\(null\)/);
-
-  // Freshness is derived by comparing the stored request-time context key
-  // with the live one — never stored as a separate flag.
-  assert.match(page, /const sourcePrompt = config\.prompt\.trim\(\)/);
-  assert.match(page, /const rewriteContextKey = \[/);
-  assert.match(
+  assert.match(page, /const \[strictOutline, setStrictOutline\] = useState\(false\)/);
+  assert.doesNotMatch(
     page,
-    /isRewriteFresh =\s*[\s\S]*rewrittenFromContextKey === rewriteContextKey/
+    /rewrittenPrompt|rewrittenFromContextKey|isRewriteFresh|isRewriteStale/
   );
-  // The key covers every active rewrite input. File selection participates
-  // only while document-aware rewrite is enabled.
-  const keyStart = page.indexOf("const rewriteContextKey = [");
-  const keyEnd = page.indexOf('].join("::")', keyStart);
-  assert.ok(keyStart !== -1 && keyEnd !== -1, "rewriteContextKey is missing");
-  const contextKey = page.slice(keyStart, keyEnd);
-  assert.match(contextKey, /sourcePrompt/);
-  assert.match(contextKey, /config\.language/);
-  assert.match(contextKey, /parseLimitedSlideCount\(config\.slides\) \?\? "auto"/);
-  assert.match(
-    contextKey,
-    /documentAwareRewrite \? fileFingerprint\(files\) : "prompt-only"/,
-  );
-  // Settings that are not rewrite inputs never invalidate a result.
-  for (const excluded of ["tone", "verbosity", "theme", "generationMode"]) {
-    assert.doesNotMatch(contextKey, new RegExp(excluded));
-  }
 
   // One AbortController plus a monotonically increasing request ID.
   assert.match(page, /useRef<AbortController \| null>\(null\)/);
   assert.match(handler, /const requestId = \+\+rewriteRequestIdRef\.current;/);
 
-  // Starting a newer rewrite aborts the in-flight one first.
+  // Starting a newer request aborts the in-flight one first.
   assert.match(
     handler,
     /rewriteAbortRef\.current\?\.abort\(\);\s*const controller = new AbortController\(\)/
@@ -328,77 +307,69 @@ test("UploadPage orchestrates the rewrite with abort and request-ID freshness gu
   // when the abort arrives too late for the fetch to reject.
   assert.match(handler, /if \(requestId !== rewriteRequestIdRef\.current\) return;/);
 
-  // The context key is captured at request start and stored only after
-  // success, together with the result.
-  assert.match(handler, /const source = config\.prompt\.trim\(\);/);
-  assert.match(handler, /const previous = rewrittenPrompt\.trim\(\);/);
-  assert.match(handler, /previousPrompt: previous \|\| undefined/);
-  assert.match(handler, /const contextKey = rewriteContextKey;/);
+  // Box 1 seeds the request; with no idea the attached file names do. The
+  // current box-2 text rides along so a second run refines instead of
+  // starting over.
+  assert.match(handler, /const idea = config\.instructions\.trim\(\);/);
+  assert.match(handler, /const previousOutline = config\.prompt\.trim\(\);/);
   assert.match(
     handler,
-    /setRewrittenPrompt\(result\);\s*[\s\S]*setRewrittenFromContextKey\(contextKey\);/
+    /idea \|\| files\.map\(\(file\) => file\.name\)\.join\(", "\) \|\| config\.prompt\.trim\(\);/
   );
+  assert.match(handler, /previousPrompt: previousOutline \|\| undefined/);
+  assert.match(handler, /if \(!seedSource\) return;/);
 
-  // The request follows the generation boundary rules for language and
-  // slide count, and forwards the abort signal.
+  // The request follows the generation boundary rules for language and the
+  // effective slide count, and forwards the abort signal.
   assert.match(handler, /language: config\.language,/);
-  assert.match(handler, /nSlides: parseLimitedSlideCount\(config\.slides\),/);
+  assert.match(handler, /nSlides: effectiveSlides \?\? null,/);
   assert.match(handler, /signal: controller\.signal,/);
 
   // The user sees the localized fallback; the raw error text is
-  // console-only, and any previous result is kept on failure. A failed
-  // preparation gets its own message, distinct from a failed rewrite.
+  // console-only. A failed preparation gets its own message, distinct from
+  // a failed outline generation.
   assert.match(
     handler,
     /phase === "rewriting"\s*\?\s*"upload\.prompt\.rewrite\.errorFallback"\s*:\s*"upload\.prompt\.rewrite\.preparationErrorFallback"/
   );
-  assert.match(handler, /console\.error\("Error rewriting prompt", error\)/);
+  assert.match(handler, /console\.error\("Error generating outline", error\)/);
 
-  // The source prompt is never overwritten with the response.
-  assert.doesNotMatch(handler, /setConfig/);
+  // The result is written into box 2, never over the idea in box 1, and the
+  // user is told where to find it.
+  assert.match(handler, /handleConfigChange\("prompt", result\);/);
+  assert.doesNotMatch(handler, /handleConfigChange\("instructions"/);
+  assert.match(handler, /t\("upload\.outline\.successTitle"\)/);
+  assert.match(handler, /t\("upload\.outline\.successDescription"\)/);
 
-  // The in-flight rewrite is aborted on unmount.
+  // The in-flight request is aborted on unmount.
   assert.match(
     page,
     /return \(\) => \{\s*rewriteRequestIdRef\.current \+= 1;\s*rewriteAbortRef\.current\?\.abort\(\);/
   );
 
-  // Clearing the editable source must keep the last rewrite visible. It is
-  // derived as stale until the user rewrites the new source, so users can
-  // delete and replace their original text without losing the AI result.
-  assert.doesNotMatch(
-    page,
-    /if \(sourcePrompt\) return;[\s\S]{0,400}setRewrittenPrompt\(""\)/
-  );
-
-  // Button wiring: duplicate submissions disabled while the same request
-  // is active, aria-busy while loading, and the label follows the state
-  // machine (loading / retry / update / action).
-  assert.match(
-    page,
-    /disabled=\{!promptRequiresRewrite \|\| isRewriting\}/
-  );
-  assert.match(page, /aria-busy=\{isRewriting\}/);
-  assert.match(page, /onClick=\{handleRewritePrompt\}/);
-  for (const key of ["loading", "retryAction", "updateAction", "action"]) {
+  // Button wiring: duplicate submissions disabled while the same request is
+  // active, aria-busy while loading, and the label follows the phase.
+  assert.match(page, /onGenerate=\{handleGenerateOutline\}/);
+  for (const key of ["phaseUploading", "phaseReading", "loading", "retryAction"]) {
     assert.match(page, new RegExp(`upload\\.prompt\\.rewrite\\.${key}`));
   }
+  assert.match(page, /upload\.outline\.action/);
 
-  // The result panel receives the orchestrated state, and its retry path
-  // runs the same rewrite flow.
+  // The composer receives the orchestrated state, and its retry path runs
+  // the same outline flow.
   assert.match(
     page,
-    /value=\{rewrittenPrompt\}\s*onChange=\{setRewrittenPrompt\}\s*keptOpen=\{rewrittenFromContextKey\.length > 0\}\s*isLoading=\{isRewriting\}\s*phase=\{rewritePhase\}\s*isStale=\{isRewriteStale\}\s*error=\{rewriteError\}/
+    /actionLabel=\{rewriteActionLabel\}\s*isGenerating=\{isRewriting\}\s*onGenerate=\{handleGenerateOutline\}/
   );
-  assert.match(page, /onRetry=\{handleRewritePrompt\}/);
+  assert.match(page, /onRetry=\{handleGenerateOutline\}/);
 });
 
 /**
- * Task 7 — generation must consume the latest rewrite produced from the
- * current source. Prompt-less document/community creation stays available,
- * while every path containing source text requires a fresh rewrite.
+ * Task 7 — generation must consume box 2 verbatim. Creating is never gated
+ * on the AI outline: box-2 content or an attached document is enough, and
+ * both generation branches submit the same snapshot.
  */
-test("UploadPage validates freshness and snapshots the rewritten prompt for generation", async () => {
+test("UploadPage snapshots the outline for generation and never requires a rewrite", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
   const validationStart = page.indexOf("const validateConfiguration");
   const generationStart = page.indexOf("const handleGeneratePresentation");
@@ -414,25 +385,21 @@ test("UploadPage validates freshness and snapshots the rewritten prompt for gene
   const documentGeneration = page.slice(documentStart, directStart);
   const directGeneration = page.slice(directStart, errorStart);
 
-  // A prompt-plus-document submission needs both a fresh rewrite and, when
-  // document-aware rewrite is enabled, the prepared set it was grounded in.
-  assert.match(
-    validation,
-    /promptRequiresRewrite &&\s*\(!isRewriteFresh \|\| !preparedDocumentsMatchSelection\)/
-  );
-  assert.match(validation, /upload\.prompt\.rewrite\.requiredTitle/);
-  assert.match(validation, /upload\.prompt\.rewrite\.requiredDescription/);
+  // The mandatory-rewrite gate is gone: validation only requires a language
+  // and something to build the presentation from.
+  assert.match(validation, /if \(!hasContentInput && !hasAttachedDocuments\) \{/);
+  assert.doesNotMatch(validation, /requiredTitle|requiredDescription|isRewriteFresh/);
 
   assert.match(
     generation,
-    /const generationConfig: PresentationConfig = \{[\s\S]*prompt: promptRequiresRewrite \? rewrittenPrompt\.trim\(\) : ""/,
+    /const generationConfig: PresentationConfig = \{[\s\S]*prompt: sourcePrompt,/,
   );
   assert.match(generation, /handleDocumentProcessing\(generationConfig, templateId\)/);
   assert.match(generation, /handleDirectPresentationGeneration\(generationConfig, templateId\)/);
   assert.match(generation, /resolveTemplateForCreate\(/);
 
   // Selected documents are always prepared for generation. The rollout flag
-  // gates rewrite grounding only and must never remove Create file paths.
+  // gates outline grounding only and must never remove Create file paths.
   assert.match(
     documentGeneration,
     /const prepared = await ensureDocumentsPrepared\(\s*preparationController\.signal,?\s*\)/,
@@ -446,73 +413,96 @@ test("UploadPage validates freshness and snapshots the rewritten prompt for gene
   }
 });
 
-test("Create eligibility preserves prompt-less inputs and does not block attachments", async () => {
+test("Create eligibility never requires an AI rewrite and does not block attachments", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
   const supportingDoc = await read(SUPPORTING_DOC_PATH);
 
-  assert.match(
+  // Box-2 content or an attached document opens Create immediately; the AI
+  // outline is an accelerator, not a prerequisite.
+  assert.match(page, /const hasContentInput = sourcePrompt\.length > 0;/);
+  assert.match(page, /const hasAttachedDocuments = files\.length > 0;/);
+  assert.match(page, /\(!hasContentInput && !hasAttachedDocuments\);/);
+  // Template selection and an in-flight request still gate Create.
+  assert.match(page, /!templateReady \|\|/);
+  assert.match(page, /!selectedTemplateId \|\|/);
+  assert.match(page, /isRewriting \|\|/);
+  // The former freshness gate is gone entirely.
+  assert.doesNotMatch(
     page,
-    /const hasPromptlessGenerationInput = files\.length > 0/,
+    /promptRequiresRewrite|isRewriteFresh|preparedDocumentsMatchSelection/
   );
-  assert.match(
-    page,
-    /promptRequiresRewrite\s*\? !isRewriteFresh \|\| !preparedDocumentsMatchSelection\s*:\s*!hasPromptlessGenerationInput/,
-  );
-  // The prepared set must match the current file fingerprint and language.
-  assert.match(
-    page,
-    /preparedDocuments\.decompositionKey ===\s*decompositionKeyFor\(fileFingerprint\(files\), config\.language\)/
-  );
-  assert.match(
-    page,
-    /const preparedDocumentsMatchSelection =\s*!documentAwareRewrite \|\|/,
-  );
-  // Redesign 2026-09-16: the explicit Create button lives on UploadPage and
-  // is gated on the same `isCreateDisabled` flag the validation flow uses.
+  // The explicit Create button is gated on the same `isCreateDisabled` flag.
   assert.match(page, /disabled=\{isCreateDisabled \|\| loadingState\.isLoading\}/);
   assert.match(page, /onClick=\{handleGeneratePresentation\}/);
   assert.match(page, /upload\.create\.label/);
 
-  // Rewrite eligibility disables only Create; users can still select the
-  // attachment that makes a prompt-less flow valid. The attachment panel
-  // exposes only the selection state — Create moved out.
+  // Create eligibility never disables the attachment picker, so users can
+  // still add the document that makes a content-free flow valid.
   assert.match(supportingDoc, /type="file"[\s\S]*disabled=\{disabled\}/);
 });
 
-test("source edits invalidate in-flight rewrites before updating config", async () => {
+test("edits to either box invalidate in-flight outline requests before updating config", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
-  const start = page.indexOf("const handleSourcePromptChange");
-  const end = page.indexOf("const handleGenerationModeChange");
+  const start = page.indexOf("const handleComposerTextChange");
+  const end = page.indexOf("const handleFilesChange");
   const handler = page.slice(start, end);
 
-  assert.ok(start !== -1, "handleSourcePromptChange is missing");
+  assert.ok(start !== -1, "handleComposerTextChange is missing");
   assert.match(handler, /rewriteRequestIdRef\.current \+= 1/);
   assert.match(handler, /rewriteAbortRef\.current\?\.abort\(\)/);
-  assert.match(handler, /handleConfigChange\("prompt", value\)/);
-  assert.match(page, /onChange=\{handleSourcePromptChange\}/);
+  assert.match(handler, /handleConfigChange\(key, value\)/);
+  // Both boxes feed the request, so both must retire it.
+  assert.match(
+    page,
+    /onIdeaChange=\{\(value\) =>\s*handleComposerTextChange\("instructions", value\)\s*\}/
+  );
+  assert.match(
+    page,
+    /onContentChange=\{\(value\) =>\s*handleComposerTextChange\("prompt", value\)\s*\}/
+  );
 });
 
-test("prompt rewrite catalogs stay symmetric and the upload hero renders once", async () => {
+test("the outline slide count detected in box 2 can override the slide dropdown", async () => {
+  const page = await read(UPLOAD_PAGE_PATH);
+
+  // The count is detected from box 2 and only promoted over the dropdown
+  // when the user asks to follow the outline exactly.
+  assert.match(page, /const detectedSlidesCount = useMemo\(/);
+  assert.match(page, /\(\) => detectSlideCountFromText\(sourcePrompt\)/);
+  assert.match(
+    page,
+    /const effectiveSlides =\s*\n\s*\(strictOutline && detectedSlidesCount\) \|\| parseLimitedSlideCount\(config\.slides\);/
+  );
+  // Both generation branches submit the effective count, not the raw
+  // dropdown value, so a pasted 13-slide outline produces 13 slides.
+  assert.match(page, /n_slides: effectiveSlides \?\? null,[\s\S]*file_paths: documentPaths/);
+  assert.match(page, /n_slides: effectiveSlides \?\? null,[\s\S]*file_paths: \[\]/);
+  assert.match(page, /detectedSlidesCount=\{detectedSlidesCount\}/);
+  assert.match(page, /strictOutline=\{strictOutline\}/);
+});
+
+test("outline catalogs stay symmetric and the upload hero renders once", async () => {
   const [vi, en, page] = await Promise.all([
     read("i18n/locales/vi.ts"),
     read("i18n/locales/en.ts"),
     read(UPLOAD_PAGE_PATH),
   ]);
   const keys = [
-    "sourceLabel",
-    "sourcePlaceholder",
+    "ideaLabel",
+    "ideaPlaceholder",
+    "contentLabel",
+    "contentPlaceholder",
     "action",
     "loading",
-    "outputLabel",
-    "emptyHint",
-    "staleBadge",
-    "staleHelper",
-    "updateAction",
+    "successTitle",
+    "successDescription",
+    "detectedCount",
+    "strictLabel",
+    "dropHint",
+    "phaseUploading",
+    "phaseReading",
     "retryAction",
-    "errorTitle",
     "errorFallback",
-    "requiredTitle",
-    "requiredDescription",
   ];
 
   for (const key of keys) {
@@ -531,30 +521,30 @@ test("prompt rewrite catalogs stay symmetric and the upload hero renders once", 
 /**
  * Task 6 — preparation is represented as explicit phases
  * (`uploading_documents`, `reading_documents`, `rewriting`), announced
- * through the existing polite live region with localized strings, and the
- * loading label follows the active phase. Abort paths clear the phase, and
+ * through a polite live region with localized strings, and the loading
+ * label follows the active phase. Abort paths clear the phase, and
  * duplicate submissions are prevented while work is active.
  */
-test("rewrite progress surfaces preparation phases accessibly", async () => {
-  const [page, panel, vi, en] = await Promise.all([
+test("outline progress surfaces preparation phases accessibly", async () => {
+  const [page, composer, vi, en] = await Promise.all([
     read(UPLOAD_PAGE_PATH),
-    read("app/(presentation-generator)/upload/components/RewrittenPrompt.tsx"),
+    read(OUTLINE_COMPOSER_PATH),
     read("i18n/locales/vi.ts"),
     read("i18n/locales/en.ts"),
   ]);
-  const handlerStart = page.indexOf("const handleRewritePrompt");
+  const handlerStart = page.indexOf("const handleGenerateOutline");
   const handlerEnd = page.indexOf("const getGenerationDestination");
   const handler = page.slice(handlerStart, handlerEnd);
 
   // Explicit phase state covering the three preparation phases.
-  assert.match(page, /const \[rewritePhase, setRewritePhase\] = useState<RewritePhase \| null>\(null\)/);
+  assert.match(page, /const \[rewritePhase, setRewritePhase\] = useState<OutlinePhase \| null>\(null\)/);
   assert.match(
-    panel,
-    /export type RewritePhase =\s*\|\s*"uploading_documents"\s*\|\s*"reading_documents"\s*\|\s*"rewriting"/
+    composer,
+    /export type OutlinePhase =\s*\|\s*"uploading_documents"\s*\|\s*"reading_documents"\s*\|\s*"rewriting"/
   );
 
   // Preparation reports each step that actually runs; cache hits report
-  // nothing, and the rewrite call always ends in the rewriting phase.
+  // nothing, and the outline call always ends in the rewriting phase.
   assert.match(
     page,
     /onPhase\?: \(phase: "uploading_documents" \| "reading_documents"\) => void/
@@ -568,10 +558,10 @@ test("rewrite progress surfaces preparation phases accessibly", async () => {
   assert.match(page, /upload\.prompt\.rewrite\.phaseUploading/);
   assert.match(page, /upload\.prompt\.rewrite\.phaseReading/);
 
-  // Phase changes are announced through the existing polite live region.
-  assert.match(panel, /aria-live="polite"/);
-  assert.match(panel, /upload\.prompt\.rewrite\.aria\.uploading/);
-  assert.match(panel, /upload\.prompt\.rewrite\.aria\.reading/);
+  // Phase changes are announced through a polite live region.
+  assert.match(composer, /aria-live="polite"/);
+  assert.match(composer, /upload\.prompt\.rewrite\.aria\.uploading/);
+  assert.match(composer, /upload\.prompt\.rewrite\.aria\.reading/);
 
   // Localized status/error strings exist in both catalogs.
   for (const catalog of [vi, en]) {
@@ -582,12 +572,13 @@ test("rewrite progress surfaces preparation phases accessibly", async () => {
     assert.match(catalog, /reading: "/);
   }
 
-  // Duplicate submissions are prevented while a rewrite or Create is active.
+  // Duplicate submissions are prevented while an outline request or a
+  // Create is active.
   assert.match(page, /if \(createInFlightRef\.current \|\| isRewriting \|\| loadingState\.isLoading \|\| !templateReady\) return;/);
 
-  // Aborting an in-flight rewrite clears the phase along with the flag.
+  // Aborting an in-flight request clears the phase along with the flag.
   const filesHandlerStart = page.indexOf("const handleFilesChange");
-  const filesHandlerEnd = page.indexOf("const handleRewritePrompt");
+  const filesHandlerEnd = page.indexOf("const handleGenerateOutline");
   const filesHandler = page.slice(filesHandlerStart, filesHandlerEnd);
   assert.match(
     filesHandler,
@@ -596,13 +587,13 @@ test("rewrite progress surfaces preparation phases accessibly", async () => {
 });
 
 /**
- * Task 8 — document-aware rewrite is gated behind a feature flag for the
- * first rollout. When the flag is off, the rewrite and Create paths skip
- * preparation so the prompt-only body stays byte-compatible with the API
- * that has always existed. The flag defaults to off; nothing reaches the
- * rewrite in tests that mount UploadPage without overriding the flag.
+ * Task 8 — document-aware outline generation is gated behind a feature flag
+ * for the first rollout. When the flag is off, the outline and Create paths
+ * skip preparation so the prompt-only body stays byte-compatible with the
+ * API that has always existed. The flag defaults to off; nothing reaches the
+ * outline in tests that mount UploadPage without overriding the flag.
  */
-test("document-aware rewrite is gated behind a feature flag defaulting off", async () => {
+test("document-aware outline generation is gated behind a feature flag defaulting off", async () => {
   const [flags, page] = await Promise.all([
     read("lib/feature-flags.ts"),
     read(UPLOAD_PAGE_PATH),
@@ -617,10 +608,10 @@ test("document-aware rewrite is gated behind a feature flag defaulting off", asy
     /GSLIDE_FEATURE_DOCUMENT_AWARE_REWRITE/
   );
   // UploadPage reads the flag and gates preparation on it. The flag is
-  // consulted in both the rewrite handler and the Create-time preparation.
+  // consulted in both the outline handler and the Create-time preparation.
   // The handler must not call ensureDocumentsPrepared when the flag is off
   // AND files are attached; the prompt-only path stays as the API contract.
-  const handlerStart = page.indexOf("const handleRewritePrompt");
+  const handlerStart = page.indexOf("const handleGenerateOutline");
   const handlerEnd = page.indexOf("const getGenerationDestination");
   const handler = page.slice(handlerStart, handlerEnd);
   assert.match(
@@ -630,45 +621,42 @@ test("document-aware rewrite is gated behind a feature flag defaulting off", asy
 });
 
 /**
- * Redesign 2026-09-16 — the upload composer was recomposed so prompt and
- * documents appear as inputs first, the rewritten prompt sits between them,
- * and Create is an explicit visible text action below the output. The
- * attachment panel is attachment-only (no submit/submitDisabled), exposes a
- * typed usage mode that drives truthful helper copy, and renders a section
- * label and an "Optional" indicator.
+ * Redesign 2026-09-28 — the composer is two boxes: box 1 takes the idea and
+ * owns the AI outline action, box 2 takes the outline or detailed content
+ * that becomes the presentation. The attachment panel sits inside the
+ * composer (so the whole group is a drop target) and Create is an explicit
+ * visible text action below it.
  */
-test("redesign: UploadPage composes prompt → attachments → rewrite → output → Create", async () => {
+test("redesign: UploadPage composes idea → outline → attachments → Create", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
   // DOM order must match the visual order so keyboard navigation follows
   // the same mental model.
-  const promptIdx = page.indexOf("<PromptInput");
+  const composerIdx = page.indexOf("<OutlineComposer");
+  const ideaIdx = page.indexOf("idea={config.instructions}");
+  const contentIdx = page.indexOf("content={config.prompt}");
   const attachmentsIdx = page.indexOf("<SupportingDoc");
-  const rewriteButtonIdx = page.indexOf('data-testid="rewrite-action-button"');
-  const outputIdx = page.indexOf("<RewrittenPrompt");
   const createIdx = page.indexOf('data-testid="generate-presentation-button"');
-  assert.ok(promptIdx !== -1, "PromptInput is missing");
+  assert.ok(composerIdx !== -1, "OutlineComposer is missing");
+  assert.ok(ideaIdx !== -1, "box 1 is missing");
+  assert.ok(contentIdx !== -1, "box 2 is missing");
   assert.ok(attachmentsIdx !== -1, "SupportingDoc is missing");
-  assert.ok(rewriteButtonIdx !== -1, "rewrite button is missing");
-  assert.ok(outputIdx !== -1, "RewrittenPrompt is missing");
   assert.ok(createIdx !== -1, "Create button is missing");
-  assert.ok(promptIdx < attachmentsIdx, "prompt comes before attachments");
-  assert.ok(attachmentsIdx < rewriteButtonIdx, "attachments come before rewrite");
-  assert.ok(rewriteButtonIdx < outputIdx, "rewrite comes before output");
-  assert.ok(outputIdx < createIdx, "output comes before Create");
+  assert.ok(ideaIdx < contentIdx, "the idea comes before the outline");
+  assert.ok(contentIdx < attachmentsIdx, "the outline comes before attachments");
+  assert.ok(attachmentsIdx < createIdx, "attachments come before Create");
 
-  // Attachments and the rewrite action live inside the composer. Bare Enter
-  // rewrites; Shift+Enter stays a newline; Ctrl/Cmd+Enter still creates.
-  const promptEnd = page.indexOf("</PromptInput>");
-  assert.ok(promptEnd > promptIdx, "PromptInput is not closed");
-  const composer = page.slice(promptIdx, promptEnd);
+  // Attachments live inside the composer, which is also the drop target.
+  const composerEnd = page.indexOf("</OutlineComposer>");
+  assert.ok(composerEnd > composerIdx, "OutlineComposer is not closed");
+  const composer = page.slice(composerIdx, composerEnd);
   assert.match(composer, /<SupportingDoc/);
-  assert.match(composer, /data-testid="rewrite-action-button"/);
-  assert.match(composer, /onRewrite=\{handleRewritePrompt\}/);
+  assert.match(composer, /onGenerate=\{handleGenerateOutline\}/);
+  assert.match(composer, /onSubmit=\{handleGeneratePresentation\}/);
 });
 
 test("redesign: Create is an explicit visible text action bound to handleGeneratePresentation", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
-  // The new Create button lives on UploadPage (not in SupportingDoc) and
+  // The Create button lives on UploadPage (not in SupportingDoc) and
   // reuses the existing orchestration. The test id is preserved so
   // Cypress and integration tests stay stable.
   const createMatch = page.match(
@@ -679,24 +667,21 @@ test("redesign: Create is an explicit visible text action bound to handleGenerat
   assert.match(createButton, /onClick=\{handleGeneratePresentation\}/);
   assert.match(createButton, /aria-label=\{t\("upload\.create\.ariaLabel"\)\}/);
   assert.match(createButton, /\{t\("upload\.create\.label"\)\}/);
-  // The same `isCreateDisabled` flag still drives the disabled state, so
-  // prompt-only rewrite freshness and document-aware prep continue to gate
-  // Create exactly as before.
+  // The same `isCreateDisabled` flag drives the disabled state, so template
+  // selection and in-flight work continue to gate Create.
   assert.match(createButton, /disabled=\{isCreateDisabled \|\| loadingState\.isLoading\}/);
   assert.match(createButton, /whitespace-nowrap/);
   assert.match(page, /flex w-full justify-center/);
   assert.doesNotMatch(page, /sm:justify-end/);
 });
 
-test("composer: Enter rewrites and Shift+Enter inserts a newline", async () => {
-  const promptInput = await read(
-    "app/(presentation-generator)/upload/components/PromptInput.tsx",
-  );
-  assert.match(promptInput, /onRewrite\?: \(\) => void/);
-  assert.match(promptInput, /if \(event\.shiftKey \|\| event\.altKey\) return/);
-  assert.match(promptInput, /onRewrite\?\.\(\)/);
-  assert.match(promptInput, /onSubmit\?\.\(\)/);
-  assert.match(promptInput, /isComposing/);
+test("composer: Ctrl/Cmd+Enter creates and Shift+Enter inserts a newline", async () => {
+  const composer = await read(OUTLINE_COMPOSER_PATH);
+  assert.match(composer, /onSubmit\?: \(\) => void/);
+  assert.match(composer, /if \(event\.shiftKey \|\| event\.altKey\) return/);
+  assert.match(composer, /if \(!event\.metaKey && !event\.ctrlKey\) return;/);
+  assert.match(composer, /onSubmit\?\.\(\)/);
+  assert.match(composer, /isComposing/);
 });
 
 test("redesign: SupportingDoc is attachment-only with a typed usage mode", async () => {
@@ -745,28 +730,34 @@ test("redesign: SupportingDoc renders the right helper copy per usage mode", asy
   assert.match(helperBlock, /files\.length > 0/);
 });
 
-test("redesign: RewrittenPrompt renders a compact empty state and a grounded helper", async () => {
-  const [panel, page] = await Promise.all([
-    read("app/(presentation-generator)/upload/components/RewrittenPrompt.tsx"),
-    read(UPLOAD_PAGE_PATH),
-  ]);
-  // Compact empty state: no result, not loading, no error, not stale.
-  assert.match(panel, /isCompactEmpty/);
-  assert.match(panel, /data-compact-empty=\{isCompactEmpty \? "true" : undefined\}/);
-  assert.match(panel, /upload\.prompt\.rewrite\.emptyTitle/);
-  // The output textarea only renders when the panel is expanded so the
-  // empty state does not dominate the composer.
-  assert.match(panel, /!isCompactEmpty && \(\s*<div className="flex min-h-0/);
-  // Grounded helper appears only for fresh, non-stale, non-error rewrites.
-  assert.match(panel, /groundedDocumentCount\?: number/);
-  assert.match(panel, /showGroundedHelper/);
-  assert.match(panel, /upload\.prompt\.rewrite\.groundedSummary/);
-  assert.match(panel, /data-testid="rewritten-prompt-grounded-helper"/);
-  // The result can be edited by hand. It stays read-only only while a rewrite
-  // is in flight, or when the parent does not provide an editor callback.
-  assert.match(panel, /onChange\?: \(value: string\) => void/);
-  assert.match(panel, /readOnly=\{isLoading \|\| !onChange\}/);
-  assert.match(page, /onChange=\{setRewrittenPrompt\}/);
+test("redesign: OutlineComposer renders the detected count, the strict toggle, and an editable box 2", async () => {
+  const composer = await read(OUTLINE_COMPOSER_PATH);
+  // Both boxes are labelled, and both are plain editable textareas.
+  assert.match(composer, /htmlFor="outline-idea"/);
+  assert.match(composer, /htmlFor="outline-content"/);
+  assert.match(composer, /data-testid="idea-input"/);
+  assert.match(composer, /data-testid="prompt-input"/);
+  // The AI action lives on box 1 and reports busy while it runs; duplicate
+  // submissions are refused while the same request is already in flight.
+  assert.match(composer, /data-testid="rewrite-action-button"/);
+  assert.match(composer, /disabled=\{!canGenerate \|\| isGenerating\}/);
+  assert.match(composer, /aria-busy=\{isGenerating\}/);
+  assert.match(composer, /onClick=\{onGenerate\}/);
+  // The detected count is a badge that only renders when the outline
+  // declares one, and it is not hard-coded copy.
+  assert.match(composer, /data-testid="detected-slides-badge"/);
+  assert.match(composer, /\{detectedSlidesCount \? \(/);
+  assert.match(composer, /t\("upload\.outline\.detectedCount", \{\s*count: detectedSlidesCount,/);
+  // "Follow the outline exactly" is an explicit opt-in, reported back to
+  // the parent that owns the effective slide count.
+  assert.match(composer, /data-testid="strict-outline-toggle"/);
+  assert.match(composer, /onStrictOutlineChange\(event\.target\.checked\)/);
+  // A failure is reported inline with a retry that reuses the same flow.
+  assert.match(composer, /data-testid="rewrite-error"/);
+  assert.match(composer, /data-testid="rewrite-retry-button"/);
+  // The composer is the drop target the attachment control binds to.
+  assert.match(composer, /PromptComposerBoundaryContext\.Provider/);
+  assert.match(composer, /data-testid="outline-composer"/);
 });
 
 test("redesign: new copy keys exist and remain symmetric across catalogs", async () => {
@@ -780,8 +771,6 @@ test("redesign: new copy keys exist and remain symmetric across catalogs", async
     "emptyGuidance",
     "helperDocAware",
     "helperPresentationOnly",
-    "emptyTitle",
-    "groundedSummary",
   ];
   for (const key of newKeys) {
     const re = new RegExp(`\\b${key}:`);

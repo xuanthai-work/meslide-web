@@ -76,3 +76,47 @@ export function parseLimitedSlideCount(
 
   return Math.min(parsed, MAX_NUMBER_OF_SLIDES);
 }
+
+/**
+ * Counts the slides an outline declares for itself.
+ *
+ * Users paste documents that already number their own slides (`## Slide 1`,
+ * `Slide 01:`, `Slide 3 —`, …), so the outline text is a more trustworthy
+ * source of the slide count than the dropdown. Only a line that *starts* a
+ * slide marker counts, which keeps inline cross-references such as
+ * "(Slide 3)" inside a bullet from inflating the total.
+ *
+ * A single marker is treated as prose, not an outline, so an incidental
+ * "Slide 1" mention never pins the count. The result is clamped to
+ * {@link MAX_NUMBER_OF_SLIDES} like every other count on this page.
+ *
+ * The trailing separator is an alternation rather than a whitespace class on
+ * purpose: a whitespace class swallows the newline, which would cut a
+ * newline-delimited outline (`## Slide 1` on a line of its own) short after
+ * the first hit.
+ */
+const SLIDE_MARKER_PATTERN =
+  /^[ \t]*(?:#{1,3}[ \t]*)?Slide[ \t]*(\d+)(?:[ \t]*[:\u2014-]|\r?$)/gim;
+
+export function detectSlideCountFromText(
+  text: string | null | undefined
+): number | null {
+  if (!text) return null;
+
+  const numbers = new Set<number>();
+  for (const match of text.matchAll(SLIDE_MARKER_PATTERN)) {
+    const parsed = Number(match[1]);
+    if (Number.isFinite(parsed) && parsed > 0) numbers.add(parsed);
+  }
+  if (numbers.size < 2) return null;
+
+  // A conventional outline numbers its slides 1..N with no gaps, so the
+  // highest marker is the count. Anything else (gaps, restarts, repeats)
+  // falls back to how many distinct markers were seen, which never invents
+  // slides the outline does not describe.
+  const ordered = [...numbers].sort((a, b) => a - b);
+  const isSequential = ordered.every((value, index) => value === index + 1);
+  const count = isSequential ? ordered.length : numbers.size;
+
+  return Math.min(count, MAX_NUMBER_OF_SLIDES);
+}

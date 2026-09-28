@@ -22,9 +22,9 @@ const createTestStore = () =>
   });
 
 const mountUploadPage = ({
-  // Document-aware rewrite is gated behind a feature flag that defaults
-  // to off; the doc-aware Cypress suite turns it on so the assertions
-  // exercise the document paths.
+  // Document-aware outline generation is gated behind a feature flag that
+  // defaults to off; the doc-aware Cypress suite turns it on so the
+  // assertions exercise the document paths.
   documentAwareRewrite = false,
 }: {
   documentAwareRewrite?: boolean;
@@ -54,6 +54,32 @@ const mountUploadPage = ({
   );
 };
 
+/** An outline that declares its own slide count, the way users paste one. */
+const outlineWith = (count: number, separator = " - ") =>
+  Array.from(
+    { length: count },
+    (_, index) => `## Slide ${index + 1}${separator}Nội dung ${index + 1}`,
+  ).join("\n");
+
+/** Cypress types `{enter}` for a newline; literal newlines are not accepted. */
+const typeOutline = (text: string) =>
+  cy.get('[data-testid="prompt-input"]').type(text.split("\n").join("{enter}"));
+
+const typeIdea = (text: string) =>
+  cy.get('[data-testid="idea-input"]').type(text);
+
+const attachFile = (
+  name: string,
+  contents = "supporting notes",
+  mimeType = "text/plain",
+) =>
+  cy
+    .get('[data-testid="file-upload-input"]')
+    .selectFile(
+      { contents: Cypress.Buffer.from(contents), fileName: name, mimeType },
+      { force: true },
+    );
+
 beforeEach(() => {
   cy.intercept("GET", "**/api/v1/ppt/template/all?*", (request) => {
     const isDefault = new URL(request.url).searchParams.get("default") === "true";
@@ -66,282 +92,185 @@ beforeEach(() => {
       },
     });
   });
+  // Template recommendation is a side quest; these tests are about content.
+  cy.intercept("POST", "**/api/v1/ppt/prompt/select-template", {
+    body: { template_id: "momentum" },
+  }).as("recommendTemplate");
 });
 
-describe("upload prompt rewrite flow", () => {
-  it("sizes the prompt input from its content instead of manual resizing", () => {
-    mountUploadPage();
-
-    cy.get('[data-testid="prompt-input"]')
-      .should("have.css", "resize", "none")
-      .then(($input) => {
-        const initialHeight = $input[0].getBoundingClientRect().height;
-
-        cy.wrap($input)
-          .type(
-            "Dòng 1{shift}{enter}Dòng 2{shift}{enter}Dòng 3{shift}{enter}Dòng 4{shift}{enter}Dòng 5{shift}{enter}Dòng 6{shift}{enter}Dòng 7{shift}{enter}Dòng 8",
-          )
-          .should(($grownInput) => {
-            expect($grownInput[0].getBoundingClientRect().height).to.be.greaterThan(
-              initialHeight,
-            );
-          })
-          .then(($grownInput) => {
-            cy.wrap($grownInput)
-              .type(
-                "{shift}{enter}Dòng 9{shift}{enter}Dòng 10{shift}{enter}Dòng 11{shift}{enter}Dòng 12{shift}{enter}Dòng 13{shift}{enter}Dòng 14{shift}{enter}Dòng 15{shift}{enter}Dòng 16{shift}{enter}Dòng 17{shift}{enter}Dòng 18{shift}{enter}Dòng 19{shift}{enter}Dòng 20{shift}{enter}Dòng 21{shift}{enter}Dòng 22{shift}{enter}Dòng 23{shift}{enter}Dòng 24{shift}{enter}Dòng 25",
-              )
-              .should(($cappedInput) => {
-                expect($cappedInput[0].getBoundingClientRect().height).to.equal(
-                  400,
-                );
-                expect($cappedInput[0].scrollHeight).to.be.greaterThan(
-                  $cappedInput[0].clientHeight,
-                );
-                expect(getComputedStyle($cappedInput[0]).overflowY).to.equal(
-                  "auto",
-                );
-              })
-              .clear()
-              .should(($clearedInput) => {
-                expect(
-                  $clearedInput[0].getBoundingClientRect().height,
-                ).to.be.lessThan(400);
-              });
-          });
-      });
-  });
-
-  it("remeasures wrapped prompt content when the available width changes", () => {
-    cy.viewport(1200, 720);
-    mountUploadPage();
-
-    cy.get('[data-testid="prompt-input"]')
-      .type(
-        "Nội dung trình bày cần giải thích rõ bối cảnh, mục tiêu, phương pháp, dữ liệu, kết quả, bài học và các bước hành động tiếp theo cho toàn bộ đội ngũ tham gia dự án trong quý này.",
-      )
-      .then(($wideInput) => {
-        const wideWidth = $wideInput[0].getBoundingClientRect().width;
-        const wideHeight = $wideInput[0].getBoundingClientRect().height;
-
-        cy.viewport(420, 720);
-        cy.get('[data-testid="prompt-input"]').should(($narrowInput) => {
-          expect($narrowInput[0].getBoundingClientRect().width).to.be.lessThan(
-            wideWidth,
-          );
-          expect($narrowInput[0].getBoundingClientRect().height).to.be.greaterThan(
-            wideHeight,
-          );
-        });
-      });
-  });
-
-  it("keeps source and rewrite separate, then invalidates a stale result", () => {
-    let rewriteCalls = 0;
+describe("upload outline composer", () => {
+  it("writes the AI outline into box 2 and never overwrites the idea in box 1", () => {
+    let outlineCalls = 0;
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
-      rewriteCalls += 1;
-      if (rewriteCalls === 1) {
-        expect(request.body.previous_prompt).to.equal(undefined);
+      outlineCalls += 1;
+      if (outlineCalls === 1) {
+        expect(request.body.previous_prompt, "first run has no prior outline")
+          .to.equal(undefined);
+        expect(request.body.prompt).to.equal("Bài cho dev iOS");
       } else {
-        expect(request.body.prompt).to.equal("AI trong giáo dục tại Việt Nam");
-        expect(request.body.previous_prompt).to.equal("Bản tối ưu thứ nhất");
+        expect(request.body.prompt).to.equal("Bài cho dev Android");
+        expect(
+          request.body.previous_prompt,
+          "a second run refines the current outline",
+        ).to.equal("## Slide 1 - Mở đầu");
       }
       request.reply({
         delay: 750,
         body: {
           rewritten_prompt:
-            rewriteCalls === 1
-              ? "Bản tối ưu thứ nhất"
-              : "Bản tối ưu đã cập nhật",
+            outlineCalls === 1
+              ? "## Slide 1 - Mở đầu"
+              : "## Slide 1 - Mở đầu\n## Slide 2 - Kết luận",
         },
       });
-    }).as("rewritePrompt");
+    }).as("outlineRequest");
 
     mountUploadPage();
 
+    // Nothing to build an outline from yet, and nothing to create from.
     cy.get('[data-testid="rewrite-action-button"]').should("be.disabled");
     cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
 
-    cy.get('[data-testid="prompt-input"]').type("AI trong giáo dục");
-    cy.get('[data-testid="rewrite-action-button"]').should("be.enabled").click();
-    cy.get('[data-testid="rewrite-action-button"]')
-      .should("have.attr", "aria-busy", "true")
-      .and("contain.text", "Đang viết lại");
+    // Typing an idea arms the AI action but never blocks Create: the user
+    // is never forced through the AI.
+    typeIdea("Bài cho dev iOS");
+    cy.get('[data-testid="rewrite-action-button"]').should("be.enabled");
     cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
 
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="prompt-input"]').should(
-      "have.value",
-      "AI trong giáo dục",
-    );
-    cy.get('[data-testid="rewritten-prompt-output"]')
-      .should("have.value", "Bản tối ưu thứ nhất")
+    cy.get('[data-testid="rewrite-action-button"]')
+      .click()
+      .should("have.attr", "aria-busy", "true")
+      .and("contain.text", "Đang tạo dàn ý");
+    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
+
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="idea-input"]').should("have.value", "Bài cho dev iOS");
+    cy.get('[data-testid="prompt-input"]')
+      .should("have.value", "## Slide 1 - Mở đầu")
       .and("not.have.attr", "readonly");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
 
-    cy.get('[data-testid="prompt-input"]').clear();
-    cy.get('[data-testid="prompt-input"]').should("have.value", "");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
+    // A second run sends the current outline along and replaces it.
+    cy.get('[data-testid="idea-input"]').clear().type("Bài cho dev Android");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="prompt-input"]').should(
       "have.value",
-      "Bản tối ưu thứ nhất",
+      "## Slide 1 - Mở đầu\n## Slide 2 - Kết luận",
     );
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("be.visible");
-    cy.get('[data-testid="rewrite-action-button"]').should("be.disabled");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
-
-    cy.get('[data-testid="prompt-input"]').type(
-      "AI trong giáo dục tại Việt Nam",
-    );
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Bản tối ưu thứ nhất",
-    );
-
-    cy.get('[data-testid="rewrite-action-button"]')
-      .should("contain.text", "Cập nhật bản viết lại")
-      .click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Bản tối ưu đã cập nhật",
-    );
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("not.exist");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
+    cy.get('[data-testid="idea-input"]').should("have.value", "Bài cho dev Android");
   });
 
-  it("submits the fresh rewrite from both the keyboard and generation boundary", () => {
+  it("creates straight from box 2 without ever calling the AI", () => {
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
-      body: { rewritten_prompt: "Prompt cuối cùng dùng để tạo slide" },
-    }).as("rewritePrompt");
+      body: { rewritten_prompt: "không được gọi" },
+    }).as("outlineRequest");
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
-      expect(request.body.content).to.equal(
-        "Prompt cuối cùng dùng để tạo slide",
-      );
+      expect(request.body.content).to.equal("Nội dung dán trực tiếp");
       request.reply({ body: { id: "presentation-123" } });
     }).as("createPresentation");
 
     mountUploadPage();
-    cy.get('[data-testid="prompt-input"]').type("Prompt nguồn");
+    cy.get('[data-testid="prompt-input"]').type("Nội dung dán trực tiếp");
+    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled").click();
 
-    // The shortcut follows the same validation and cannot submit stale input.
-    cy.get('[data-testid="prompt-input"]').type("{ctrl}{enter}");
-    cy.get("@routerPush").should("not.have.been.called");
-
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="prompt-input"]').type("{ctrl}{enter}");
     cy.wait("@createPresentation");
+    cy.get("@outlineRequest.all").should("have.length", 0);
     cy.get("@routerPush").should(
       "have.been.calledWith",
       "/presentation?id=presentation-123&auto=1&template=momentum",
     );
   });
 
-  it("submits a hand-edited rewrite", () => {
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
-      body: { rewritten_prompt: "Bản AI gốc" },
-    }).as("rewritePrompt");
+  it("submits box 2 with Ctrl+Enter and keeps Shift+Enter as a newline", () => {
+    cy.intercept("POST", "**/api/v1/ppt/presentation/create", {
+      body: { id: "presentation-123" },
+    }).as("createPresentation");
+
+    mountUploadPage();
+    cy.get('[data-testid="prompt-input"]').type("Dòng 1");
+    cy.get('[data-testid="prompt-input"]').type("{shift}{enter}dòng 2");
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Dòng 1\ndòng 2");
+    cy.get("@createPresentation.all").should("have.length", 0);
+
+    cy.get('[data-testid="prompt-input"]').type("{ctrl}{enter}");
+    cy.wait("@createPresentation");
+  });
+
+  it("detects the slide count the outline declares and can pin it on Create", () => {
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
-      expect(request.body.content).to.equal("Bản đã sửa tay");
+      expect(request.body.n_slides, "the detected count wins once opted in")
+        .to.equal(13);
       request.reply({ body: { id: "presentation-123" } });
     }).as("createPresentation");
 
     mountUploadPage();
-    cy.get('[data-testid="prompt-input"]').type("Ý tưởng gốc");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "not.have.attr",
-      "readonly",
+    cy.get('[data-testid="detected-slides-badge"]').should("not.exist");
+
+    typeOutline(outlineWith(13));
+    cy.get('[data-testid="detected-slides-badge"]').should(
+      "contain.text",
+      "Phát hiện 13 slide",
     );
-    cy.get('[data-testid="rewritten-prompt-output"]').clear();
-    cy.get('[data-testid="rewritten-prompt-output"]').type("Bản đã sửa tay");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Bản đã sửa tay",
-    );
+
+    // The dropdown still wins until the user opts into the outline's own
+    // structure.
+    cy.get('[data-testid="strict-outline-toggle"]').check();
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@createPresentation");
   });
 
-  it("rewrites from Enter and keeps Shift+Enter as a newline", () => {
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
-      body: { rewritten_prompt: "Bản viết lại từ Enter" },
-    }).as("rewritePrompt");
+  it("ignores an obsolete response when the user keeps typing", () => {
+    let outlineCalls = 0;
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
+      outlineCalls += 1;
+      request.reply({
+        delay: 600,
+        body: { rewritten_prompt: `Kết quả lần ${outlineCalls}` },
+      });
+    }).as("outlineRequest");
 
     mountUploadPage();
-    cy.get('[data-testid="prompt-input"]').type("Ý tưởng gốc");
-    cy.get('[data-testid="prompt-input"]').type("{enter}");
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Bản viết lại từ Enter",
-    );
+    typeIdea("Ý tưởng đầu");
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Kết quả lần 1");
 
-    cy.get('[data-testid="prompt-input"]').type("{shift}{enter}dòng mới");
-    cy.get('[data-testid="prompt-input"]').should("have.value", "Ý tưởng gốc\ndòng mới");
-    cy.get("@rewritePrompt.all").should("have.length", 1);
+    // A second, slow run is retired the moment box 1 changes.
+    cy.get('[data-testid="rewrite-action-button"]').click();
+    typeIdea(" đã sửa");
+    cy.wait(900);
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Kết quả lần 1");
+    cy.get('[data-testid="rewrite-action-button"]').should("be.enabled");
   });
 
-  it("ignores an obsolete response and retains a prior result after refresh failure", () => {
-    let rewriteCalls = 0;
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
-      rewriteCalls += 1;
-      if (rewriteCalls === 1) {
-        request.reply({
-          delay: 250,
-          body: { rewritten_prompt: "Kết quả đã lỗi thời" },
-        });
-      } else if (rewriteCalls === 2) {
-        request.reply({ body: { rewritten_prompt: "Kết quả mới nhất" } });
-      } else {
-        request.reply({
-          statusCode: 503,
-          body: { detail: "provider unavailable" },
-        });
-      }
-    }).as("rewritePrompt");
+  it("keeps the typed outline and reports a localized error when the AI fails", () => {
+    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
+      statusCode: 503,
+      body: { detail: "provider unavailable" },
+    }).as("outlineRequest");
 
     mountUploadPage();
-    cy.get('[data-testid="prompt-input"]').type("Nguồn đầu tiên");
+    typeIdea("Ý tưởng");
+    cy.get('[data-testid="prompt-input"]').type("Nội dung tôi đã nhập");
     cy.get('[data-testid="rewrite-action-button"]').click();
 
-    // Editing aborts/invalidates request one, then request two becomes current.
-    cy.get('[data-testid="prompt-input"]').type(" đã sửa");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Kết quả mới nhất",
-    );
-    cy.wait(300);
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Kết quả mới nhất",
-    );
-
-    cy.get('[data-testid="prompt-input"]').type(" lần nữa");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.get('[data-testid="rewritten-prompt-error"]').should("be.visible");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Kết quả mới nhất",
-    );
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
+    cy.get('[data-testid="rewrite-error"]')
+      .should("be.visible")
+      .and("contain.text", "tạo dàn ý");
+    // The user's own content is never lost, and Create stays available.
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Nội dung tôi đã nhập");
+    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
+    cy.get('[data-testid="rewrite-retry-button"]').should("be.visible");
   });
 
   it("keeps document-only creation eligible", () => {
     mountUploadPage();
     cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "notes.txt",
-        mimeType: "text/plain",
-      },
-      { force: true },
-    );
+    attachFile("notes.txt");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
+    // The attached file is also enough to ask the AI for an outline.
+    cy.get('[data-testid="rewrite-action-button"]').should("be.enabled");
   });
 
   it("rejects legacy binary Office attachments", () => {
@@ -377,7 +306,7 @@ describe("upload prompt rewrite flow", () => {
     cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
   });
 
-  it("creates from documents when document-aware rewrite is disabled", () => {
+  it("creates from documents when document-aware mode is disabled", () => {
     cy.intercept("POST", "**/api/v1/ppt/files/upload", {
       body: ["tmp-notes-upload.txt"],
     }).as("uploadDoc");
@@ -392,14 +321,7 @@ describe("upload prompt rewrite flow", () => {
     }).as("createPresentation");
 
     mountUploadPage();
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "notes.txt",
-        mimeType: "text/plain",
-      },
-      { force: true },
-    );
+    attachFile("notes.txt");
     cy.get('[data-testid="generate-presentation-button"]').click();
 
     cy.wait("@uploadDoc");
@@ -407,7 +329,7 @@ describe("upload prompt rewrite flow", () => {
     cy.wait("@createPresentation");
   });
 
-  it("keeps documents out of rewrite but includes them in Create when the flag is disabled", () => {
+  it("keeps documents out of the outline but includes them in Create when the flag is disabled", () => {
     let uploadCalls = 0;
     let decomposeCalls = 0;
     cy.intercept("POST", "**/api/v1/ppt/files/upload", (request) => {
@@ -425,7 +347,7 @@ describe("upload prompt rewrite flow", () => {
       expect(uploadCalls).to.equal(0);
       expect(decomposeCalls).to.equal(0);
       request.reply({ body: { rewritten_prompt: "Brief prompt-only đã tối ưu" } });
-    }).as("rewritePrompt");
+    }).as("outlineRequest");
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
       expect(request.body.file_paths).to.deep.equal([
         "tmp-notes-decomposed.txt",
@@ -434,49 +356,27 @@ describe("upload prompt rewrite flow", () => {
     }).as("createPresentation");
 
     mountUploadPage();
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "notes.txt",
-        mimeType: "text/plain",
-      },
-      { force: true },
-    );
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
     cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
-    cy.get('[data-testid="generate-presentation-button"]').click();
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled").click();
 
     cy.wait("@uploadDoc");
     cy.wait("@decomposeDocuments");
     cy.wait("@createPresentation");
   });
-
 });
 
 /**
- * Document-aware rewrite flow. The upload page prepares the selected files
- * (upload + decompose) at most once per file set and language, grounds the
- * rewrite on the decomposed paths, and reuses the prepared set for Create.
- * Any change to a rewrite input (files, language, slide count) marks the
- * stored result stale; obsolete in-flight work is aborted and discarded.
+ * Document-aware outline generation. The upload page prepares the selected
+ * files (upload + decompose) at most once per file set and language, grounds
+ * the outline on the decomposed paths, and reuses the prepared set for
+ * Create. Obsolete in-flight work is aborted and discarded.
  */
-describe("document-aware rewrite flow", () => {
-  const attach = (name: string, contents = "supporting notes") =>
-    cy
-      .get('[data-testid="file-upload-input"]')
-      .selectFile(
-        {
-          contents: Cypress.Buffer.from(contents),
-          fileName: name,
-          mimeType: "text/plain",
-        },
-        { force: true },
-      );
-
+describe("document-aware outline flow", () => {
   const counters = () => {
-    const state = { upload: 0, decompose: 0, rewrite: 0, create: 0 };
+    const state = { upload: 0, decompose: 0, outline: 0, create: 0 };
     cy.intercept("POST", "**/api/v1/ppt/files/upload", (request) => {
       state.upload += 1;
       request.reply({ body: ["tmp-notes-0.txt"] });
@@ -488,11 +388,11 @@ describe("document-aware rewrite flow", () => {
       });
     }).as("decomposeDocuments");
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
-      state.rewrite += 1;
+      state.outline += 1;
       request.reply({
-        body: { rewritten_prompt: "Brief dựa trên tài liệu" },
+        body: { rewritten_prompt: "## Slide 1 - Mở đầu\n## Slide 2 - Bối cảnh" },
       });
-    }).as("rewritePrompt");
+    }).as("outlineRequest");
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
       state.create += 1;
       request.reply({ body: { id: "presentation-123" } });
@@ -500,40 +400,35 @@ describe("document-aware rewrite flow", () => {
     return state;
   };
 
-  it("prepares documents once, grounds the rewrite, and reuses them for Create", () => {
+  it("prepares documents once, grounds the outline, and reuses them for Create", () => {
     const state = counters();
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    attach("notes.txt");
-
-    // Keyboard submission cannot run before a fresh document-aware rewrite.
-    cy.get('[data-testid="prompt-input"]').type("{ctrl}{enter}");
-    cy.get("@routerPush").should("not.have.been.called");
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
 
     cy.get('[data-testid="rewrite-action-button"]').click();
     cy.wait("@uploadDoc");
     cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="prompt-input"]').should(
       "have.value",
-      "Brief dựa trên tài liệu",
+      "## Slide 1 - Mở đầu\n## Slide 2 - Bối cảnh",
     );
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
+    cy.get('[data-testid="detected-slides-badge"]').should(
+      "contain.text",
+      "Phát hiện 2 slide",
+    );
 
-    // A second rewrite with the same files and language skips upload and
+    // A second run with the same files and language skips upload and
     // decomposition entirely.
     cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt").then(() => {
+    cy.wait("@outlineRequest").then(() => {
       expect(state.upload, "upload runs once").to.equal(1);
       expect(state.decompose, "decomposition runs once").to.equal(1);
     });
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Brief dựa trên tài liệu",
-    );
 
-    // Create reuses the prepared paths and the fresh rewrite.
+    // Create reuses the prepared paths and the outline in box 2.
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@createPresentation").then(() => {
       expect(state.upload, "Create does not re-upload").to.equal(1);
@@ -545,41 +440,41 @@ describe("document-aware rewrite flow", () => {
     );
   });
 
-  it("sends the decomposed document paths on every grounded request", () => {
+  it("sends the decomposed document paths on the grounded request and on Create", () => {
     const state = counters();
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    attach("notes.txt");
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
 
     cy.get('[data-testid="rewrite-action-button"]').click();
     cy.wait("@uploadDoc");
     cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt").its("request.body.file_paths").should("deep.equal", ["tmp-notes-0.txt"]);
+    cy.wait("@outlineRequest").its("request.body.file_paths").should("deep.equal", ["tmp-notes-0.txt"]);
 
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@createPresentation")
       .its("request.body")
       .should((body) => {
         expect(body.file_paths).to.deep.equal(["tmp-notes-0.txt"]);
-        expect(body.content).to.equal("Brief dựa trên tài liệu");
+        expect(body.content).to.equal("## Slide 1 - Mở đầu\n## Slide 2 - Bối cảnh");
       });
     cy.then(() => {
       expect(state.decompose).to.equal(1);
     });
   });
 
-  it("never performs document requests for a prompt-only rewrite", () => {
+  it("never performs document requests for a prompt-only outline", () => {
     const state = counters();
 
-    // Flag is off: the rewrite and Create paths skip preparation entirely.
+    // Flag is off: the outline and Create paths skip preparation entirely.
     mountUploadPage();
-    cy.get('[data-testid="prompt-input"]').type("AI trong giáo dục");
+    typeIdea("AI trong giáo dục");
     cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="prompt-input"]').should(
       "have.value",
-      "Brief dựa trên tài liệu",
+      "## Slide 1 - Mở đầu\n## Slide 2 - Bối cảnh",
     );
 
     // Prompt-only Create goes through the direct path with no file paths.
@@ -588,7 +483,7 @@ describe("document-aware rewrite flow", () => {
       .its("request.body")
       .should((body) => {
         expect(body.file_paths).to.deep.equal([]);
-        expect(body.content).to.equal("Brief dựa trên tài liệu");
+        expect(body.content).to.equal("## Slide 1 - Mở đầu\n## Slide 2 - Bối cảnh");
       });
     cy.then(() => {
       expect(state.upload, "no upload happens").to.equal(0);
@@ -596,43 +491,32 @@ describe("document-aware rewrite flow", () => {
     });
   });
 
-  it("discards obsolete work and marks the result stale when files change", () => {
+  it("discards obsolete work when the file set changes mid-flight", () => {
     const state = counters();
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
-      state.rewrite += 1;
+      state.outline += 1;
       request.reply({
         delay: 600,
         body: { rewritten_prompt: "Brief đã lỗi thời" },
       });
-    }).as("rewritePrompt");
+    }).as("outlineRequest");
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    attach("notes.txt");
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
     cy.get('[data-testid="rewrite-action-button"]').click();
     cy.wait("@uploadDoc");
     cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Brief đã lỗi thời",
-    );
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Brief đã lỗi thời");
 
-    // Start a rewrite with the slow intercept, then change the file set
+    // Start another run with the slow intercept, then change the file set
     // mid-flight: the request is aborted and its response must never land.
     cy.get('[data-testid="rewrite-action-button"]').click();
-    attach("report.txt", "second file");
+    attachFile("report.txt", "second file");
     cy.wait(800);
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Brief đã lỗi thời",
-    );
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("be.visible");
-    cy.get('[data-testid="rewrite-action-button"]')
-      .should("contain.text", "Cập nhật bản viết lại")
-      .and("be.enabled");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Brief đã lỗi thời");
+    cy.get('[data-testid="rewrite-action-button"]').should("be.enabled");
     cy.then(() => {
       expect(state.upload, "the aborted attempt never uploaded").to.equal(1);
     });
@@ -650,29 +534,22 @@ describe("document-aware rewrite flow", () => {
     }).as("decomposeDocuments");
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    attach("notes.txt");
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
     cy.get('[data-testid="rewrite-action-button"]').click();
     cy.wait("@uploadDoc");
     cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt");
+    cy.wait("@outlineRequest");
 
-    // Switching language marks the grounded result stale. The dropdown
-    // uses cmdk with substring/keyword matching, so the selector finds the
-    // "Auto (English)" option first; instead of relying on partial text
-    // matching, we read the language code from each option and pick the one
-    // whose code maps to "english".
+    // The dropdown uses cmdk with substring/keyword matching, so the
+    // selector finds the option by its language code rather than by partial
+    // text matching.
     cy.get('[data-testid="language-select"]').click();
     cy.get('[role="option"][data-value="english"]').click();
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("be.visible");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
-
-    // Refreshing reuses the uploaded originals but re-extracts the text.
+    // Wait for the popover to close before clicking the outline action,
+    // otherwise the click lands on the dismissing overlay.
+    cy.get('[data-testid="language-select"]').should("contain.text", "Tiếng Anh");
     cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("not.exist");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
     cy.then(() => {
       expect(state.upload, "originals are uploaded once").to.equal(1);
       expect(decomposeLanguages).to.deep.equal([
@@ -682,42 +559,34 @@ describe("document-aware rewrite flow", () => {
     });
   });
 
-  it("marks slide-count changes stale without re-preparing documents", () => {
+  it("passes the configured slide count to the outline without re-preparing documents", () => {
     const state = counters();
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    attach("notes.txt");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@uploadDoc");
-    cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("not.exist");
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
 
     cy.get('[data-testid="slides-select"]').click();
     // The Vietnamese slide pluralization renders the count with no trailing
     // "s"; the option is rendered as `${option} slide` regardless of count.
     cy.get('[role="option"]').contains("8").click();
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("be.visible");
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
-
     cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt").its("request.body.n_slides").should("equal", 8);
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("not.exist");
+    cy.wait("@uploadDoc");
+    cy.wait("@decomposeDocuments");
+    cy.wait("@outlineRequest").its("request.body.n_slides").should("equal", 8);
     cy.then(() => {
       expect(state.upload, "slide count does not re-upload").to.equal(1);
       expect(state.decompose, "slide count does not re-decompose").to.equal(1);
     });
   });
 
-  it("prepares documents on Create when no prompt is given", () => {
+  it("prepares documents on Create when no content is given", () => {
     const state = counters();
 
     mountUploadPage({ documentAwareRewrite: true });
     cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
-    attach("notes.txt");
+    attachFile("notes.txt");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
-    cy.get('[data-testid="rewrite-action-button"]').should("be.disabled");
 
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@uploadDoc");
@@ -733,13 +602,13 @@ describe("document-aware rewrite flow", () => {
       "/presentation?id=presentation-123&auto=1&template=momentum",
     );
     cy.then(() => {
-      expect(state.rewrite, "no rewrite happens without a prompt").to.equal(0);
+      expect(state.outline, "no outline request happens without a click").to.equal(0);
     });
   });
 
-  it("keeps the previous rewrite visible and Create blocked when preparation fails", () => {
+  it("keeps the existing outline when document preparation fails", () => {
     let uploadShouldFail = false;
-    const state = { upload: 0, decompose: 0, rewrite: 0, create: 0 };
+    const state = { upload: 0, decompose: 0, outline: 0, create: 0 };
     cy.intercept("POST", "**/api/v1/ppt/files/upload", (request) => {
       state.upload += 1;
       if (uploadShouldFail) {
@@ -755,19 +624,17 @@ describe("document-aware rewrite flow", () => {
       });
     }).as("decomposeDocuments");
     cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", (request) => {
-      state.rewrite += 1;
-      request.reply({
-        body: { rewritten_prompt: "Brief dựa trên tài liệu" },
-      });
-    }).as("rewritePrompt");
+      state.outline += 1;
+      request.reply({ body: { rewritten_prompt: "Brief dựa trên tài liệu" } });
+    }).as("outlineRequest");
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
       state.create += 1;
       request.reply({ body: { id: "presentation-123" } });
     }).as("createPresentation");
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    attach("notes.txt");
+    typeIdea("Viết về báo cáo Q3");
+    attachFile("notes.txt");
     cy.get('[data-testid="attached-file-item"]', { timeout: 5000 }).should(
       "have.length",
       1,
@@ -775,63 +642,61 @@ describe("document-aware rewrite flow", () => {
     cy.get('[data-testid="rewrite-action-button"]').click();
     cy.wait("@uploadDoc");
     cy.wait("@decomposeDocuments");
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
-      "have.value",
-      "Brief dựa trên tài liệu",
-    );
-    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
+    cy.wait("@outlineRequest");
+    cy.get('[data-testid="prompt-input"]').should("have.value", "Brief dựa trên tài liệu");
 
-    // Flip the upload to fail before the next rewrite click so the
-    // re-preparation of the changed file set returns the localized
-    // preparation fallback. The previous rewrite must stay visible.
+    // Flip the upload to fail before the next click so the re-preparation
+    // of the changed file set returns the localized preparation fallback.
+    // Whatever the user already has must survive it.
     cy.then(() => {
       uploadShouldFail = true;
     });
-    attach("report.txt", "second file");
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("be.visible");
+    attachFile("report.txt", "second file");
     cy.get('[data-testid="rewrite-action-button"]').click();
 
-    cy.get('[data-testid="rewritten-prompt-error"]')
+    cy.get('[data-testid="rewrite-error"]')
       .should("be.visible")
       .and("contain.text", "chuẩn bị tài liệu");
-    cy.get('[data-testid="rewritten-prompt-output"]').should(
+    cy.get('[data-testid="prompt-input"]').should(
       "have.value",
       "Brief dựa trên tài liệu",
     );
-    cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
+    // Create is never blocked by a failed outline request.
+    cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
     cy.then(() => {
       expect(state.upload, "upload is retried for the new file set").to.equal(2);
       expect(state.decompose, "decompose never runs when upload fails").to.equal(1);
-      expect(state.rewrite, "rewrite does not run after preparation failure").to.equal(1);
+      expect(state.outline, "outline does not run after preparation failure").to.equal(1);
     });
   });
 });
 
 /**
- * Redesign 2026-09-16 — the upload composer was recomposed so prompt and
- * documents appear as inputs first, the rewritten prompt and its grounding
- * helper sit between them, and Create is an explicit visible text action
- * below the rewrite output. Tests pin the DOM order, the new helper copy,
- * the compact empty state, and the explicit Create label.
+ * Redesign 2026-09-28 — the composer is two boxes: the idea plus its AI
+ * outline action, then the outline itself, then attachments, then Create.
+ * Tests pin that DOM order, the attachment helper copy, and the explicit
+ * Create label.
  */
 describe("upload redesign composition", () => {
-  it("renders attachments before the Rewrite action and Create after the output", () => {
+  it("renders idea → outline → attachments → Create in that order", () => {
     mountUploadPage();
 
+    // The AI action sits on box 1's header, just above the field it seeds.
     const milestones = [
-      '[data-testid="attachments-uploader"]',
       '[data-testid="rewrite-action-button"]',
-      '[data-testid="rewritten-prompt"]',
+      '[data-testid="idea-input"]',
+      '[data-testid="prompt-input"]',
+      '[data-testid="attachments-uploader"]',
       '[data-testid="generate-presentation-button"]',
     ].join(", ");
 
     cy.get(milestones).then(($elements) => {
       const order = [...$elements].map((element) => element.dataset.testid);
       expect(order).to.deep.equal([
-        "attachments-uploader",
         "rewrite-action-button",
-        "rewritten-prompt",
+        "idea-input",
+        "prompt-input",
+        "attachments-uploader",
         "generate-presentation-button",
       ]);
     });
@@ -856,14 +721,7 @@ describe("upload redesign composition", () => {
 
   it("shows the document-aware helper when the flag is on and files are attached", () => {
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "report.pdf",
-        mimeType: "application/pdf",
-      },
-      { force: true },
-    );
+    attachFile("report.pdf", "supporting notes", "application/pdf");
     cy.get('[data-testid="attachments-helper"]').should(
       "contain.text",
       "AI sẽ dùng 1 tài liệu để tối ưu prompt",
@@ -872,88 +730,14 @@ describe("upload redesign composition", () => {
 
   it("shows the presentation-only helper when the flag is off and files are attached", () => {
     mountUploadPage({ documentAwareRewrite: false });
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "data.xlsx",
-        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      },
-      { force: true },
+    attachFile(
+      "data.xlsx",
+      "supporting notes",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
     cy.get('[data-testid="attachments-helper"]').should(
       "contain.text",
       "Tài liệu này sẽ được dùng khi tạo bài thuyết trình",
     );
-  });
-
-  it("renders the rewritten panel as a compact empty state before the first rewrite", () => {
-    mountUploadPage();
-    cy.get('[data-testid="rewritten-prompt"]')
-      .should("have.attr", "data-compact-empty", "true")
-      .and("not.contain.text", "AI-optimized prompt");
-    cy.get('[data-testid="rewritten-prompt"]').should(
-      "contain.text",
-      "Chưa có bản viết lại",
-    );
-  });
-
-  it("expands the panel once a fresh document-aware rewrite succeeds", () => {
-    cy.intercept("POST", "**/api/v1/ppt/files/upload", {
-      body: ["tmp-notes-0.txt"],
-    }).as("uploadDoc");
-    cy.intercept("POST", "**/api/v1/ppt/files/decompose", {
-      body: [{ name: "notes.txt", file_path: "tmp-notes-0.txt" }],
-    }).as("decomposeDocuments");
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
-      body: { rewritten_prompt: "Brief dựa trên tài liệu" },
-    }).as("rewritePrompt");
-    mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "notes.txt",
-        mimeType: "text/plain",
-      },
-      { force: true },
-    );
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt"]').should(
-      "not.have.attr",
-      "data-compact-empty",
-    );
-    cy.get('[data-testid="rewritten-prompt-grounded-helper"]').should(
-      "contain.text",
-      "Đã tối ưu từ ý tưởng và 1 tài liệu",
-    );
-  });
-
-  it("hides the grounded helper while the stored rewrite is stale", () => {
-    cy.intercept("POST", "**/api/v1/ppt/files/upload", {
-      body: ["tmp-notes-0.txt"],
-    }).as("uploadDoc");
-    cy.intercept("POST", "**/api/v1/ppt/files/decompose", {
-      body: [{ name: "notes.txt", file_path: "tmp-notes-0.txt" }],
-    }).as("decomposeDocuments");
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
-      body: { rewritten_prompt: "Brief dựa trên tài liệu" },
-    }).as("rewritePrompt");
-    mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="prompt-input"]').type("Viết về báo cáo Q3");
-    cy.get('[data-testid="file-upload-input"]').selectFile(
-      {
-        contents: Cypress.Buffer.from("supporting notes"),
-        fileName: "notes.txt",
-        mimeType: "text/plain",
-      },
-      { force: true },
-    );
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
-    cy.get('[data-testid="rewritten-prompt-grounded-helper"]').should("exist");
-    cy.get('[data-testid="prompt-input"]').clear();
-    cy.get('[data-testid="rewritten-prompt-stale-badge"]').should("be.visible");
-    cy.get('[data-testid="rewritten-prompt-grounded-helper"]').should("not.exist");
   });
 });

@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useContext, useEffect, type ChangeEvent, type DragEvent, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, type ChangeEvent, type DragEvent } from "react";
 import { File, Paperclip, X } from "lucide-react";
 
 import { notify } from "@/components/ui/sonner";
 import { useT } from "@/i18n/provider";
-import { PromptComposerBoundaryContext } from "./PromptInput";
+import { PromptComposerBoundaryContext } from "./PromptComposerBoundary";
 import { exceedsPresentationUploadLimit } from "../services/document-preparation";
 import {
   isAllowedDocumentName,
@@ -38,8 +38,6 @@ interface SupportingDocProps {
    * has no files or no flag context.
    */
   usageMode?: SupportingDocUsageMode;
-  /** Composer action rendered on the bottom-right of the attachment row. */
-  action?: ReactNode;
 }
 
 const MAX_SUPPORTED_FILES = 8;
@@ -51,7 +49,6 @@ export default function SupportingDoc({
   disabled = false,
   multiple = true,
   usageMode = "none",
-  action,
 }: SupportingDocProps) {
   const t = useT();
   const boundaryRef = useContext(PromptComposerBoundaryContext);
@@ -203,7 +200,6 @@ export default function SupportingDoc({
             data-testid="file-upload-input"
           />
         </label>
-        {action}
       </div>
     </section>
   );

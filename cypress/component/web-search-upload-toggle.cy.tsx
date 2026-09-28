@@ -128,9 +128,6 @@ describe("per-presentation web search toggle", () => {
   });
 
   it("sends web_search true on create by default", () => {
-    cy.intercept("POST", "**/api/v1/ppt/prompt/rewrite", {
-      body: { rewritten_prompt: "Bản tối ưu có web search" },
-    }).as("rewritePrompt");
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
       expect(request.body.web_search).to.equal(true);
       request.reply({ body: { id: "presentation-web-search" } });
@@ -144,8 +141,6 @@ describe("per-presentation web search toggle", () => {
       "true",
     );
     cy.get('[data-testid="prompt-input"]').type("AI trong giáo dục");
-    cy.get('[data-testid="rewrite-action-button"]').click();
-    cy.wait("@rewritePrompt");
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@createPresentation");
   });
