@@ -14,12 +14,19 @@ import {
   fitTextToBox,
   floorFontPx,
   floorScale,
+  hasWideGlyphs,
+  isSingleLineBox,
   layoutFitTextRuns,
   measureTextByUnits,
+  singleLineMinScale,
   textUnits,
   verticalGlyphClipBounds,
   visualCapacityUnits,
 } from "../components/slide-editor/text/template-v2-text-fit.mjs";
+import {
+  canvasFontCss,
+  normalizeCanvasFontSpec,
+} from "../components/slide-editor/text/template-v2-text-font.mjs";
 
 const wideCharMeasure = (text, font) => {
   const size = font.size ?? 18;
@@ -379,6 +386,116 @@ test("text-list continuation lines indent by marker width", () => {
 });
 
 const read = (relative) => readFile(path.resolve(relative), "utf8");
+
+test("canvas font spec strips a style suffix and reports its weight", () => {
+  assert.deepEqual(
+    normalizeCanvasFontSpec({ family: "Montserrat Medium", bold: false }),
+    { family: "Montserrat", weight: 500, sourceFamily: "Montserrat Medium" },
+  );
+  assert.deepEqual(
+    normalizeCanvasFontSpec({ family: "Roboto Medium", bold: false }),
+    { family: "Roboto", weight: 500, sourceFamily: "Roboto Medium" },
+  );
+  assert.deepEqual(
+    normalizeCanvasFontSpec({ family: "Inter SemiBold", bold: false }),
+    { family: "Inter", weight: 600, sourceFamily: "Inter SemiBold" },
+  );
+  assert.equal(
+    normalizeCanvasFontSpec({ family: "Montserrat Medium", bold: true })
+      .weight,
+    700,
+  );
+  assert.equal(
+    normalizeCanvasFontSpec({ family: "Montserrat", bold: false }).weight,
+    400,
+  );
+  assert.equal(
+    canvasFontCss({ family: "Montserrat Medium", size: 64, bold: false }),
+    '500 64px "Montserrat", "Montserrat Medium", Helvetica, Arial, sans-serif',
+  );
+  assert.equal(
+    canvasFontCss({ family: "Montserrat", size: 64, bold: true, italic: true }),
+    'italic 700 64px "Montserrat", Helvetica, Arial, sans-serif',
+  );
+});
+
+test("a designed one-line box is distinguished from a multi-line paragraph box", () => {
+  // primary_title in title_stepped_cards_1046: 64px/1.25 in a 79.47px box.
+  assert.equal(isSingleLineBox({ width: 786.86, height: 79.47 }, 64), true);
+  // supporting_statement in the same layout: 21.33px/1.5 in a 62.27px box.
+  assert.equal(isSingleLineBox({ width: 791.37, height: 62.27 }, 21.33), false);
+  assert.equal(isSingleLineBox({ width: 400, height: 120 }, 18), false);
+  assert.equal(isSingleLineBox({ width: 400, height: 0 }, 18), false);
+  assert.equal(singleLineMinScale(64) < floorScale(64), true);
+  assert.equal(singleLineMinScale(64) >= 0.55, true);
+});
+
+test("wide glyphs take a wider paint safety margin than latin copy", () => {
+  assert.equal(hasWideGlyphs("AI in daily life"), false);
+  assert.equal(hasWideGlyphs("AI trong Đời sống hàng ngày"), true);
+});
+
+test("a long Vietnamese title stays on one line instead of overlapping the box below", () => {
+  const titleFont = {
+    family: "Montserrat Medium",
+    size: 64,
+    bold: true,
+    italic: false,
+    underline: false,
+    lineHeight: 1.25,
+    letterSpacing: -0.64,
+  };
+  const box = { width: 786.86, height: 79.47 };
+  const result = fitTextToBox(
+    [{ text: "AI trong Đời sống hàng ngày", font: titleFont }],
+    box,
+    { measure: measureTextByUnits },
+  );
+
+  assert.equal(result.ellipsis, false);
+  assert.equal(result.lines.length, 1);
+  assert.equal(
+    result.lines[0].map((segment) => segment.text).join(""),
+    "AI trong Đời sống hàng ngày",
+  );
+  assert.ok(result.fontScale < 1);
+  assert.ok(result.fontScale + 1e-9 >= singleLineMinScale(64));
+  const width = result.lines[0].reduce((sum, segment) => sum + segment.width, 0);
+  assert.ok(width <= box.width + 0.5);
+  assert.ok(result.height <= box.height + 0.5);
+});
+
+test("a one-line box never spends its second line even when shrinking deep", () => {
+  const titleFont = { ...font, size: 64, lineHeight: 1.25 };
+  const box = { width: 300, height: 80 };
+  const result = fitTextToBox(
+    [{ text: "AI trong Đời sống hàng ngày", font: titleFont }],
+    box,
+    { measure: wideCharMeasure },
+  );
+
+  assert.equal(result.lines.length, 1);
+  const width = result.lines[0].reduce((sum, segment) => sum + segment.width, 0);
+  assert.ok(width <= box.width + 0.5);
+});
+
+test("a multi-line paragraph box still wraps to a second line", () => {
+  const bodyFont = { family: "Montserrat", size: 21.33, lineHeight: 1.5 };
+  const box = { width: 791.37, height: 62.27 };
+  const result = fitTextToBox(
+    [
+      {
+        text: "Trí tuệ nhân tạo hiện diện trong mọi ngóc ngách của cuộc sống, giúp tối ưu hóa công việc và nâng cao chất lượng trải nghiệm.",
+        font: bodyFont,
+      },
+    ],
+    box,
+    { measure: wideCharMeasure },
+  );
+
+  assert.equal(result.lines.length, 2);
+  assert.ok(result.height <= box.height + 0.5);
+});
 
 test("html text lists keep overflow hidden", async () => {
   const source = await read("lib/template-v2-json-to-html.ts");

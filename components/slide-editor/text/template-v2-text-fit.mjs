@@ -11,6 +11,11 @@ export const TITLE_SIZE_THRESHOLD = 24;
 export const ELLIPSIS = "…";
 export const FIT_SCALE_EPSILON = 0.001;
 export const PAINT_SAFETY = 1.1;
+export const UNICODE_PAINT_SAFETY = 1.14;
+export const DESIGN_LINE_HEIGHT = 1.25;
+export const SINGLE_LINE_TOLERANCE = 1.6;
+export const SINGLE_LINE_MIN_SCALE = 0.55;
+export const SINGLE_LINE_FLOOR_RATIO = 0.85;
 
 export function verticalGlyphClipBounds(lines, boxHeight) {
   const largestFont = Math.max(
@@ -282,7 +287,12 @@ function ellipsizeLine(line, maxWidth, measure) {
   return copy;
 }
 
-function applyEllipsis(lines, box, measure) {
+function applyEllipsis(lines, box, measure, singleLine = false) {
+  if (singleLine) {
+    if (!lines[0]?.length) return [];
+    const single = ellipsizeLine(lines[0], box.width, measure);
+    return single.length ? [single] : [];
+  }
   const kept = [];
   let y = 0;
   for (const line of lines) {
@@ -315,14 +325,50 @@ function designedSizeOf(runs) {
   return sizes.length ? Math.max(...sizes) : 18;
 }
 
-function paintSafeBox(box) {
+export function runsTextContent(runs) {
+  return (runs ?? [])
+    .map((run) => (run?.type === "latex" ? String(run.text ?? "") : String(run?.text ?? "")))
+    .join("");
+}
+
+/**
+ * True when the designed box only has room for a single line of its own font
+ * size. Such a box must never grow a second line: template V2 positions every
+ * element absolutely, so a second line paints straight over the element below.
+ */
+export function isSingleLineBox(box, designedFontSize, lineHeight = DESIGN_LINE_HEIGHT) {
+  const height = Number(box?.height);
+  if (!Number.isFinite(height) || height <= 0) return false;
+  const size = Number(designedFontSize) > 0 ? designedFontSize : 18;
+  const leading = Number(lineHeight) > 0 ? lineHeight : DESIGN_LINE_HEIGHT;
+  return height < size * leading * SINGLE_LINE_TOLERANCE;
+}
+
+export function singleLineMinScale(designedSize) {
+  return Math.max(
+    SINGLE_LINE_MIN_SCALE,
+    floorScale(designedSize) * SINGLE_LINE_FLOOR_RATIO,
+  );
+}
+
+export function hasWideGlyphs(text) {
+  return /[^\x00-\x7F]/u.test(String(text ?? ""));
+}
+
+function paintSafeBox(box, text = "") {
+  const safety = hasWideGlyphs(text) ? UNICODE_PAINT_SAFETY : PAINT_SAFETY;
   return {
-    width: box.width / PAINT_SAFETY,
+    width: box.width / safety,
     height: box.height,
   };
 }
 
-function searchFitScale(layoutAt, box, minScale) {
+function layoutFitsSingleLine(lines, box) {
+  if (lines.length > 1) return false;
+  return layoutFits(lines, box);
+}
+
+function searchFitScale(layoutAt, box, minScale, fits = layoutFits) {
   let low = minScale;
   let high = 1;
   let bestScale = minScale;
@@ -330,7 +376,7 @@ function searchFitScale(layoutAt, box, minScale) {
   while (high - low > FIT_SCALE_EPSILON) {
     const mid = (low + high) / 2;
     const probe = layoutAt(mid);
-    if (layoutFits(probe, box)) {
+    if (fits(probe, box)) {
       bestScale = mid;
       bestLines = probe;
       low = mid;
@@ -341,28 +387,51 @@ function searchFitScale(layoutAt, box, minScale) {
   return { bestScale, bestLines };
 }
 
-function finishOverflowFit(layoutAt, box, measure, minScale) {
+function finishOverflowFit(layoutAt, box, measure, minScale, singleLine = false) {
+  const fits = singleLine ? layoutFitsSingleLine : layoutFits;
   const wordFit = searchFitScale(
     (scale) => layoutAt(scale, false),
     box,
     minScale,
+    fits,
   );
-  if (layoutFits(wordFit.bestLines, box)) {
+  if (fits(wordFit.bestLines, box)) {
     return { ...wordFit, ellipsis: false };
   }
   const splitFit = searchFitScale(
     (scale) => layoutAt(scale, true),
     box,
     minScale,
+    fits,
   );
-  if (layoutFits(splitFit.bestLines, box)) {
+  if (fits(splitFit.bestLines, box)) {
     return { ...splitFit, ellipsis: false };
   }
   return {
     bestScale: minScale,
-    bestLines: applyEllipsis(splitFit.bestLines, box, measure),
+    bestLines: applyEllipsis(splitFit.bestLines, box, measure, singleLine),
     ellipsis: true,
   };
+}
+
+/**
+ * A designed single-line box must never gain a second line, because template V2
+ * positions the next element right below it and the overflow paints on top of
+ * it. Try the normal shrink floor first so copy keeps its designed size, and
+ * only allow the deeper single-line floor when the second line is the only
+ * reason the fit fails.
+ */
+function fitSingleLineOverflow(layoutAt, box, measure, designedSize) {
+  const standard = floorScale(designedSize);
+  const deep = singleLineMinScale(designedSize);
+  const floors = deep < standard ? [standard, deep] : [standard];
+  let fallback = null;
+  for (const minScale of floors) {
+    const fitted = finishOverflowFit(layoutAt, box, measure, minScale, true);
+    if (!fitted.ellipsis) return fitted;
+    if (!fallback) fallback = fitted;
+  }
+  return fallback;
 }
 
 export function fitTextToBox(runs, box, options = {}) {
@@ -371,7 +440,7 @@ export function fitTextToBox(runs, box, options = {}) {
   if (source.length === 0 || !(box?.width > 0) || !(box?.height > 0)) {
     return { runs: source, fontScale: 1, lines: [], ellipsis: false, height: 0 };
   }
-  const fitBox = paintSafeBox(box);
+  const fitBox = paintSafeBox(box, runsTextContent(source));
   const layout = (scale, allowCharSplit) =>
     layoutFitTextRuns(scaleFitRuns(source, scale), fitBox.width, measure, {
       allowCharSplit,
@@ -380,8 +449,10 @@ export function fitTextToBox(runs, box, options = {}) {
   if (layoutFits(lines, fitBox)) {
     return { runs: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
   }
-  const minScale = floorScale(designedSizeOf(source));
-  const fitted = finishOverflowFit(layout, fitBox, measure, minScale);
+  const designedSize = designedSizeOf(source);
+  const fitted = isSingleLineBox(box, designedSize)
+    ? fitSingleLineOverflow(layout, fitBox, measure, designedSize)
+    : finishOverflowFit(layout, fitBox, measure, floorScale(designedSize));
   return {
     runs: scaleFitRuns(source, fitted.bestScale),
     fontScale: fitted.bestScale,
@@ -397,7 +468,12 @@ export function fitTextListToBox(items, box, options = {}) {
   if (source.length === 0 || !(box?.width > 0) || !(box?.height > 0)) {
     return { items: source, fontScale: 1, lines: [], ellipsis: false, height: 0 };
   }
-  const fitBox = paintSafeBox(box);
+  const fitBox = paintSafeBox(
+    box,
+    source
+      .map((item) => `${item.marker ?? ""}${runsTextContent(item.runs)}`)
+      .join(""),
+  );
   const asRuns = (scale, allowCharSplit = true) => {
     const lines = [];
     for (const item of source) {

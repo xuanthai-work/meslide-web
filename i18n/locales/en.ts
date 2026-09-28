@@ -121,6 +121,8 @@ const en = {
       },
       unsupportedTitle: "Unsupported in this version of Presenton",
       previewUnavailable: "Preview unavailable",
+      present: "Quick present",
+      presentAria: "Quick present this deck",
       deleted: {
         title: "Presentation deleted",
         description: "The presentation was removed from your dashboard.",
