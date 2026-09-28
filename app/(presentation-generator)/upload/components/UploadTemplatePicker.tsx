@@ -62,6 +62,15 @@ export function UploadTemplatePicker({
     setActiveIndex((index + templates.length) % templates.length);
   };
 
+  // Hovering and arrowing only browse the preview; clicking picks the template,
+  // so the selected border follows the click before "use this template".
+  const selectAt = (index: number) => {
+    const target = templates[index];
+    if (!target) return;
+    goTo(index);
+    if (target.id !== selectedTemplateId) onSelectionChange(target.id);
+  };
+
   const chooseActive = () => {
     const active = templates[activeIndex];
     if (!active) return;
@@ -166,21 +175,33 @@ export function UploadTemplatePicker({
                 <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2 md:max-h-[420px] md:flex-col md:overflow-x-hidden md:overflow-y-auto md:pr-1" role="group" aria-label={t("upload.template.railAria")}>
                   {templates.map((template, index) => {
                     const copy = templateCardCopy(template, locale);
+                    const isSelected = selectedTemplateId === template.id;
+                    const isPreviewing = activeIndex === index;
                     return (
                       <button
                         key={template.id}
                         type="button"
                         data-testid={`template-rail-item-${template.id}`}
-                        aria-pressed={activeIndex === index}
+                        data-selected={isSelected || undefined}
+                        aria-pressed={isPreviewing}
                         aria-label={t("upload.template.previewAria", { name: copy.name })}
                         onMouseEnter={() => goTo(index)}
                         onFocus={() => goTo(index)}
-                        onClick={() => goTo(index)}
-                        className={cn("flex w-40 shrink-0 items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] md:w-full", activeIndex === index ? "border-[#1D6FE8] bg-[#EFF4FF]" : "border-transparent hover:border-[#EDEEF4] hover:bg-[#F6F8FB]")}
+                        onClick={() => selectAt(index)}
+                        className={cn(
+                          "flex w-40 shrink-0 items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-[border-color,background-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] md:w-full",
+                          // The chosen template keeps a thick brand border while you
+                          // browse, so hovering a neighbour never looks like a change.
+                          isSelected
+                            ? "border-[#1D6FE8] bg-[#EFF4FF] shadow-[0_0_0_2px_rgba(29,111,232,0.28)]"
+                            : isPreviewing
+                              ? "border-[#DADDE6] bg-[#F6F8FB]"
+                              : "border-transparent hover:border-[#DADDE6] hover:bg-[#F6F8FB]",
+                        )}
                       >
                         <span className="block aspect-video w-[54px] shrink-0 overflow-hidden rounded border border-[#EDEEF4] bg-white"><TemplateThumbnailPreview thumbnail={template.thumbnail} templateName={copy.name} /></span>
                         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[#101323]">{copy.name}</span>
-                        {isConfirmed && selectedTemplateId === template.id && <Check aria-hidden="true" size={15} className="hidden shrink-0 text-[#1D6FE8] md:block" />}
+                        {isConfirmed && isSelected && <Check aria-hidden="true" size={15} className="hidden shrink-0 text-[#1D6FE8] md:block" />}
                       </button>
                     );
                   })}
