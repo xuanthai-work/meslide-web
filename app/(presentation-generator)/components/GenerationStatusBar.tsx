@@ -83,7 +83,6 @@ const GenerationStatusBar: React.FC<Props> = ({
   statusMessage,
   draftCount,
   totalCount,
-  canKeepWaiting = false,
   onCancel,
   onKeepWaiting,
   onRetry,
@@ -178,18 +177,14 @@ const GenerationStatusBar: React.FC<Props> = ({
           );
           break;
         case "stalled": {
-          const description =
-            statusMessage || t("presentation.status.noContent");
-          const actions: ActionKey[] = ["retry", "stop"];
-          if (canKeepWaiting) {
-            actions.unshift("keepWaiting");
-          }
-          notify.warning(
-            t("common.generation.takingLonger"),
+          // Auto-retry is handled by the stream hook. Keep the loading UI
+          // visible and never show action buttons (keep waiting / retry / stop).
+          notify.loading(
+            statusMessage || t("presentation.status.creating"),
             undefined,
             publishOptions({
-              description,
-              action: toastActions(actions),
+              description: undefined,
+              action: undefined,
             }),
           );
           break;
@@ -247,7 +242,6 @@ const GenerationStatusBar: React.FC<Props> = ({
     surface,
     draftCount,
     totalCount,
-    canKeepWaiting,
   ]);
 
   useEffect(

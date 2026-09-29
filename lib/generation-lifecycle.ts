@@ -25,9 +25,9 @@ export function silentRetryDelayMs(retryCount: number): number {
 }
 
 export function shouldSilentRetry(args: {
-  retryCount: number; hasUsefulEvent: boolean; closed: boolean;
+  retryCount: number; hasUsefulEvent?: boolean; closed: boolean;
 }): boolean {
-  if (args.closed || args.hasUsefulEvent) return false;
+  if (args.closed) return false;
   return args.retryCount < MAX_SILENT_RETRIES;
 }
 

@@ -229,7 +229,7 @@ describe("generation status controller toast", () => {
     cy.get("@cancel").should("have.been.calledOnce");
   });
 
-  it("shows recovery actions without a dismiss button", () => {
+  it("keeps the loading toast without recovery actions while stalled", () => {
     const onCancel = cy.stub().as("cancel");
     const onRetry = cy.stub().as("retry");
     const onKeepWaiting = cy.stub().as("keepWaiting");
@@ -247,17 +247,12 @@ describe("generation status controller toast", () => {
     cy.get('[data-testid="generation-status-toast"] [data-close-button]')
       .should("not.exist");
     cy.get('[data-testid="generation-status-toast"]')
-      .contains("button", "Tiếp tục chờ")
-      .click();
-    cy.get('[data-testid="generation-status-toast"]')
-      .contains("button", "Thử lại")
-      .click();
-    cy.get('[data-testid="generation-status-toast"]')
-      .contains("button", "Dừng")
-      .click();
-    cy.get("@keepWaiting").should("have.been.calledOnce");
-    cy.get("@retry").should("have.been.calledOnce");
-    cy.get("@cancel").should("have.been.calledOnce");
+      .should("contain", "Đang soạn dàn ý bài thuyết trình");
+    cy.get('[data-testid="generation-status-toast"] .generation-toast-actions')
+      .should("not.exist");
+    cy.get("@keepWaiting").should("not.have.been.called");
+    cy.get("@retry").should("not.have.been.called");
+    cy.get("@cancel").should("not.have.been.called");
   });
 
   it("dismisses the operational toast when generation completes", () => {
@@ -319,7 +314,7 @@ describe("generation status controller toast", () => {
   it("clears stale description and action buttons when lifecycle changes", () => {
     function LifecycleHarness() {
       const [lifecycle, setLifecycle] =
-        useState<GenerationLifecycleState>("stalled");
+        useState<GenerationLifecycleState>("failed");
       const [message, setMessage] = useState(
         "Chi tiết trì hoãn từ backend",
       );
@@ -391,7 +386,7 @@ describe("generation status stream failure integration", () => {
     notify.dismiss();
   });
 
-  it("shows one operational error toast when the presentation stream fails", () => {
+  it("keeps the presentation stream retrying when the backend reports an error", () => {
     resetStreamFailureHarness();
     cy.window().then((win) => {
       win.EventSource = FakeEventSource as unknown as typeof EventSource;
@@ -411,11 +406,14 @@ describe("generation status stream failure integration", () => {
 
     cy.get('[data-testid="generation-status-toast"]')
       .should("have.length", 1)
-      .and("contain", "Provider generation failed");
+      .and("contain", "Đang kết nối lại luồng tạo bài thuyết trình");
     cy.get('[data-sonner-toast]').should("have.length", 1);
+    cy.wrap(null).should(() => {
+      expect(FakeEventSource.instances[0].closed).to.equal(true);
+    });
   });
 
-  it("keeps one error toast visible on PresentationPage after stream failure", () => {
+  it("keeps a single loading toast on PresentationPage after a backend error", () => {
     resetStreamFailureHarness();
     cy.window().then((win) => {
       win.EventSource = FakeEventSource as unknown as typeof EventSource;
@@ -433,10 +431,9 @@ describe("generation status stream failure integration", () => {
       });
     });
 
-    cy.get('[role="alert"]').should("exist");
     cy.get('[data-testid="generation-status-toast"]')
       .should("have.length", 1)
-      .and("contain", "Provider generation failed");
+      .and("contain", "Đang kết nối lại luồng tạo bài thuyết trình");
     cy.get('[data-sonner-toast]').should("have.length", 1);
   });
 
