@@ -716,7 +716,7 @@ function makeImageElement({
     position: { x, y },
     size: { width, height },
     data: DEFAULT_IMAGE_PLACEHOLDER_SRC,
-    fit: "cover",
+    fit: "contain",
     decorative: false,
     name,
     is_icon: false,

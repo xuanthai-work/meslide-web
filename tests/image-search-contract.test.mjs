@@ -47,11 +47,12 @@ test("generation payloads still send the existing web_search boolean", async () 
   );
 
   // The toggle stays a boolean on the existing field; no provider string or
-  // new field is introduced for image search.
+  // new field is introduced for image search. Create now runs a single
+  // request, so the boolean is sent exactly once.
   assert.match(uploadPage, /web_search:\s*!!generationConfig\.webSearch/g);
   assert.equal(
     (uploadPage.match(/web_search:\s*!!generationConfig\.webSearch/g) ?? []).length,
-    2,
+    1,
   );
   assert.match(
     documentsPreview,

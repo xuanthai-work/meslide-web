@@ -417,6 +417,19 @@ const en = {
       generatingOutline: "Generating presentation outline...",
       preparingOutline: "Preparing outline generation...",
     },
+    preparingModal: {
+      title: "Preparing your presentation...",
+      subtitle: "This can take 1-2 minutes, so feel free to make a cup of coffee while we work our magic.",
+      stepAnalyzeWithDocs: "Processing documents and analyzing requirements",
+      stepAnalyze: "Analyzing topic and requirements",
+      stepSearch: "Searching and gathering information",
+      stepOutline: "Drafting presentation outline",
+      stepPrepare: "Preparing slide layouts and structure",
+      cancel: "Cancel",
+      retry: "Retry",
+      failedTitle: "Generation failed",
+      failedDescription: "Could not complete outline generation. Please try again.",
+    },
     create: {
       // Redesign 2026-09-16: explicit, unambiguous text action that replaces
       // the previous icon-only button. The visible label never depends on a

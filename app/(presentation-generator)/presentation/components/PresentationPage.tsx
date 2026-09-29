@@ -47,6 +47,10 @@ import PresentationHeader from "./PresentationHeader";
 import PresentationActions from "./PresentationActions";
 import GenerationStatusBar from "../../components/GenerationStatusBar";
 import {
+  PresentationPreparingModal,
+  computePreparingStep,
+} from "../../components/PresentationPreparingModal";
+import {
   TEMPLATE_V2_ACTIVATE_SURFACE_EVENT,
   TEMPLATE_V2_SURFACE_SELECTED_EVENT,
   type TemplateV2ActivateSurfaceDetail,
@@ -731,12 +735,35 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     return () => window.cancelAnimationFrame(frame);
   }, [isPresentMode, isTemplateV2Presentation, selectedSlide]);
 
-  const generationStatusToast = (
+  const preparingModal = autoGenerate ? (
+    <PresentationPreparingModal
+      isOpen={autoGenerate}
+      currentStep={computePreparingStep({
+        isCreating: false,
+        phase: automaticGenerationControls.phase,
+        statusCode: automaticGenerationControls.statusCode,
+      })}
+      hasAttachedDocs={false}
+      onCancel={() => void automaticGenerationControls.cancel()}
+      error={
+        automaticGenerationControls.lifecycle === "failed"
+          ? automaticGenerationControls.statusMessage
+          : null
+      }
+      onRetry={automaticGenerationControls.retry}
+    />
+  ) : null;
+
+  if (autoGenerate) {
+    return preparingModal;
+  }
+
+  const generationStatusToast = autoGenerate ? null : (
     <GenerationStatusBar
-      surface={autoGenerate ? "outline" : "presentation"}
+      surface="presentation"
       lifecycle={generationLifecycle}
       statusMessage={generationStatusMessage}
-      draftCount={autoGenerate ? 0 : generationDraftCount}
+      draftCount={generationDraftCount}
       totalCount={streamTotalCount}
       onCancel={generationCancel}
       onKeepWaiting={generationKeepWaiting}
@@ -993,6 +1020,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
 
   return (
     <>
+      {preparingModal}
       {generationStatusToast}
       {pageContent}
     </>

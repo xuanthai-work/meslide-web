@@ -319,11 +319,11 @@ const vi = {
     outline: {
       ideaLabel: "Soạn với AI",
       ideaPlaceholder:
-        "Nhập ý tưởng, chủ đề hoặc yêu cầu đặc biệt cho AI (VD: Bài thuyết trình kỹ thuật cho dev iOS, nhấn mạnh vào pipeline, không giải thích khái niệm cơ bản)...",
+        "Nhập ý tưởng, chủ đề cho AI...",
       optionalPill: "Tùy chọn",
       contentLabel: "Dàn ý hoặc nội dung chi tiết bài thuyết trình",
       contentPlaceholder:
-        "Dán toàn bộ dàn ý, file Markdown hoặc báo cáo chi tiết vào đây (VD: ## Slide 1: Tiêu đề... ## Slide 2: Nội dung...)...",
+        "Dán bộ dàn ý hoặc báo cáo chi tiết ...",
       action: "Viết lại",
       successTitle: "Đã tạo dàn ý từ AI",
       successDescription:
@@ -417,6 +417,19 @@ const vi = {
       largeDocumentsHint: "Tài liệu lớn có thể mất vài phút để xử lý.",
       generatingOutline: "Đang tạo dàn ý bài thuyết trình...",
       preparingOutline: "Đang chuẩn bị tạo dàn ý...",
+    },
+    preparingModal: {
+      title: "Đang chuẩn bị bài thuyết trình...",
+      subtitle: "Quá trình này có thể mất 1-2 phút, bạn có thể thư giãn trong khi chúng tôi chuẩn bị nội dung.",
+      stepAnalyzeWithDocs: "Xử lý tài liệu và phân tích yêu cầu",
+      stepAnalyze: "Phân tích chủ đề và yêu cầu",
+      stepSearch: "Tìm kiếm và tổng hợp thông tin",
+      stepOutline: "Soạn thảo dàn ý bài thuyết trình",
+      stepPrepare: "Chuẩn bị bố cục và dữ liệu slide",
+      cancel: "Hủy",
+      retry: "Thử lại",
+      failedTitle: "Chuẩn bị bài thuyết trình thất bại",
+      failedDescription: "Không thể hoàn tất tạo dàn ý. Vui lòng thử lại.",
     },
     create: {
       // Redesign 2026-09-16: explicit, unambiguous text action that replaces

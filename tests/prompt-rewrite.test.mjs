@@ -280,7 +280,7 @@ test("rewritePrompt rejects a response without rewritten_prompt", async () => {
 test("UploadPage orchestrates outline generation with abort and request-ID guards", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
   const handlerStart = page.indexOf("const handleGenerateOutline");
-  const handlerEnd = page.indexOf("const getGenerationDestination");
+  const handlerEnd = page.indexOf("const validateConfiguration");
   assert.ok(handlerStart !== -1, "handleGenerateOutline is missing");
   const handler = page.slice(handlerStart, handlerEnd);
 
@@ -372,17 +372,14 @@ test("UploadPage snapshots the outline for generation and never requires a rewri
   const page = await read(UPLOAD_PAGE_PATH);
   const validationStart = page.indexOf("const validateConfiguration");
   const generationStart = page.indexOf("const handleGeneratePresentation");
-  const documentStart = page.indexOf("const handleDocumentProcessing");
-  const directStart = page.indexOf("const handleDirectPresentationGeneration");
-  const errorStart = page.indexOf("const handleGenerationError");
+  const retryStart = page.indexOf("const handleRetryPreparing");
 
   assert.ok(validationStart !== -1, "validateConfiguration is missing");
   assert.ok(generationStart !== -1, "handleGeneratePresentation is missing");
+  assert.ok(retryStart !== -1, "handleRetryPreparing is missing");
 
   const validation = page.slice(validationStart, generationStart);
-  const generation = page.slice(generationStart, documentStart);
-  const documentGeneration = page.slice(documentStart, directStart);
-  const directGeneration = page.slice(directStart, errorStart);
+  const generation = page.slice(generationStart, retryStart);
 
   // The mandatory-rewrite gate is gone: validation only requires a language
   // and something to build the presentation from.
@@ -393,23 +390,28 @@ test("UploadPage snapshots the outline for generation and never requires a rewri
     generation,
     /const generationConfig: PresentationConfig = \{[\s\S]*prompt: sourcePrompt,/,
   );
-  assert.match(generation, /handleDocumentProcessing\(generationConfig, templateId\)/);
-  assert.match(generation, /handleDirectPresentationGeneration\(generationConfig, templateId\)/);
   assert.match(generation, /resolveTemplateForCreate\(/);
 
   // Selected documents are always prepared for generation. The rollout flag
   // gates outline grounding only and must never remove Create file paths.
   assert.match(
-    documentGeneration,
-    /const prepared = await ensureDocumentsPrepared\(\s*preparationController\.signal,?\s*\)/,
+    generation,
+    /preparedDocuments = await ensureDocumentsPrepared\(controller\.signal\)/,
   );
-  assert.doesNotMatch(documentGeneration, /documentAwareRewrite/);
+  assert.match(generation, /documentPathsOf\(preparedDocuments\)/);
+  assert.doesNotMatch(generation, /documentAwareRewrite/);
 
-  for (const branch of [documentGeneration, directGeneration]) {
-    assert.match(branch, /content: generationConfig\.prompt/);
-    assert.match(branch, /config: generationConfig/);
-    assert.doesNotMatch(branch, /content: config\??\.prompt/);
-  }
+  // A single Create request submits the snapshot verbatim, then hands the
+  // presentation to the in-place outline hook instead of navigating away.
+  assert.equal(
+    generation.match(/content: generationConfig\.prompt/g)?.length,
+    1,
+  );
+  assert.match(generation, /config: generationConfig/);
+  assert.doesNotMatch(generation, /content: config\??\.prompt/);
+  assert.match(generation, /setActivePresentationId\(createResponse\.id\)/);
+  assert.match(generation, /setActiveTemplateId\(templateId\)/);
+  assert.doesNotMatch(generation, /router\.(?:push|replace)\(/);
 });
 
 test("Create eligibility never requires an AI rewrite and does not block attachments", async () => {
@@ -476,8 +478,8 @@ test("an outline that numbers its own slides reports that count to the user", as
   // outline to defer to.
   assert.equal(
     page.match(/n_slides: parseLimitedSlideCount\(generationConfig\.slides\),/g)?.length,
-    2,
-    "both generation branches submit the configured slide count",
+    1,
+    "the single Create request submits the configured slide count",
   );
   assert.match(page, /nSlides: parseLimitedSlideCount\(config\.slides\),/);
 });
@@ -534,7 +536,7 @@ test("outline progress surfaces preparation phases accessibly", async () => {
     read("i18n/locales/en.ts"),
   ]);
   const handlerStart = page.indexOf("const handleGenerateOutline");
-  const handlerEnd = page.indexOf("const getGenerationDestination");
+  const handlerEnd = page.indexOf("const validateConfiguration");
   const handler = page.slice(handlerStart, handlerEnd);
 
   // Explicit phase state covering the three preparation phases.
@@ -573,9 +575,12 @@ test("outline progress surfaces preparation phases accessibly", async () => {
     assert.match(catalog, /reading: "/);
   }
 
-  // Duplicate submissions are prevented while an outline request or a
-  // Create is active.
-  assert.match(page, /if \(createInFlightRef\.current \|\| isRewriting \|\| loadingState\.isLoading \|\| !templateReady\) return;/);
+  // Duplicate submissions are prevented while an outline request, the
+  // preparing modal, or a Create is active.
+  assert.match(
+    page,
+    /if \(\s*createInFlightRef\.current \|\|\s*isRewriting \|\|\s*loadingState\.isLoading \|\|\s*isPreparingModalOpen \|\|\s*!templateReady\s*\)\s*return;/,
+  );
 
   // Aborting an in-flight request clears the phase along with the flag.
   const filesHandlerStart = page.indexOf("const handleFilesChange");
@@ -613,7 +618,7 @@ test("document-aware outline generation is gated behind a feature flag defaultin
   // The handler must not call ensureDocumentsPrepared when the flag is off
   // AND files are attached; the prompt-only path stays as the API contract.
   const handlerStart = page.indexOf("const handleGenerateOutline");
-  const handlerEnd = page.indexOf("const getGenerationDestination");
+  const handlerEnd = page.indexOf("const validateConfiguration");
   const handler = page.slice(handlerStart, handlerEnd);
   assert.match(
     handler,

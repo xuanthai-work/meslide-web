@@ -8,10 +8,13 @@ test("new presentations carry the resolved template from upload", async () => {
   const upload = await read("app/(presentation-generator)/upload/components/UploadPage.tsx");
   const documents = await read("app/(presentation-generator)/documents-preview/components/DocumentPreviewPage.tsx");
 
-  assert.match(upload, /return `\/presentation\?\$\{params\.toString\(\)\}`/);
-  assert.match(upload, /auto:\s*"1"/);
-  assert.match(upload, /template: templateId/);
-  assert.match(upload, /getGenerationDestination\(createResponse\.id, templateId\)/);
+  // Upload resolves the template and hands it to the in-place outline hook;
+  // it no longer navigates itself, so the /upload UI stays put until the
+  // outline and preparation finish. The hook then routes to the editor with
+  // `stream=true`, carrying the resolved template.
+  assert.match(upload, /setActiveTemplateId\(templateId\)/);
+  assert.match(upload, /setActivePresentationId\(createResponse\.id\)/);
+  assert.doesNotMatch(upload, /router\.(?:push|replace)\(/);
   assert.match(documents, /router\.replace\(`\/presentation\?/);
   assert.doesNotMatch(`${upload}\n${documents}`, /\/outline\?/);
 });
