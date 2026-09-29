@@ -288,7 +288,6 @@ test("UploadPage orchestrates outline generation with abort and request-ID guard
   // the outline lands in `config.prompt` (box 2) and stays user-editable.
   assert.match(page, /const \[isRewriting, setIsRewriting\] = useState\(false\)/);
   assert.match(page, /const \[rewriteError, setRewriteError\] = useState<string \| null>\(null\)/);
-  assert.match(page, /const \[strictOutline, setStrictOutline\] = useState\(false\)/);
   assert.doesNotMatch(
     page,
     /rewrittenPrompt|rewrittenFromContextKey|isRewriteFresh|isRewriteStale/
@@ -322,7 +321,7 @@ test("UploadPage orchestrates outline generation with abort and request-ID guard
   // The request follows the generation boundary rules for language and the
   // effective slide count, and forwards the abort signal.
   assert.match(handler, /language: config\.language,/);
-  assert.match(handler, /nSlides: effectiveSlides \?\? null,/);
+  assert.match(handler, /nSlides: parseLimitedSlideCount\(config\.slides\),/);
   assert.match(handler, /signal: controller\.signal,/);
 
   // The user sees the localized fallback; the raw error text is
@@ -422,9 +421,8 @@ test("Create eligibility never requires an AI rewrite and does not block attachm
   assert.match(page, /const hasContentInput = sourcePrompt\.length > 0;/);
   assert.match(page, /const hasAttachedDocuments = files\.length > 0;/);
   assert.match(page, /\(!hasContentInput && !hasAttachedDocuments\);/);
-  // Template selection and an in-flight request still gate Create.
+  // Template availability and an in-flight request still gate Create.
   assert.match(page, /!templateReady \|\|/);
-  assert.match(page, /!selectedTemplateId \|\|/);
   assert.match(page, /isRewriting \|\|/);
   // The former freshness gate is gone entirely.
   assert.doesNotMatch(
@@ -462,23 +460,26 @@ test("edits to either box invalidate in-flight outline requests before updating 
   );
 });
 
-test("the outline slide count detected in box 2 can override the slide dropdown", async () => {
+test("an outline that numbers its own slides reports that count to the user", async () => {
   const page = await read(UPLOAD_PAGE_PATH);
+  const composer = await read(OUTLINE_COMPOSER_PATH);
 
-  // The count is detected from box 2 and only promoted over the dropdown
-  // when the user asks to follow the outline exactly.
+  // The count is derived from box 2 purely to show the user what to expect:
+  // the backend always pins a numbered outline's sequence, so there is no
+  // opt-in control to expose.
   assert.match(page, /const detectedSlidesCount = useMemo\(/);
   assert.match(page, /\(\) => detectSlideCountFromText\(sourcePrompt\)/);
-  assert.match(
-    page,
-    /const effectiveSlides =\s*\n\s*\(strictOutline && detectedSlidesCount\) \|\| parseLimitedSlideCount\(config\.slides\);/
-  );
-  // Both generation branches submit the effective count, not the raw
-  // dropdown value, so a pasted 13-slide outline produces 13 slides.
-  assert.match(page, /n_slides: effectiveSlides \?\? null,[\s\S]*file_paths: documentPaths/);
-  assert.match(page, /n_slides: effectiveSlides \?\? null,[\s\S]*file_paths: \[\]/);
   assert.match(page, /detectedSlidesCount=\{detectedSlidesCount\}/);
-  assert.match(page, /strictOutline=\{strictOutline\}/);
+  assert.doesNotMatch(page, /strictOutline|effectiveSlides/);
+  assert.doesNotMatch(composer, /strictOutline|type="checkbox"/);
+  // The slide-count dropdown still drives the request when there is no
+  // outline to defer to.
+  assert.equal(
+    page.match(/n_slides: parseLimitedSlideCount\(generationConfig\.slides\),/g)?.length,
+    2,
+    "both generation branches submit the configured slide count",
+  );
+  assert.match(page, /nSlides: parseLimitedSlideCount\(config\.slides\),/);
 });
 
 test("outline catalogs stay symmetric and the upload hero renders once", async () => {
@@ -490,15 +491,15 @@ test("outline catalogs stay symmetric and the upload hero renders once", async (
   const keys = [
     "ideaLabel",
     "ideaPlaceholder",
+    "optionalPill",
     "contentLabel",
     "contentPlaceholder",
     "action",
     "loading",
     "successTitle",
     "successDescription",
+    "orDivider",
     "detectedCount",
-    "strictLabel",
-    "dropHint",
     "phaseUploading",
     "phaseReading",
     "retryAction",
@@ -730,14 +731,27 @@ test("redesign: SupportingDoc renders the right helper copy per usage mode", asy
   assert.match(helperBlock, /files\.length > 0/);
 });
 
-test("redesign: OutlineComposer renders the detected count, the strict toggle, and an editable box 2", async () => {
+test("redesign: OutlineComposer numbers both boxes and renders the detected count", async () => {
   const composer = await read(OUTLINE_COMPOSER_PATH);
+  // Two numbered cards: the ordinal lives in a badge, not in the copy, so
+  // both labels stay reusable and translatable on their own.
+  assert.match(composer, /function StepBadge\(\{ step \}: \{ step: number \}\)/);
+  assert.match(composer, /<StepBadge step=\{1\} \/>/);
+  assert.match(composer, /<StepBadge step=\{2\} \/>/);
+  assert.match(composer, /data-purpose="idea-card"/);
+  assert.match(composer, /data-purpose="outline-card"/);
+  // Box 1 is optional and says so, and a dashed rule separates the two
+  // paths: let the AI draft it, or paste it straight into box 2.
+  assert.match(composer, /upload\.outline\.optionalPill/);
+  assert.match(composer, /upload\.outline\.orDivider/);
+  assert.match(composer, /border-dashed/);
+
   // Both boxes are labelled, and both are plain editable textareas.
   assert.match(composer, /htmlFor="outline-idea"/);
   assert.match(composer, /htmlFor="outline-content"/);
   assert.match(composer, /data-testid="idea-input"/);
   assert.match(composer, /data-testid="prompt-input"/);
-  // The AI action lives on box 1 and reports busy while it runs; duplicate
+  // The AI action sits on box 1 and reports busy while it runs; duplicate
   // submissions are refused while the same request is already in flight.
   assert.match(composer, /data-testid="rewrite-action-button"/);
   assert.match(composer, /disabled=\{!canGenerate \|\| isGenerating\}/);
@@ -748,10 +762,6 @@ test("redesign: OutlineComposer renders the detected count, the strict toggle, a
   assert.match(composer, /data-testid="detected-slides-badge"/);
   assert.match(composer, /\{detectedSlidesCount \? \(/);
   assert.match(composer, /t\("upload\.outline\.detectedCount", \{\s*count: detectedSlidesCount,/);
-  // "Follow the outline exactly" is an explicit opt-in, reported back to
-  // the parent that owns the effective slide count.
-  assert.match(composer, /data-testid="strict-outline-toggle"/);
-  assert.match(composer, /onStrictOutlineChange\(event\.target\.checked\)/);
   // A failure is reported inline with a retry that reuses the same flow.
   assert.match(composer, /data-testid="rewrite-error"/);
   assert.match(composer, /data-testid="rewrite-retry-button"/);

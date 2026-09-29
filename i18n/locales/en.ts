@@ -278,6 +278,9 @@ const en = {
     hero: { title: "G-SLIDE", subtitle: "Turn prompts or documents into presentations with AI" },
     template: {
       label: "Template",
+      auto: "Auto",
+      autoDescription: "AI automatically analyzes your outline to choose the best template",
+      resetToAuto: "Reset to Auto",
       loading: "Loading templates...",
       unavailable: "Select template",
       loadError: "Templates could not be loaded.",
@@ -293,7 +296,7 @@ const en = {
     },
     prompt: {
       rewrite: {
-        loading: "Generating outline...",
+        loading: "Rewriting...",
         phaseUploading: "Uploading documents...",
         phaseReading: "Reading documents...",
         retryAction: "Try again",
@@ -311,22 +314,22 @@ const en = {
     // Two-box upload layout (2026-09-28): box 1 captures the idea and any
     // extra instructions for the AI, box 2 holds the outline or detailed
     // content that actually becomes the presentation. The AI outline action
-    // lives on box 1 and writes its result into box 2.
+    // lives on box 1 and writes its result into box 2. Ordinal numbers and
+    // the optional pill are rendered by the component, not baked into copy.
     outline: {
-      ideaLabel: "1. Idea or instructions for AI (optional)",
+      ideaLabel: "Compose with AI",
       ideaPlaceholder:
-        "Add special requirements for the AI (e.g. a technical deck for iOS engineers, focus on the pipeline, skip the basics)...",
-      contentLabel: "2. Outline or detailed presentation content",
+        "Enter an idea, topic, or special requirement for the AI (e.g. a technical deck for iOS engineers, focus on the pipeline, skip the basics)...",
+      optionalPill: "Optional",
+      contentLabel: "Outline or detailed presentation content",
       contentPlaceholder:
         "Paste your full outline, a Markdown file, or a detailed report here (e.g. ## Slide 1: Title... ## Slide 2: Content...)...",
-      action: "AI generate outline",
-      loading: "Generating outline...",
+      action: "Rewrite",
       successTitle: "AI outline generated",
       successDescription: "You can edit the content below before creating your slides.",
+      orDivider: "Or paste your content directly below",
       // Shown next to box 2 once the outline itself declares its slide count.
       detectedCount: (p) => `${p.count} slides detected`,
-      strictLabel: "Follow the outline exactly (no merging or dropping slides)",
-      dropHint: "Drop a .md or .txt file here to load its content",
     },
     files: {
       unsupportedTitle: "Some files are not supported",

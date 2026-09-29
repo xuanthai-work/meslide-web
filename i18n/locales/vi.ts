@@ -278,6 +278,9 @@ const vi = {
     },
     template: {
       label: "Mẫu thiết kế",
+      auto: "Auto",
+      autoDescription: "AI tự động phân tích dàn ý để chọn mẫu thiết kế phù hợp nhất",
+      resetToAuto: "Đổi về tự động",
       loading: "Đang tải mẫu...",
       unavailable: "Chọn mẫu",
       loadError: "Không thể tải mẫu.",
@@ -293,7 +296,7 @@ const vi = {
     },
     prompt: {
       rewrite: {
-        loading: "Đang tạo dàn ý...",
+        loading: "Đang viết lại...",
         phaseUploading: "Đang tải tài liệu lên...",
         phaseReading: "Đang đọc tài liệu...",
         retryAction: "Thử lại",
@@ -311,23 +314,23 @@ const vi = {
     // Two-box upload layout (2026-09-28): box 1 captures the idea and any
     // extra instructions for the AI, box 2 holds the outline or detailed
     // content that actually becomes the presentation. The AI outline action
-    // lives on box 1 and writes its result into box 2.
+    // lives on box 1 and writes its result into box 2. Ordinal numbers and
+    // the optional pill are rendered by the component, not baked into copy.
     outline: {
-      ideaLabel: "1. Ý tưởng hoặc yêu cầu cho AI (Tùy chọn)",
+      ideaLabel: "Soạn với AI",
       ideaPlaceholder:
-        "Nhập yêu cầu đặc biệt cho AI (VD: Bài thuyết trình kỹ thuật cho dev iOS, nhấn mạnh vào pipeline, không giải thích khái niệm cơ bản)...",
-      contentLabel: "2. Dàn ý hoặc nội dung chi tiết bài thuyết trình",
+        "Nhập ý tưởng, chủ đề hoặc yêu cầu đặc biệt cho AI (VD: Bài thuyết trình kỹ thuật cho dev iOS, nhấn mạnh vào pipeline, không giải thích khái niệm cơ bản)...",
+      optionalPill: "Tùy chọn",
+      contentLabel: "Dàn ý hoặc nội dung chi tiết bài thuyết trình",
       contentPlaceholder:
         "Dán toàn bộ dàn ý, file Markdown hoặc báo cáo chi tiết vào đây (VD: ## Slide 1: Tiêu đề... ## Slide 2: Nội dung...)...",
-      action: "AI tạo dàn ý",
-      loading: "Đang tạo dàn ý...",
+      action: "Viết lại",
       successTitle: "Đã tạo dàn ý từ AI",
       successDescription:
         "Bạn có thể chỉnh sửa nội dung bên dưới trước khi tạo slide.",
+      orDivider: "Hoặc dán trực tiếp nội dung bên dưới",
       // Shown next to box 2 once the outline itself declares its slide count.
       detectedCount: (p) => `Phát hiện ${p.count} slide`,
-      strictLabel: "Bám sát cấu trúc từng slide (không gộp hay bỏ bớt slide)",
-      dropHint: "Kéo thả tệp .md hoặc .txt vào đây để tải nội dung",
     },
     files: {
       unsupportedTitle: "Một số tệp không được hỗ trợ",

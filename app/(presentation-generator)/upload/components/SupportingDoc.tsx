@@ -186,8 +186,8 @@ export default function SupportingDoc({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="inline-flex h-8 min-w-0 cursor-pointer items-center gap-2 rounded-full px-2.5 font-manrope text-xs font-medium text-[#4C4C4C] transition hover:bg-[#F6F6F9] focus-within:outline-none focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="inline-flex h-8 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gslide-border)] bg-white px-2.5 font-manrope text-xs font-medium text-[var(--gslide-muted)] transition hover:border-[color-mix(in_srgb,var(--gslide-accent)_35%,var(--gslide-border))] hover:text-[var(--gslide-ink)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]">
           <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{files.length ? t("upload.files.attachMore", { count: files.length }) : t("upload.files.attach")}</span>
           <input
