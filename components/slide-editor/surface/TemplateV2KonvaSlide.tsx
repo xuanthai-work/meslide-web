@@ -20,6 +20,7 @@ import {
   templateFontOptionsFromMap,
 } from "@/components/slide-editor/text/google-fonts";
 import {
+  autoUngroupTextComponents,
   canUngroupTemplateV2Component,
   ungroupTemplateV2ComponentInUi,
 } from "@/components/slide-editor/model/template-v2-ungroup";
@@ -169,6 +170,23 @@ import {
   type TemplateV2SurfaceSelectedDetail,
 } from "@/components/slide-editor/events/events";
 
+/**
+ * Normalizes a raw slide UI for the editor. In edit mode, text-only groups are
+ * automatically ungrouped so each heading/paragraph gets its own selectable box
+ * (the user no longer has to ungroup before editing a single text element).
+ * Presentation mode keeps the authored grouping.
+ */
+function normalizeEditorUi(ui: RawUi, isEditMode: boolean): RawUi {
+  const normalized = normalizeMarkdownTextInUi(cloneJson(ui));
+  if (!isEditMode) return normalized;
+  return autoUngroupTextComponents(normalized, {
+    childArrayInfo,
+    componentBox,
+    elementBox,
+    layoutChildren,
+  }) as RawUi;
+}
+
 function autoSizeInlineTextFrame(
   frame: TemplateV2InlineEditBox | null | undefined,
   runs: TextRun[],
@@ -268,7 +286,7 @@ function TemplateV2KonvaSlideComponent({
   const redoStackRef = useRef<RawUi[]>([]);
   const handledHistoryCommandTokenRef = useRef<number | null>(null);
   const [uiDraft, setUiDraft] = useState<RawUi>(() =>
-    normalizeMarkdownTextInUi(cloneJson(layout as RawUi)),
+    normalizeEditorUi(layout as RawUi, isEditMode),
   );
   const templateFonts = useMemo(() => templateFontOptionsFromMap(fonts), [
     fonts,
@@ -624,7 +642,7 @@ function TemplateV2KonvaSlideComponent({
 
   useEffect(() => {
     if (layout === currentUiRef.current) return;
-    const next = normalizeMarkdownTextInUi(cloneJson(layout as RawUi));
+    const next = normalizeEditorUi(layout as RawUi, isEditMode);
     currentUiRef.current = next;
     setUiDraft(next);
     resetDragStateRef.current();
@@ -640,6 +658,7 @@ function TemplateV2KonvaSlideComponent({
   }, [
     clearInlineEdit,
     clearTableCellSelection,
+    isEditMode,
     layout,
     publishHistoryAvailability,
   ]);

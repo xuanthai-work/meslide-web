@@ -74,6 +74,55 @@ export function ungroupTemplateV2ComponentInUi(
   };
 }
 
+/**
+ * Ungroups every component that only contains text (a stack of headings, a
+ * flex column of copy, ...) into one component per text element. Running this
+ * when a slide is loaded into the editor lets the user click and drag each text
+ * box independently, instead of selecting the whole group first and pressing
+ * "Ungroup". Non-text components (images, charts, mixed content) are left as
+ * authored so their grouping is preserved.
+ */
+export function autoUngroupTextComponents(
+  sourceUi: RawRecord,
+  deps: UngroupDeps,
+): RawRecord {
+  let ui = sourceUi;
+  let index = 0;
+  while (index < readArray(ui.components).length) {
+    const component = asRecord(readArray(ui.components)[index]);
+    if (
+      component &&
+      isTextOnlyComponent(component) &&
+      canUngroupTemplateV2Component(component)
+    ) {
+      const result = ungroupTemplateV2ComponentInUi(ui, index, deps);
+      if (result) {
+        ui = result.ui;
+        // Re-check the components spliced in at this index: a nested text
+        // container is flattened on the following passes.
+        continue;
+      }
+    }
+    index += 1;
+  }
+  return ui;
+}
+
+function isTextOnlyComponent(component: RawRecord): boolean {
+  const elements = readArray(component.elements).filter(isRecord);
+  if (elements.length === 0) return false;
+  return elements.every(isTextOnlyElement);
+}
+
+function isTextOnlyElement(element: RawRecord): boolean {
+  const type = readString(element.type);
+  if (type === "text" || type === "text-list") return true;
+  if (!isUngroupableLayoutType(type)) return false;
+  const childInfo = childArrayInfoFromRecord(element);
+  const children = (childInfo?.items ?? []).filter(isRecord);
+  return children.length > 0 && children.every(isTextOnlyElement);
+}
+
 function ungroupedComponentsFromComponent(
   component: RawRecord,
   componentIndex: number,

@@ -151,6 +151,12 @@ export const usePresentationStreaming = (
   const streamEpochRef = useRef(0);
   const supersedeStreamEpochRef = useRef(false);
   const presentationStreamMountedRef = useRef(false);
+  // Assigned inside the stream effect so the hook-body stall watcher can
+  // trigger an automatic retry instead of surfacing a stalled popup.
+  const scheduleRetryRef = useRef<((reason: string) => boolean) | null>(null);
+  const finalizeFailureRef = useRef<((description: string) => void) | null>(
+    null
+  );
 
   useEffect(() => {
     presentationStreamMountedRef.current = true;
@@ -191,13 +197,16 @@ export const usePresentationStreaming = (
           state: lifecycleRef.current,
         })
       ) {
+        // Auto-retry on stall (up to MAX_SILENT_RETRIES) while keeping the
+        // loading UI. Only surface a failure once retries are exhausted.
+        const retry = scheduleRetryRef.current;
+        if (retry && retry("stream stalled")) {
+          return;
+        }
         const cause: StallCause = eventSourceRef.current ? "silence" : "socket";
         stallCauseRef.current = cause;
         setStallCause(cause);
-        setLifecycle("stalled");
-        setStatusMessage(
-          t("presentation.status.stalled")
-        );
+        finalizeFailureRef.current?.(t("presentation.status.stalled"));
       }
     }, STALL_INTERVAL_MS);
   }, [t]);
@@ -329,6 +338,11 @@ export const usePresentationStreaming = (
 
       return true;
     };
+
+    // Expose the retry/failure helpers to the hook-body stall watcher so a
+    // stall auto-retries (keeping the loading UI) instead of showing a popup.
+    scheduleRetryRef.current = scheduleRetry;
+    finalizeFailureRef.current = finalizeFailure;
 
     const preloadPreparedPresentation = async (force = false) => {
       if ((!preloadPresentationData && !force) || preloadAttempted) return;
@@ -679,7 +693,11 @@ export const usePresentationStreaming = (
             break;
 
           case "error":
-            // Server already failed the job: do NOT silent-retry.
+            // Do not surface the failure immediately: try to auto-retry
+            // (reconnect and resume from the saved prefix) first.
+            if (scheduleRetry("backend error: " + (data.detail || ""))) {
+              break;
+            }
             finalizeFailure(
               translateBackendError(t, data) ||
                 t("presentation.status.connectFailed")
@@ -706,24 +724,13 @@ export const usePresentationStreaming = (
         if (isClosedRef.current) {
           return;
         }
-        if (!hasUsefulEventRef.current) {
-          // Connection lost before any useful event: silent retry allowed.
-          if (!scheduleRetry("connection lost")) {
-            finalizeFailure(
-              t("presentation.status.connectFailed")
-            );
-          }
+        // Socket error/disconnect: auto-retry (up to MAX_SILENT_RETRIES) while
+        // keeping the loading UI, regardless of whether slides were already
+        // streamed. Only report failure once retries are exhausted.
+        if (scheduleRetry("socket error/disconnect")) {
           return;
         }
-        // After a useful event, a dead socket is a stall — do NOT reopen.
-        closeEventSource();
-        clearStallInterval();
-        stallCauseRef.current = "socket";
-        setStallCause("socket");
-        setLifecycle("stalled");
-        setStatusMessage(
-          t("presentation.status.stalled")
-        );
+        finalizeFailure(t("presentation.status.connectFailed"));
       };
 
       // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"

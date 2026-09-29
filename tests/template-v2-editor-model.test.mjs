@@ -268,3 +268,107 @@ test("clipboard and side resize keep geometry for the selected component", async
   assert.deepEqual(resized[0].children[0].position, { x: 2, y: 3 });
   assert.equal(resized[0].children[0].text, "nested");
 });
+
+test("auto-ungroup splits text-only components and leaves mixed ones grouped", async () => {
+  const { autoUngroupTextComponents } = await import(
+    "../components/slide-editor/model/template-v2-ungroup.ts"
+  );
+
+  const ui = {
+    components: [
+      {
+        id: "heading_stack",
+        position: { x: 0, y: 0 },
+        elements: [
+          { type: "text", name: "title", text: "Title" },
+          { type: "text", name: "subtitle", text: "Subtitle" },
+        ],
+      },
+      {
+        id: "flex_copy",
+        position: { x: 40, y: 50 },
+        elements: [
+          {
+            type: "flex",
+            direction: "column",
+            children: [
+              { type: "text", text: "One" },
+              { type: "text", text: "Two" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "image_row",
+        position: { x: 0, y: 100 },
+        elements: [
+          { type: "image", data: "/img.png" },
+          { type: "text", name: "caption", text: "Caption" },
+        ],
+      },
+    ],
+  };
+
+  const result = autoUngroupTextComponents(ui, ungroupDeps);
+
+  assert.deepEqual(
+    result.components.map((component) => component.id),
+    [
+      "heading_stack_part_1",
+      "heading_stack_part_2",
+      "flex_copy_part_1",
+      "flex_copy_part_2",
+      "image_row",
+    ],
+  );
+  // Text-only groups become one text per component...
+  assert.equal(result.components[0].elements.length, 1);
+  assert.equal(result.components[0].elements[0].text, "Title");
+  assert.equal(result.components[3].elements[0].text, "Two");
+  // ...while a mixed image+text component keeps its authored grouping.
+  assert.equal(result.components[4], ui.components[2]);
+});
+
+test("flow column clamps a manual child below a taller preceding sibling", async () => {
+  const { layoutFlowChildren } = await import(
+    "../components/slide-editor/layout/flowLayout.ts"
+  );
+
+  const heading = {
+    type: "text",
+    position: { x: 0, y: 0 },
+    size: { width: 200, height: 150 },
+  };
+  const subtitle = {
+    type: "text",
+    position: { x: 0, y: 82 },
+    size: { width: 200, height: 40 },
+    __gslide_manual_position: true,
+  };
+
+  const laidOut = layoutFlowChildren(
+    { type: "flex", direction: "column", gap: 5.36 },
+    [heading, subtitle],
+    { x: 0, y: 0, width: 200, height: 400 },
+    {
+      elementBox: (element) => ({
+        x: element.position?.x ?? 0,
+        y: element.position?.y ?? 0,
+        width: element.size?.width ?? 1,
+        height: element.size?.height ?? 1,
+      }),
+      elementSize: (element) => ({
+        width: element.size?.width ?? 1,
+        height: element.size?.height ?? 1,
+      }),
+      isManualPositioned: (element) =>
+        element.__gslide_manual_position === true,
+    },
+  );
+
+  assert.equal(laidOut[0].box.y, 0);
+  assert.ok(
+    laidOut[1].box.y >= 150 + 5.36,
+    `subtitle y ${laidOut[1].box.y} must clear the two-line heading`,
+  );
+});

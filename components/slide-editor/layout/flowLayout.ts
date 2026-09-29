@@ -308,8 +308,15 @@ function layoutFlexChildren(
   return children.map((child, index) => {
     const raw = deps.elementBox(child);
     if (deps.isManualPositioned(child)) {
+      // A manual child keeps its authored offset, but never overlaps the
+      // sibling that flowed ahead of it. A heading that wraps to a second line
+      // grows taller, so the following manual child is clamped down to the
+      // running cursor (previous bottom + gap) instead of its stale offset.
+      const box = isColumn
+        ? { ...raw, y: Math.max(raw.y, cursor) }
+        : { ...raw, x: Math.max(raw.x, cursor) };
       cursor += (isColumn ? raw.height : raw.width) + mainGap;
-      return { child, index, box: raw, layoutManaged: false };
+      return { child, index, box, layoutManaged: false };
     }
     const main = clampLayoutSize(mainSizes[index], child, isColumn ? "height" : "width");
     const cross = childCrossSize(child, direction, availableCross, align, deps);

@@ -28,10 +28,11 @@ test("heartbeat is not a useful event", () => {
   assert.equal(isUsefulStreamEvent("error"), true);
 });
 
-test("silent retry only before first useful event", () => {
+test("silent retry is allowed before and after the first useful event", () => {
   assert.equal(shouldSilentRetry({ retryCount: 0, hasUsefulEvent: false, closed: false }), true);
   assert.equal(shouldSilentRetry({ retryCount: 3, hasUsefulEvent: false, closed: false }), false);
-  assert.equal(shouldSilentRetry({ retryCount: 0, hasUsefulEvent: true, closed: false }), false);
+  assert.equal(shouldSilentRetry({ retryCount: 0, hasUsefulEvent: true, closed: false }), true);
+  assert.equal(shouldSilentRetry({ retryCount: 3, hasUsefulEvent: true, closed: false }), false);
   assert.equal(shouldSilentRetry({ retryCount: 0, hasUsefulEvent: false, closed: true }), false);
   assert.equal(silentRetryDelayMs(1), 1000);
   assert.equal(silentRetryDelayMs(3), 3000);
@@ -126,7 +127,7 @@ test("presentation retry keeps already-rendered slides while the saved prefix is
   );
 });
 
-test("stream hooks hide Keep waiting after socket death", async () => {
+test("stream hooks keep keep-waiting policy in sync with socket death", async () => {
   const outline = await backgroundOutlineSource();
   const presentation = await readFile(
     new URL(
@@ -137,9 +138,13 @@ test("stream hooks hide Keep waiting after socket death", async () => {
   );
   for (const source of [outline, presentation]) {
     assert.match(source, /shouldShowKeepWaiting/);
-    assert.match(source, /stallCauseRef\.current = "socket"/);
     assert.match(source, /if \(!eventSourceRef\.current\) \{\s*return;/);
   }
+  // The outline stream still surfaces a socket-death stall.
+  assert.match(outline, /stallCauseRef\.current = "socket"/);
+  // The presentation stream auto-retries on socket death instead of stalling.
+  assert.match(presentation, /scheduleRetry\("socket error\/disconnect"\)/);
+  assert.doesNotMatch(presentation, /stallCauseRef\.current = "socket"/);
 });
 
 test("background outline chunks report progress without exposing partial outlines", async () => {
