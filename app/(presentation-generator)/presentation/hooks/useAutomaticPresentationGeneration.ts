@@ -17,7 +17,7 @@ import {
 import { useBackgroundOutlineStream } from "./useBackgroundOutlineStream";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 
-type BootstrapPhase =
+export type BootstrapPhase =
   | "idle"
   | "checking"
   | "outlining"
@@ -166,9 +166,13 @@ export function useAutomaticPresentationGeneration(
         preparedRef.current = true;
         setPhase("complete");
         dispatch(clearPresentationData());
-        router.replace(
-          `/presentation?id=${presentationId}&stream=true`,
-        );
+        setTimeout(() => {
+          if (prepareGeneration !== prepareGenerationRef.current) return;
+          if (cancelledByUserRef.current) return;
+          router.replace(
+            `/presentation?id=${presentationId}&stream=true`,
+          );
+        }, 500);
       })
       .catch((error: unknown) => {
         if (prepareGeneration !== prepareGenerationRef.current) return;
@@ -255,6 +259,8 @@ export function useAutomaticPresentationGeneration(
 
   return {
     active: enabled && phase !== "idle" && phase !== "complete",
+    phase,
+    statusCode: outlineStream.statusCode,
     lifecycle,
     statusMessage,
     draftCount: 0,

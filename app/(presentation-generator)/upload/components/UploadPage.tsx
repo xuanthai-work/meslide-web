@@ -11,7 +11,6 @@
 
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { clearOutlines, setPresentationId } from "@/store/slices/presentationGeneration";
 import { OutlineComposer, type OutlinePhase } from "./OutlineComposer";
@@ -42,6 +41,11 @@ import { GSlideButton, GSlideStudioTitle } from "@/components/gslide";
 import { UploadTemplatePicker } from "./UploadTemplatePicker";
 import { useTemplateSummaries } from "../../hooks/useTemplateSummaries";
 import { resolveTemplateForCreate } from "../services/template-selection";
+import {
+  PresentationPreparingModal,
+  computePreparingStep,
+} from "../../components/PresentationPreparingModal";
+import { useAutomaticPresentationGeneration } from "../../presentation/hooks/useAutomaticPresentationGeneration";
 
 // Types for loading state
 interface LoadingState {
@@ -73,7 +77,6 @@ const isStaleDocumentError = (error: unknown): boolean => {
 const UploadPage = () => {
   const t = useT();
   const { documentAwareRewrite } = useFeatureFlags();
-  const router = useRouter();
   const dispatch = useDispatch();
 
   const [files, setFiles] = useState<File[]>([]);
@@ -107,13 +110,47 @@ const UploadPage = () => {
     }
   }, []);
 
-  const [loadingState, setLoadingState] = useState<LoadingState>({
+  const [loadingState] = useState<LoadingState>({
     isLoading: false,
     message: "",
     duration: 4,
     showProgress: false,
     extra_info: "",
   });
+
+  const [activePresentationId, setActivePresentationId] = useState<string | null>(null);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [isPreparingModalOpen, setIsPreparingModalOpen] = useState(false);
+  const [isCreatingPresentation, setIsCreatingPresentation] = useState(false);
+  const [preparingError, setPreparingError] = useState<string | null>(null);
+  const preparingAbortControllerRef = useRef<AbortController | null>(null);
+  const [maxStep, setMaxStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+
+  const automaticGeneration = useAutomaticPresentationGeneration(
+    activePresentationId || "",
+    !!activePresentationId,
+    activeTemplateId,
+  );
+
+  const computedStep = computePreparingStep({
+    isCreating: isCreatingPresentation,
+    phase: automaticGeneration.phase,
+    statusCode: automaticGeneration.statusCode,
+  });
+
+  useEffect(() => {
+    setMaxStep((current) => (computedStep > current ? computedStep : current));
+  }, [computedStep]);
+
+  const currentPreparingStep = isPreparingModalOpen
+    ? (Math.max(maxStep, computedStep) as 1 | 2 | 3 | 4 | 5)
+    : 1;
+
+  const currentPreparingError =
+    preparingError ||
+    (automaticGeneration.lifecycle === "failed"
+      ? automaticGeneration.statusMessage
+      : null);
 
   // --- AI outline generation ------------------------------------------
   // `config.instructions` (box 1) is the idea and never overwritten by the
@@ -221,6 +258,7 @@ const UploadPage = () => {
     !templateReady ||
     isRewriting ||
     loadingState.isLoading ||
+    isPreparingModalOpen ||
     (!hasContentInput && !hasAttachedDocuments);
 
   // The action label follows the active preparation phase so the user can
@@ -235,11 +273,12 @@ const UploadPage = () => {
       ? t("upload.prompt.rewrite.retryAction")
       : t("upload.outline.action");
 
-  // Abort the in-flight rewrite when the component unmounts.
+  // Abort the in-flight rewrite or preparing when the component unmounts.
   useEffect(() => {
     return () => {
       rewriteRequestIdRef.current += 1;
       rewriteAbortRef.current?.abort();
+      preparingAbortControllerRef.current?.abort();
     };
   }, []);
 
@@ -403,15 +442,6 @@ const UploadPage = () => {
     }
   };
 
-  const getGenerationDestination = (presentationId: string, templateId: string) => {
-    const params = new URLSearchParams({
-      id: presentationId,
-      auto: "1",
-      template: templateId,
-    });
-    return `/presentation?${params.toString()}`;
-  };
-
   /**
    * Validates the current configuration and files
    * @returns boolean indicating if the configuration is valid
@@ -437,26 +467,46 @@ const UploadPage = () => {
     return true;
   };
 
+  const handleCancelPreparing = useCallback(async () => {
+    preparingAbortControllerRef.current?.abort();
+    preparingAbortControllerRef.current = null;
+    if (activePresentationId) {
+      await automaticGeneration.cancel();
+    }
+    setIsPreparingModalOpen(false);
+    setIsCreatingPresentation(false);
+    setActivePresentationId(null);
+    setActiveTemplateId(null);
+    setPreparingError(null);
+    setMaxStep(1);
+    createInFlightRef.current = false;
+  }, [activePresentationId, automaticGeneration]);
+
   /**
    * Handles the presentation generation process
    */
-  const handleGeneratePresentation = async () => {
+  const handleGeneratePresentation = useCallback(async () => {
     // Keyboard submissions run the same eligibility checks as the button:
-    // never start a Create while an outline request or a previous Create is
-    // active.
-    if (createInFlightRef.current || isRewriting || loadingState.isLoading || !templateReady) return;
+    // never start a Create while an outline request, modal, or previous Create is active.
+    if (
+      createInFlightRef.current ||
+      isRewriting ||
+      loadingState.isLoading ||
+      isPreparingModalOpen ||
+      !templateReady
+    )
+      return;
     if (!validateConfiguration()) return;
-    createInFlightRef.current = true;
-    setLoadingState({
-      isLoading: true,
-      message: t("upload.status.preparingOutline"),
-      showProgress: true,
-    });
 
-    // Capture the exact configuration being submitted. From this point on,
-    // neither an edit to either box nor another settings change can alter
-    // the content used by the in-flight generation request. Box 2 becomes
-    // `content`, box 1 rides along as `instructions`.
+    createInFlightRef.current = true;
+    setIsPreparingModalOpen(true);
+    setIsCreatingPresentation(true);
+    setPreparingError(null);
+    setMaxStep(1);
+
+    const controller = new AbortController();
+    preparingAbortControllerRef.current = controller;
+
     const generationConfig: PresentationConfig = {
       ...config,
       prompt: sourcePrompt,
@@ -470,55 +520,21 @@ const UploadPage = () => {
         confirmedTemplateId: confirmedSnapshot,
         templates: candidateSnapshot,
       });
+
+      if (controller.signal.aborted) return;
+
       const hasUploadedAssets = files.length > 0;
+      let documentPaths: string[] = [];
+      let preparedDocuments: PreparedDocumentSet | null = null;
 
       if (hasUploadedAssets) {
-        await handleDocumentProcessing(generationConfig, templateId);
-      } else {
-        await handleDirectPresentationGeneration(generationConfig, templateId);
+        preparedDocuments = await ensureDocumentsPrepared(controller.signal);
+        documentPaths = documentPathsOf(preparedDocuments);
       }
-    } catch (error) {
-      handleGenerationError(error);
-    } finally {
-      createInFlightRef.current = false;
-    }
-  };
 
-  /**
-   * Handles document processing: reuses the prepared document set (or
-   * prepares it now for document-only creation) instead of uploading and
-   * decomposing again, then creates the presentation.
-   */
-  const handleDocumentProcessing = async (
-    generationConfig: PresentationConfig,
-    templateId: string,
-  ) => {
-    setLoadingState({
-      isLoading: true,
-      message: t("upload.status.processingDocuments"),
-      showProgress: true,
-      duration: 90,
-      extra_info: files.length > 0 ? t("upload.status.largeDocumentsHint") : "",
-    });
+      if (controller.signal.aborted) return;
 
-    const selectedLanguage = generationConfig.language ?? null;
-    const preparationController = new AbortController();
-
-    try {
-      // Generation always consumes selected documents. The feature flag only
-      // controls whether those documents also ground the AI outline.
-      const prepared = await ensureDocumentsPrepared(
-        preparationController.signal,
-      );
-      const documentPaths = documentPathsOf(prepared);
-
-      setLoadingState({
-        isLoading: true,
-        message: t("upload.status.generatingOutline"),
-        showProgress: true,
-        duration: 40,
-        extra_info: "",
-      });
+      const selectedLanguage = generationConfig.language ?? null;
 
       const createResponse = await PresentationGenerationApi.createPresentation({
         content: generationConfig.prompt,
@@ -531,75 +547,55 @@ const UploadPage = () => {
         web_search: !!generationConfig.webSearch,
       });
 
-      dispatch(setPptGenUploadState({
-        config: generationConfig,
-        files: prepared?.documents ?? [],
-      }));
+      if (controller.signal.aborted) return;
+
+      dispatch(
+        setPptGenUploadState({
+          config: generationConfig,
+          files: preparedDocuments?.documents ?? [],
+        }),
+      );
       dispatch(clearOutlines());
       dispatch(setPresentationId(createResponse.id));
-      const destination = getGenerationDestination(createResponse.id, templateId);
-      router.push(destination);
-    } catch (error) {
-      // The prepared server-side files may be stale; drop the caches so the
-      // next attempt re-prepares from the still-selected local files.
+
+      // Không gọi router.push ở đây. Kích hoạt hook chạy outline stream tại chỗ:
+      setMaxStep(2);
+      setIsCreatingPresentation(false);
+      setActiveTemplateId(templateId);
+      setActivePresentationId(createResponse.id);
+    } catch (error: any) {
+      if (controller.signal.aborted) return;
+      console.error("Error creating presentation", error);
       invalidatePreparedDocuments();
-      throw error;
+      setIsCreatingPresentation(false);
+      setPreparingError(
+        error?.message || t("upload.error.generationFallback"),
+      );
+    } finally {
+      createInFlightRef.current = false;
     }
-  };
+  }, [
+    config,
+    confirmedTemplateId,
+    defaultTemplates,
+    dispatch,
+    files,
+    isPreparingModalOpen,
+    isRewriting,
+    loadingState.isLoading,
+    sourcePrompt,
+    t,
+    templateReady,
+  ]);
 
-  /**
-   * Handles direct presentation generation without documents
-   */
-  const handleDirectPresentationGeneration = async (
-    generationConfig: PresentationConfig,
-    templateId: string,
-  ) => {
-      setLoadingState({
-        isLoading: true,
-        message: t("upload.status.preparingOutline"),
-      showProgress: true,
-      duration: 30,
-    });
-
-    const selectedLanguage = generationConfig.language ?? null;
-
-    const createResponse = await PresentationGenerationApi.createPresentation({
-      content: generationConfig.prompt,
-      n_slides: parseLimitedSlideCount(generationConfig.slides),
-      file_paths: [],
-      language: selectedLanguage,
-      tone: generationConfig.tone,
-      verbosity: generationConfig.verbosity,
-      instructions: generationConfig.instructions || null,
-      web_search: !!generationConfig.webSearch,
-    });
-
-    dispatch(setPptGenUploadState({
-      config: generationConfig,
-      files: [],
-    }));
-    dispatch(clearOutlines());
-    dispatch(setPresentationId(createResponse.id));
-    const destination = getGenerationDestination(createResponse.id, templateId);
-    router.push(destination);
-  };
-
-  /**
-   * Handles errors during presentation generation
-   */
-  const handleGenerationError = (error: any) => {
-    console.error("Error in upload page", error);
-    setLoadingState({
-      isLoading: false,
-      message: "",
-      duration: 0,
-      showProgress: false,
-    });
-    notify.error(
-      t("upload.error.generationTitle"),
-      error.message || t("upload.error.generationFallback")
-    );
-  };
+  const handleRetryPreparing = useCallback(() => {
+    setPreparingError(null);
+    if (activePresentationId) {
+      automaticGeneration.retry();
+    } else {
+      void handleGeneratePresentation();
+    }
+  }, [activePresentationId, automaticGeneration, handleGeneratePresentation]);
 
   return (
     <Wrapper className="w-full">
@@ -609,6 +605,14 @@ const UploadPage = () => {
         showProgress={loadingState.showProgress}
         duration={loadingState.duration}
         extra_info={loadingState.extra_info}
+      />
+      <PresentationPreparingModal
+        isOpen={isPreparingModalOpen}
+        currentStep={currentPreparingStep}
+        hasAttachedDocs={files.length > 0}
+        onCancel={handleCancelPreparing}
+        error={currentPreparingError}
+        onRetry={handleRetryPreparing}
       />
       <div className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[780px] xl:max-w-[900px]">
         <GSlideStudioTitle

@@ -27,6 +27,7 @@ const STALL_INTERVAL_MS = 1_000;
 export type BackgroundOutlineStream = {
   lifecycle: GenerationLifecycleState;
   statusMessage: string;
+  statusCode?: string | null;
   finalOutlineCount: number;
   canKeepWaiting: boolean;
   cancel: () => Promise<void>;
@@ -69,6 +70,7 @@ export function useBackgroundOutlineStream(
   const t = useT();
   const defaultStatus = t("outline.status.preparing");
   const [statusMessage, setStatusMessage] = useState(defaultStatus);
+  const [statusCode, setStatusCode] = useState<string | null>(null);
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
   const [stallCause, setStallCause] = useState<StallCause | null>(null);
@@ -237,12 +239,16 @@ export function useBackgroundOutlineStream(
         }
 
         switch (data.type) {
-          case "status":
+          case "status": {
+            const rawCode = (data.status_code || data.code || data.status) as string | undefined;
+            if (rawCode) setStatusCode(String(rawCode));
             if (data.status) setStatusMessage(translateBackendStatus(t, data));
             setLifecycle("generating");
             break;
+          }
 
           case "chunk":
+            setStatusCode("outline.drafting");
             lastUsefulEventAtRef.current = Date.now();
             setLifecycle("generating");
             break;
@@ -253,6 +259,7 @@ export function useBackgroundOutlineStream(
             break;
 
           case "complete": {
+            setStatusCode("complete");
             let outlinesData: { content: string }[] = [];
             try {
               outlinesData = validateAndLimitOutlines(
@@ -389,6 +396,7 @@ export function useBackgroundOutlineStream(
   return {
     lifecycle: reportedLifecycle,
     statusMessage,
+    statusCode,
     finalOutlineCount,
     canKeepWaiting: shouldShowKeepWaiting(stallCause),
     cancel,
