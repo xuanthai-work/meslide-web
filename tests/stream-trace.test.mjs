@@ -134,3 +134,37 @@ test("a later chunk cannot put a placeholder back over a resolved asset", () => 
   ]);
   assert.deepEqual(outOfOrder.applied, ["slide_assets", "complete"]);
 });
+
+test("a slide_assets update carries contain over the placeholder cover fit", () => {
+  // The placeholder slide ships with fit "cover"; the SearXNG-backed asset
+  // event resolves the URL and asks for "contain". The merge must apply the
+  // incoming fit, not keep the placeholder's cover.
+  let slides = mergeSingleSlidePreservingResolvedAssets([], {
+    index: 0,
+    ui: {
+      elements: [
+        {
+          type: "image",
+          data: "/static/images/placeholder.jpg",
+          fit: "cover",
+        },
+      ],
+    },
+  });
+
+  slides = mergeSingleSlidePreservingResolvedAssets(slides, {
+    index: 0,
+    ui: {
+      elements: [
+        {
+          type: "image",
+          data: "https://cdn.example/photo.png",
+          fit: "contain",
+        },
+      ],
+    },
+  });
+
+  assert.equal(slides[0].ui.elements[0].data, "https://cdn.example/photo.png");
+  assert.equal(slides[0].ui.elements[0].fit, "contain");
+});
