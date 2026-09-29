@@ -140,7 +140,7 @@ describe("upload outline composer", () => {
     cy.get('[data-testid="rewrite-action-button"]')
       .click()
       .should("have.attr", "aria-busy", "true")
-      .and("contain.text", "Đang tạo dàn ý");
+      .and("contain.text", "Đang viết lại");
     cy.get('[data-testid="generate-presentation-button"]').should("be.disabled");
 
     cy.wait("@outlineRequest");
@@ -197,10 +197,11 @@ describe("upload outline composer", () => {
     cy.wait("@createPresentation");
   });
 
-  it("detects the slide count the outline declares and can pin it on Create", () => {
+  it("shows the slide count the outline declares without adding an opt-in control", () => {
     cy.intercept("POST", "**/api/v1/ppt/presentation/create", (request) => {
-      expect(request.body.n_slides, "the detected count wins once opted in")
-        .to.equal(13);
+      // The outline's own numbering always wins; the dropdown is simply not
+      // set here, so the request leaves the count to the server.
+      expect(request.body.n_slides).to.equal(null);
       request.reply({ body: { id: "presentation-123" } });
     }).as("createPresentation");
 
@@ -212,10 +213,9 @@ describe("upload outline composer", () => {
       "contain.text",
       "Phát hiện 13 slide",
     );
+    // Nothing to tick: preserving the sequence is the default behaviour.
+    cy.get('[data-testid="strict-outline-toggle"]').should("not.exist");
 
-    // The dropdown still wins until the user opts into the outline's own
-    // structure.
-    cy.get('[data-testid="strict-outline-toggle"]').check();
     cy.get('[data-testid="generate-presentation-button"]').click();
     cy.wait("@createPresentation");
   });
@@ -584,7 +584,12 @@ describe("document-aware outline flow", () => {
     const state = counters();
 
     mountUploadPage({ documentAwareRewrite: true });
-    cy.get('[data-testid="upload-template-trigger"]').should("contain", "Bứt phá");
+    // Template readiness: the trigger is enabled once the list has loaded.
+    // It reads "Auto" until a template is explicitly confirmed, because the
+    // template is resolved at Create time otherwise.
+    cy.get('[data-testid="upload-template-trigger"]')
+      .should("be.enabled")
+      .and("contain", "Auto");
     attachFile("notes.txt");
     cy.get('[data-testid="generate-presentation-button"]').should("be.enabled");
 
@@ -678,25 +683,26 @@ describe("document-aware outline flow", () => {
  * Create label.
  */
 describe("upload redesign composition", () => {
-  it("renders idea → outline → attachments → Create in that order", () => {
+  it("renders idea → attachments → AI action → outline → Create in that order", () => {
     mountUploadPage();
 
-    // The AI action sits on box 1's header, just above the field it seeds.
+    // Box 1 owns the idea, the attachment picker, and the AI action in its
+    // footer; box 2 owns the outline; Create stays outside the composer.
     const milestones = [
-      '[data-testid="rewrite-action-button"]',
       '[data-testid="idea-input"]',
-      '[data-testid="prompt-input"]',
       '[data-testid="attachments-uploader"]',
+      '[data-testid="rewrite-action-button"]',
+      '[data-testid="prompt-input"]',
       '[data-testid="generate-presentation-button"]',
     ].join(", ");
 
     cy.get(milestones).then(($elements) => {
       const order = [...$elements].map((element) => element.dataset.testid);
       expect(order).to.deep.equal([
-        "rewrite-action-button",
         "idea-input",
-        "prompt-input",
         "attachments-uploader",
+        "rewrite-action-button",
+        "prompt-input",
         "generate-presentation-button",
       ]);
     });
@@ -717,6 +723,46 @@ describe("upload redesign composition", () => {
     cy.get('[data-testid="generate-presentation-button"]')
       .should("contain.text", "Tạo bài thuyết trình")
       .and("not.have.attr", "aria-label", "");
+  });
+
+  it("lets the outline box actually be resized by its grip", () => {
+    mountUploadPage();
+
+    cy.get('[data-testid="prompt-input"]').then(($input) => {
+      const el = $input[0] as HTMLTextAreaElement;
+      const style = getComputedStyle(el);
+      expect(style.resize).to.equal("vertical");
+      // A flex-basis:0 item takes its height from the flex container, so the
+      // height the resize grip writes is ignored and the box springs back —
+      // which is what made the grip feel dead.
+      expect(style.flexBasis).to.equal("auto");
+
+      const before = el.getBoundingClientRect().height;
+      el.style.height = `${before + 140}px`;
+      expect(el.getBoundingClientRect().height).to.be.greaterThan(before + 120);
+    });
+  });
+
+  it("keeps the AI action readable once the idea has content", () => {
+    mountUploadPage();
+
+    // Empty idea and no files: nothing to rewrite into an outline.
+    cy.get('[data-testid="rewrite-action-button"]')
+      .should("be.disabled")
+      .and("contain.text", "Viết lại");
+
+    typeIdea("Ý tưởng về báo cáo quý");
+    cy.get('[data-testid="rewrite-action-button"]')
+      .should("be.enabled")
+      .and("contain.text", "Viết lại")
+      .and(($button) => {
+        // White label text must never sit on a background that failed to
+        // apply — that makes the button look like an empty white box.
+        const style = getComputedStyle($button[0]);
+        expect(style.color).to.equal("rgb(255, 255, 255)");
+        expect(style.backgroundColor).to.not.equal("rgba(0, 0, 0, 0)");
+        expect(style.opacity).to.equal("1");
+      });
   });
 
   it("shows the document-aware helper when the flag is on and files are attached", () => {

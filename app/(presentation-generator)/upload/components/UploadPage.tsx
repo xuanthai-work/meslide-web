@@ -81,13 +81,11 @@ const UploadPage = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [confirmedTemplateId, setConfirmedTemplateId] = useState<string | null>(null);
   const createInFlightRef = useRef(false);
-  const templateReady = !templatesLoading && !templatesError &&
-    defaultTemplates.some((item) => item.id === selectedTemplateId);
+  const templateReady = !templatesLoading && !templatesError && defaultTemplates.length > 0;
   const handlePreviewSelection = useCallback((id: string | null) => {
     setSelectedTemplateId(id);
-    setConfirmedTemplateId((confirmed) => confirmed === id ? confirmed : null);
   }, []);
-  const handleConfirmSelection = useCallback((id: string) => {
+  const handleConfirmSelection = useCallback((id: string | null) => {
     setSelectedTemplateId(id);
     setConfirmedTemplateId(id);
   }, []);
@@ -125,10 +123,6 @@ const UploadPage = () => {
   const [isRewriting, setIsRewriting] = useState(false);
   const [rewritePhase, setRewritePhase] = useState<OutlinePhase | null>(null);
   const [rewriteError, setRewriteError] = useState<string | null>(null);
-
-  // "Follow the outline exactly" — the checkbox that promotes a slide count
-  // detected in box 2 over the slide-count dropdown.
-  const [strictOutline, setStrictOutline] = useState(false);
 
   // One AbortController for the latest in-flight request plus a
   // monotonically increasing request ID. Starting a newer generation (or
@@ -208,25 +202,23 @@ const UploadPage = () => {
       documents,
     };
     preparedDocumentsRef.current = prepared;
-    return prepared;  };
+    return prepared;
+  };
 
   const sourcePrompt = config.prompt.trim();
   const hasContentInput = sourcePrompt.length > 0;
   const hasAttachedDocuments = files.length > 0;
-  // An outline that numbers its own slides is a better source of the slide
-  // count than the dropdown, but only when the user asks to follow it
-  // exactly — otherwise the configured count still wins.
+  // Purely informational: an outline that numbers its own slides always
+  // keeps that sequence (the backend pins it), so showing the count just
+  // tells the user what to expect before they create.
   const detectedSlidesCount = useMemo(
     () => detectSlideCountFromText(sourcePrompt),
     [sourcePrompt]
   );
-  const effectiveSlides =
-    (strictOutline && detectedSlidesCount) || parseLimitedSlideCount(config.slides);
   // The AI outline is an accelerator, never a prerequisite: Create opens as
   // soon as box 2 has content or a document is attached.
   const isCreateDisabled =
     !templateReady ||
-    !selectedTemplateId ||
     isRewriting ||
     loadingState.isLoading ||
     (!hasContentInput && !hasAttachedDocuments);
@@ -358,7 +350,7 @@ const UploadPage = () => {
           prompt: seedSource,
           previousPrompt: previousOutline || undefined,
           language: config.language,
-          nSlides: effectiveSlides ?? null,
+          nSlides: parseLimitedSlideCount(config.slides),
           filePaths: paths,
           signal: controller.signal,
         });
@@ -530,7 +522,7 @@ const UploadPage = () => {
 
       const createResponse = await PresentationGenerationApi.createPresentation({
         content: generationConfig.prompt,
-        n_slides: effectiveSlides ?? null,
+        n_slides: parseLimitedSlideCount(generationConfig.slides),
         file_paths: documentPaths,
         language: selectedLanguage,
         tone: generationConfig.tone,
@@ -573,7 +565,7 @@ const UploadPage = () => {
 
     const createResponse = await PresentationGenerationApi.createPresentation({
       content: generationConfig.prompt,
-      n_slides: effectiveSlides ?? null,
+      n_slides: parseLimitedSlideCount(generationConfig.slides),
       file_paths: [],
       language: selectedLanguage,
       tone: generationConfig.tone,
@@ -644,8 +636,6 @@ const UploadPage = () => {
                 handleComposerTextChange("prompt", value)
               }
               detectedSlidesCount={detectedSlidesCount}
-              strictOutline={strictOutline}
-              onStrictOutlineChange={setStrictOutline}
               actionLabel={rewriteActionLabel}
               isGenerating={isRewriting}
               onGenerate={handleGenerateOutline}
@@ -676,7 +666,8 @@ const UploadPage = () => {
                 error={templatesError}
                 retry={retryTemplates}
                 selectedTemplateId={selectedTemplateId}
-                isConfirmed={confirmedTemplateId !== null && confirmedTemplateId === selectedTemplateId}
+                confirmedTemplateId={confirmedTemplateId}
+                isConfirmed={confirmedTemplateId !== null && defaultTemplates.some((item) => item.id === confirmedTemplateId)}
                 onSelectionChange={handlePreviewSelection}
                 onConfirmSelection={handleConfirmSelection}
                 disabled={loadingState.isLoading}
