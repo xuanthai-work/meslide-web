@@ -34,6 +34,9 @@ type UngroupDeps = {
   ) => LaidOutChild[];
 };
 
+/** Minimum breathing room between two vertically stacked text components. */
+export const MIN_STACK_GAP = 12;
+
 export type TemplateV2UngroupSelection = {
   kind: "component";
   componentIndex: number;
@@ -52,6 +55,7 @@ export function ungroupTemplateV2ComponentInUi(
   sourceUi: RawRecord,
   componentIndex: number,
   deps: UngroupDeps,
+  enforceStackGap = false,
 ): { ui: RawRecord; selection: TemplateV2UngroupSelection } | null {
   const components = [...readArray(sourceUi.components)];
   const component = asRecord(components[componentIndex]);
@@ -61,6 +65,7 @@ export function ungroupTemplateV2ComponentInUi(
     component,
     componentIndex,
     deps,
+    enforceStackGap,
   );
   if (ungroupedComponents.length === 0) return null;
 
@@ -95,7 +100,7 @@ export function autoUngroupTextComponents(
       isTextOnlyComponent(component) &&
       canUngroupTemplateV2Component(component)
     ) {
-      const result = ungroupTemplateV2ComponentInUi(ui, index, deps);
+      const result = ungroupTemplateV2ComponentInUi(ui, index, deps, true);
       if (result) {
         ui = result.ui;
         // Re-check the components spliced in at this index: a nested text
@@ -127,6 +132,7 @@ function ungroupedComponentsFromComponent(
   component: RawRecord,
   componentIndex: number,
   deps: UngroupDeps,
+  enforceStackGap = false,
 ): RawRecord[] {
   const componentBoxValue = deps.componentBox(component);
   const componentRotation = readNumber(component.rotation) ?? 0;
@@ -148,9 +154,38 @@ function ungroupedComponentsFromComponent(
           absoluteElementEntry(element, componentBoxValue, deps),
         );
 
-  return entries.map((entry, index) =>
+  const spacedEntries = enforceStackGap ? enforceVerticalStackGap(entries) : entries;
+  return spacedEntries.map((entry, index) =>
     ungroupedComponent(entry, idBase, index, componentBoxValue, componentRotation),
   );
+}
+
+/**
+ * Ungrouped text components inherit their authored offsets. If an element in a
+ * vertical stack is taller than the gap its neighbour reserved, its next
+ * sibling would flow straight under it and overlap. Push each following
+ * component down so the stack always keeps at least ``MIN_STACK_GAP``.
+ */
+function enforceVerticalStackGap(entries: UngroupEntry[]): UngroupEntry[] {
+  let previous: UngroupEntry | null = null;
+  return entries.map((entry) => {
+    const box = entry.box;
+    if (previous?.box && box) {
+      const previousBox = previous.box;
+      const overlapsX =
+        previousBox.x < box.x + box.width && box.x < previousBox.x + previousBox.width;
+      if (overlapsX && box.y >= previousBox.y) {
+        const minY = previousBox.y + previousBox.height + MIN_STACK_GAP;
+        if (box.y < minY) {
+          const shifted: UngroupEntry = { ...entry, box: { ...box, y: minY } };
+          previous = shifted;
+          return shifted;
+        }
+      }
+    }
+    previous = entry;
+    return entry;
+  });
 }
 
 function absoluteElementEntry(
