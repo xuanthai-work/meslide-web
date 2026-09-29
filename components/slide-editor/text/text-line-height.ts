@@ -1,5 +1,10 @@
 const TEXT_AVERAGE_CHAR_EM = 0.52;
 
+// Vietnamese diacritics (ệ, â, ô, hỏi, ngã, sắc) need vertical breathing room
+// between lines. Never let a multi-line block collapse below this ratio or the
+// glyphs of one line will paint over the line above it.
+export const MIN_MULTILINE_LINE_HEIGHT = 1.08;
+
 export function shouldApplyLineHeight({
   text,
   width,
@@ -36,7 +41,11 @@ export function effectiveLineHeight({
   fallback: number;
   wrap?: string | null;
 }) {
-  return shouldApplyLineHeight({ text, width, fontSize, wrap })
-    ? lineHeight ?? fallback
-    : fallback;
+  if (!shouldApplyLineHeight({ text, width, fontSize, wrap })) {
+    return fallback;
+  }
+  const resolved = lineHeight ?? fallback;
+  // Guard against template authors shipping lineHeight < 1 (e.g. Momentum's
+  // 0.78). Only multi-line text is clamped; single-line blocks are untouched.
+  return Math.max(MIN_MULTILINE_LINE_HEIGHT, resolved);
 }

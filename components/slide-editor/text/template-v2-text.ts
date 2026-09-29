@@ -1,6 +1,7 @@
 import { renderMarkdownTextRuns } from "@/components/slide-editor/text/markdown-text";
 import type { Font, TextRun } from "@/components/slide-editor/types";
 import { effectiveLineHeight } from "@/components/slide-editor/text/text-line-height";
+import { sanitizeLetterSpacing } from "@/components/slide-editor/text/text-letter-spacing";
 import {
   isLatexTextRun,
   textRunContent,
@@ -25,6 +26,7 @@ export {
   singleLineMinScale,
 } from "./template-v2-text-fit.mjs";
 export { normalizeCanvasFontSpec } from "./template-v2-text-font.mjs";
+export { sanitizeLetterSpacing } from "./text-letter-spacing";
 
 type UnknownRecord = Record<string, any>;
 
@@ -172,26 +174,28 @@ export function fontFromRecord(
   font: UnknownRecord | null,
   fallback: RenderTextFont,
 ): RenderTextFont {
+  const size = readNumber(font?.size) ?? fallback.size;
   return {
     family: readString(font?.family) ?? fallback.family,
-    size: readNumber(font?.size) ?? fallback.size,
+    size,
     color: readString(font?.color) ?? fallback.color,
     bold: readBoolean(font?.bold) ?? fallback.bold,
     italic: readBoolean(font?.italic) ?? fallback.italic,
     underline:
       readBoolean(font?.underline) ??
       (readString(font?.text_decoration) === "underline" ||
-        readString(font?.textDecoration) === "underline"
+      readString(font?.textDecoration) === "underline"
         ? true
         : fallback.underline),
     lineHeight:
       readNumber(font?.line_height) ??
       readNumber(font?.lineHeight) ??
       fallback.lineHeight,
-    letterSpacing:
+    letterSpacing: sanitizeLetterSpacing(
       readNumber(font?.letter_spacing) ??
-      readNumber(font?.letterSpacing) ??
-      fallback.letterSpacing,
+        readNumber(font?.letterSpacing) ??
+        fallback.letterSpacing,
+    ),
     opacity: readNumber(font?.opacity) ?? fallback.opacity,
   };
 }
@@ -1350,18 +1354,21 @@ function scaleRawFontMetrics(value: unknown, scale: number) {
 
   const next = { ...font };
   const size = readNumber(font.size);
-  if (size != null) {
-    next.size = scaleFontSize(size, scale);
+  const scaledSize = size != null ? scaleFontSize(size, scale) : undefined;
+  if (scaledSize != null) {
+    next.size = scaledSize;
   }
 
   const letterSpacing = readNumber(font.letter_spacing);
   if (letterSpacing != null) {
-    next.letter_spacing = scaleTextMetric(letterSpacing, scale);
+    const scaled = scaleTextMetric(letterSpacing, scale);
+    next.letter_spacing = sanitizeLetterSpacing(scaled);
   }
 
   const camelLetterSpacing = readNumber(font.letterSpacing);
   if (camelLetterSpacing != null) {
-    next.letterSpacing = scaleTextMetric(camelLetterSpacing, scale);
+    const scaled = scaleTextMetric(camelLetterSpacing, scale);
+    next.letterSpacing = sanitizeLetterSpacing(scaled);
   }
 
   return stripUndefined(next);
