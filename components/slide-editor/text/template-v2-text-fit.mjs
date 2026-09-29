@@ -344,6 +344,27 @@ export function isSingleLineBox(box, designedFontSize, lineHeight = DESIGN_LINE_
   return height < size * leading * SINGLE_LINE_TOLERANCE;
 }
 
+const SHORT_TEXT_SINGLE_LINE_MIN_SCALE = 0.8;
+const SHORT_TEXT_MAX_CHARS = 25;
+const SHORT_TEXT_MAX_WORDS = 3;
+const SHORT_TEXT_MIN_FONT_SIZE = 36;
+
+/**
+ * A tall box usually means "this text may wrap", but a big headline holding a
+ * couple of words should still hug one line like the HTML thumbnail does.
+ * Prefer a single line for short, unbroken display text at large sizes, as long
+ * as the fit does not shrink the font below a tasteful floor.
+ */
+export function hasShortSingleLineText(source, designedFontSize) {
+  const size = Number(designedFontSize);
+  if (!(size >= SHORT_TEXT_MIN_FONT_SIZE)) return false;
+  const text = runsTextContent(source).trim();
+  if (!text || text.includes("\n")) return false;
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  const charCount = Array.from(text).length;
+  return wordCount <= SHORT_TEXT_MAX_WORDS || charCount < SHORT_TEXT_MAX_CHARS;
+}
+
 export function singleLineMinScale(designedSize) {
   return Math.max(
     SINGLE_LINE_MIN_SCALE,
@@ -446,13 +467,38 @@ export function fitTextToBox(runs, box, options = {}) {
       allowCharSplit,
     });
   const lines = layout(1, false);
-  if (layoutFits(lines, fitBox)) {
-    return { runs: source, fontScale: 1, lines, ellipsis: false, height: layoutHeight(lines) };
-  }
   const designedSize = designedSizeOf(source);
-  const fitted = isSingleLineBox(box, designedSize)
-    ? fitSingleLineOverflow(layout, fitBox, measure, designedSize)
-    : finishOverflowFit(layout, fitBox, measure, floorScale(designedSize));
+  const forcedSingleLine = isSingleLineBox(box, designedSize);
+  const preferSingleLine =
+    forcedSingleLine || hasShortSingleLineText(source, designedSize);
+  if (layoutFits(lines, fitBox) && (!preferSingleLine || lines.length <= 1)) {
+    return {
+      runs: source,
+      fontScale: 1,
+      lines,
+      ellipsis: false,
+      height: layoutHeight(lines),
+    };
+  }
+  if (preferSingleLine) {
+    const singleLine = fitSingleLineOverflow(layout, fitBox, measure, designedSize);
+    // A short headline keeps one line only when the required shrink is gentle;
+    // otherwise fall through so the box can wrap the copy instead of ellipsizing.
+    const keepSingle =
+      forcedSingleLine ||
+      (!singleLine.ellipsis &&
+        singleLine.bestScale >= SHORT_TEXT_SINGLE_LINE_MIN_SCALE);
+    if (keepSingle) {
+      return {
+        runs: scaleFitRuns(source, singleLine.bestScale),
+        fontScale: singleLine.bestScale,
+        lines: singleLine.bestLines,
+        ellipsis: singleLine.ellipsis,
+        height: layoutHeight(singleLine.bestLines),
+      };
+    }
+  }
+  const fitted = finishOverflowFit(layout, fitBox, measure, floorScale(designedSize));
   return {
     runs: scaleFitRuns(source, fitted.bestScale),
     fontScale: fitted.bestScale,

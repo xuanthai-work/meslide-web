@@ -25,6 +25,10 @@ export declare function isSingleLineBox(
   designedFontSize: number,
   lineHeight?: number,
 ): boolean;
+export declare function hasShortSingleLineText(
+  source: Array<{ text?: string; type?: string }> | null | undefined,
+  designedFontSize: number,
+): boolean;
 export declare function singleLineMinScale(designedSize: number): number;
 export declare function hasWideGlyphs(text: string): boolean;
 
