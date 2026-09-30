@@ -22,7 +22,6 @@ import {
 import type {
   ChatStreamTrace,
 } from "../../services/api/chat";
-import { useT } from "@/i18n/provider";
 import type { AppDispatch } from "@/store/store";
 import {
   setPresentationData,
@@ -69,8 +68,8 @@ import {
   MUTATING_TOOLS,
   readTraceSlideIndex,
 } from "./chat/chat-activity";
-import { translateBackendStatus } from "@/i18n/backend-messages";
 import { useChatSession } from "./chat/useChatSession";
+import { translateBackendStatus } from "@/lib/backend-messages";
 
 export type { ChatApiAdapter } from "./chat/chat-types";
 
@@ -94,7 +93,6 @@ const Chat = ({
   onChatSendingStateChange,
   onFollowModeChange,
 }: ChatProps) => {
-  const t = useT();
   const dispatch = useDispatch<AppDispatch>();
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -501,8 +499,8 @@ const Chat = ({
         const detail =
           error instanceof Error
             ? error.message
-            : t("chat.toast.deleteFailedFallback");
-        notify.error(t("chat.toast.deleteFailedTitle"), detail);
+            : "Không thể xóa các cuộc trò chuyện đã lưu";
+        notify.error("Không thể xóa cuộc trò chuyện", detail);
       }
     }
   };
@@ -515,15 +513,15 @@ const Chat = ({
     if (applyingEditPreviewMessageId) return;
     if (!presentationData || typeof presentationData !== "object") {
       notify.error(
-        t("chat.toast.previewUnavailable"),
-        t("chat.toast.presentationNotReady")
+        "Không thể xem trước",
+        "Bài thuyết trình chưa sẵn sàng."
       );
       return;
     }
 
     const currentPresentation = presentationData as Record<string, unknown>;
     if (!Array.isArray(currentPresentation.slides)) {
-      notify.error(t("chat.toast.previewUnavailable"), t("chat.toast.noSlides"));
+      notify.error("Không thể xem trước", "Chưa có dữ liệu slide.");
       return;
     }
 
@@ -566,10 +564,9 @@ const Chat = ({
       await onPresentationChanged?.();
       notify.success(
         version === "original"
-          ? t("chat.toast.originalRestored")
-          : t("chat.toast.changesRestored"),
-        `${preview.slideIndices.length} ${preview.slideIndices.length === 1 ? "slide" : "slides"
-        } updated.`,
+          ? "Đã khôi phục bản gốc"
+          : "Đã khôi phục thay đổi",
+        `${preview.slideIndices.length} slide đã được cập nhật.`,
       );
     } catch (error) {
       dispatch(setPresentationData(presentationData as PresentationData));
@@ -578,8 +575,8 @@ const Chat = ({
         [messageId]: previousVersion,
       }));
       notify.error(
-        t("chat.toast.restoreFailed"),
-        error instanceof Error ? error.message : t("chat.toast.tryAgain"),
+        "Không thể khôi phục slide",
+        error instanceof Error ? error.message : "Vui lòng thử lại.",
       );
     } finally {
       onChatMutationStateChange?.(false);
@@ -606,8 +603,8 @@ const Chat = ({
           error
         );
         notify.error(
-          t("chat.toast.refreshFailed"),
-          t("chat.toast.mutationRefreshFailed")
+          "Làm mới thất bại",
+          "Đã lưu thay đổi nhưng không thể làm mới."
         );
       } finally {
         refreshInFlightRef.current = false;
@@ -618,7 +615,7 @@ const Chat = ({
       }
     };
     await runRefresh();
-  }, [onPresentationChanged, t]);
+  }, [onPresentationChanged]);
 
   const refreshPresentationIfNeeded = async (toolCalls: string[]) => {
     const hasMutation = toolCalls.some((tool) => MUTATING_TOOLS.has(tool));
@@ -631,8 +628,8 @@ const Chat = ({
     } catch (error) {
       console.error("Failed to refresh presentation after chat update:", error);
       notify.error(
-        t("chat.toast.refreshFailed"),
-        t("chat.toast.completionRefreshFailed")
+        "Làm mới thất bại",
+        "Chat đã hoàn tất nhưng không thể làm mới."
       );
     }
   };
@@ -730,7 +727,7 @@ const Chat = ({
       return;
     }
     if (variant !== "template-v2") {
-      notify.info(t("chat.attachment.templateOnly"));
+      notify.info("Tệp đính kèm chỉ dùng được trong chat Template V2.");
       return;
     }
 
@@ -785,13 +782,13 @@ const Chat = ({
       }
 
       notify.success(
-        t("chat.attachment.readyTitle"),
-        `${files.length} file${files.length === 1 ? "" : "s"} attached.`
+        "Tệp đính kèm đã sẵn sàng",
+        `Đã đính kèm ${files.length} tệp.`
       );
     } catch (error) {
       notify.error(
-        t("chat.attachment.failedTitle"),
-        error instanceof Error ? error.message : t("chat.attachment.failedFallback")
+        "Không thể đính kèm tệp",
+        error instanceof Error ? error.message : "Tải lên thất bại."
       );
     } finally {
       setIsUploadingPastedImage(false);
@@ -876,10 +873,10 @@ const Chat = ({
         imagesForMessage = await extractImageTextContext(pastedImages);
       } catch (error) {
         notify.error(
-          t("chat.attachment.imageReadFailedTitle"),
+          "Không thể đọc hình ảnh",
           error instanceof Error
             ? error.message
-            : t("chat.attachment.imageReadFailedFallback")
+            : "Xử lý hình ảnh thất bại."
         );
         return;
       }
@@ -959,7 +956,7 @@ const Chat = ({
           },
           onStatus: (status, statusPayload) => {
             appendAssistantActivity(assistantMessageId, {
-              label: translateBackendStatus(t, statusPayload),
+              label: translateBackendStatus(statusPayload),
               state: inferStatusState(status, statusPayload.status_code),
             });
           },
@@ -1021,7 +1018,7 @@ const Chat = ({
             if (trace.status === "start") {
               markChatMutationStarted(trace.tool);
             }
-            const traceActivity = formatTraceActivity(trace, t);
+            const traceActivity = formatTraceActivity(trace);
             if (!traceActivity) {
               return;
             }
@@ -1097,7 +1094,7 @@ const Chat = ({
       }
 
       const message =
-        error instanceof Error ? error.message : t("chat.toast.sendFailed");
+        error instanceof Error ? error.message : "Không thể gửi tin nhắn";
 
       setMessages((previous) =>
         previous.map((entry) =>
@@ -1124,7 +1121,7 @@ const Chat = ({
           content: message,
         },
       ]);
-      notify.error(t("chat.toast.errorTitle"), message);
+      notify.error("Lỗi trò chuyện", message);
     } finally {
       setHasChatMutationStarted(false);
       if (abortControllerRef.current === streamAbortController) {
@@ -1283,15 +1280,15 @@ const Chat = ({
       }
       setPastedImages((previous) => [...previous, ...nextImages]);
       notify.success(
-        t("chat.attachment.pastedTitle"),
-        `${nextImages.length} image${nextImages.length === 1 ? "" : "s"} ready to use.`
+        "Đã dán hình ảnh",
+        `${nextImages.length} hình ảnh đã sẵn sàng để dùng.`
       );
     } catch (error) {
       notify.error(
-        t("chat.attachment.pasteFailedTitle"),
+        "Không thể dán hình ảnh",
         error instanceof Error
           ? error.message
-          : t("chat.attachment.pasteFailedFallback")
+          : "Tải hình ảnh lên thất bại."
       );
     } finally {
       setIsUploadingPastedImage(false);
@@ -1343,8 +1340,8 @@ const Chat = ({
     setIsDraggingAttachment(false);
     if (files.length === 0) {
       notify.warning(
-        t("chat.attachment.failedTitle"),
-        t("chat.attachment.useButton")
+        "Không thể đính kèm tệp",
+        "Hãy dùng nút đính kèm cho tệp này."
       );
       return;
     }

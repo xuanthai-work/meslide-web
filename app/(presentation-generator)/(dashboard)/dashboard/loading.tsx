@@ -1,5 +1,3 @@
-import { translate } from "@/i18n/translate";
-
 const DeckShimmerCard = () => (
   <div className="flex min-h-[216px] flex-col overflow-hidden rounded-[12px] border border-[#EDEEEF] bg-[#F8FBFB] shadow-none animate-pulse">
     <div className="relative flex-1 overflow-hidden p-4">
@@ -40,12 +38,12 @@ const Loading = () => {
     <div className="min-h-screen w-full px-3 pb-10 sm:px-6">
       <div className="sticky top-0 right-0 z-50 -mr-4 mb-2 w-[calc(100%+1rem)] bg-gradient-to-b from-[var(--gslide-bg)] via-[var(--gslide-bg)] to-transparent py-[28px] px-6 backdrop-blur">
         <h3 className="text-[28px] tracking-[-0.84px] font-syne font-normal text-[#101828]">
-          {translate("dashboard.loading.title")}
+          {"Bài thuyết trình slide"}
         </h3>
       </div>
       <section className="relative z-10 overflow-visible">
         <h2 className="pb-3.5 font-syne text-base font-medium text-[#333333]">
-          {translate("dashboard.section.actions")}
+          {"Hành động"}
         </h2>
         <div className="flex flex-wrap gap-4 animate-pulse">
           <ActionShimmer />
@@ -55,7 +53,7 @@ const Loading = () => {
       <section className="relative z-10 mt-12">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-syne text-base font-medium text-[#333333]">
-            {translate("dashboard.section.decks")}
+            {"Slide của tôi"}
           </h2>
           <div className="h-8 w-8 rounded-full bg-gray-100 animate-pulse" />
         </div>

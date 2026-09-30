@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { notify } from "@/components/ui/sonner";
-import { useT } from "@/i18n/provider";
 import type { ChatHistoryMessage } from "../../../services/api/chat";
 import type { ChatApiAdapter, ChatMessage } from "./chat-types";
 import {
@@ -119,7 +118,6 @@ export function useChatSession({
   conversationStorageScope: string;
   onSessionReset: () => void;
 }) {
-  const t = useT();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
@@ -158,8 +156,8 @@ export function useChatSession({
         const detail =
           error instanceof Error
             ? error.message
-            : t("chat.toast.loadFailedFallback");
-        notify.error(t("chat.toast.loadFailedTitle"), detail);
+            : "Không thể tải cuộc trò chuyện trước đó";
+        notify.error("Không thể tải cuộc trò chuyện", detail);
       } finally {
         if (!cancelled) {
           setIsHistoryLoading(false);
@@ -174,7 +172,6 @@ export function useChatSession({
     activeResourceId,
     chatAdapter,
     conversationStorageScope,
-    t,
   ]);
 
   return {

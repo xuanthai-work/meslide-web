@@ -1,11 +1,10 @@
 import UploadPage from "./components/UploadPage";
 import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/components/Header";
 import { Metadata } from "next";
-import { translate } from "@/i18n/translate";
 
 export const metadata: Metadata = {
-  title: translate("upload.metadata.title"),
-  description: translate("upload.metadata.description"),
+  title: "GSlide | Trình tạo bài thuyết trình AI",
+  description: "Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI.",
   alternates: {
     canonical: "/create",
   },
@@ -22,16 +21,16 @@ export const metadata: Metadata = {
     "business presentations",
   ],
   openGraph: {
-    title: translate("upload.metadata.createTitle"),
-    description: translate("upload.metadata.description"),
+    title: "Tạo bài thuyết trình dữ liệu | GSlide",
+    description: "Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI.",
     type: "website",
     url: "/create",
     siteName: "GSlide",
   },
   twitter: {
     card: "summary_large_image",
-    title: translate("upload.metadata.createTitle"),
-    description: translate("upload.metadata.description"),
+    title: "Tạo bài thuyết trình dữ liệu | GSlide",
+    description: "Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI.",
   },
 };
 

@@ -16,7 +16,6 @@ import {
 } from "@/components/slide-editor/charts/chart-data";
 import { ensureGoogleFontLoaded } from "@/components/slide-editor/text/google-fonts";
 import type { DataLabelPosition } from "@/components/slide-editor/types";
-import { translate } from "@/i18n/translate";
 import { applyChartFontFamily } from "@/lib/chart-font";
 import {
   asRecord,
@@ -311,7 +310,7 @@ function createChartJsConfig(
   const autoShowLegend =
     kind.pieLike ||
     datasets.length > 1 ||
-    Boolean(datasets[0]?.name && datasets[0].name !== "Series 1" && datasets[0].name !== translate("slideEditor.chart.series", { number: 1 }));
+    Boolean(datasets[0]?.name && datasets[0].name !== "Series 1" && datasets[0].name !== `Chuỗi ${(1)}`);
   const showLegend =
     readBoolean(
       "legend" in element ? element.legend : element.showLegend,
@@ -835,17 +834,17 @@ function rawChartCategories(
   if (categories.length > 0) {
     return Array.from(
       { length },
-      (_, index) => categories[index] ?? translate("slideEditor.chart.item", { number: index + 1 }),
+      (_, index) => categories[index] ?? `Mục ${(index + 1)}`,
     );
   }
   if (dataLabels.length > 0) {
     return Array.from(
       { length },
-      (_, index) => dataLabels[index] ?? translate("slideEditor.chart.item", { number: index + 1 }),
+      (_, index) => dataLabels[index] ?? `Mục ${(index + 1)}`,
     );
   }
 
-  return Array.from({ length }, (_, index) => translate("slideEditor.chart.item", { number: index + 1 }));
+  return Array.from({ length }, (_, index) => `Mục ${(index + 1)}`);
 }
 
 function rawChartDatasets(
@@ -875,7 +874,7 @@ function rawChartDatasets(
         color:
           colors[index % colors.length] ??
           DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length],
-        name: readString(item.name) ?? translate("slideEditor.chart.series", { number: index + 1 }),
+        name: readString(item.name) ?? `Chuỗi ${(index + 1)}`,
         categoryColors: effectiveSeries.length === 1 ? colors : undefined,
         points,
         values,
@@ -893,7 +892,7 @@ function rawChartDatasets(
       color:
         colors[0] ??
         safeChartColor(readString(element.color), DEFAULT_CHART_COLORS[0]),
-      name: readString(element.title) ?? translate("slideEditor.chart.series", { number: 1 }),
+      name: readString(element.title) ?? `Chuỗi ${(1)}`,
       categoryColors: colors,
       points: normalizePoints(
         rawData.map((value, valueIndex) => chartPoint(value, valueIndex)),
@@ -955,7 +954,7 @@ function normalizePoints(
 function emptyDataset(): RawChartDataset {
   return {
     color: DEFAULT_CHART_COLORS[0],
-    name: translate("slideEditor.chart.series", { number: 1 }),
+    name: `Chuỗi ${(1)}`,
     points: [{ x: 1, y: 0 }],
     values: [0],
   };

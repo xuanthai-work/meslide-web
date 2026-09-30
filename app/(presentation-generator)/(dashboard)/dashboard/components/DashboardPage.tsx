@@ -25,8 +25,6 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { notify } from "@/components/ui/sonner";
 import { GSlideHeader } from "@/components/gslide";
-import { useT } from "@/i18n/provider";
-import { translate } from "@/i18n/translate";
 
 const actionCardBase =
   "absolute aspect-[16/9] h-[46.238px] w-[82.201px] rounded-[4.474px] border border-white/50 bg-cover bg-center bg-no-repeat shadow-[0_8px_18px_rgba(16,24,40,0.18)] transition-all duration-500 ease-out opacity-100 translate-y-0 scale-100";
@@ -178,16 +176,14 @@ const ListViewIcon = () => (
   />
 );
 
-
 function DashboardHeader() {
   return (
-    <GSlideHeader title={translate("nav.dashboard")} />
+    <GSlideHeader title={"Trang chủ"} />
   );
 }
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
-  const t = useT();
   const [presentations, setPresentations] = useState<PresentationResponse[]>(
     [],
   );
@@ -250,13 +246,13 @@ const DashboardPage: React.FC = () => {
       const message =
         creationError instanceof Error
           ? creationError.message
-          : t("dashboard.actions.blank.errorFallback");
-      notify.error(t("dashboard.actions.blank.errorTitle"), message);
+          : "Đã xảy ra lỗi khi tạo bài thuyết trình.";
+      notify.error("Không thể tạo bài thuyết trình trắng", message);
     } finally {
       blankPresentationRequestInFlight.current = false;
       setIsCreatingBlankPresentation(false);
     }
-  }, [router, t]);
+  }, [router]);
 
   const removePresentation = (presentationId: string) => {
     setPresentations((prev) => removePresentationsById(prev, [presentationId]));
@@ -276,13 +272,13 @@ const DashboardPage: React.FC = () => {
       <DashboardHeader />
       <section className="relative z-10 overflow-visible pb-0 pl-3 pr-3 pt-[17px] sm:pl-6 sm:pr-[9px]">
         <h2 className="w-full font-unbounded text-base font-normal tracking-[-0.03em] text-[var(--gslide-ink)]">
-          {t("dashboard.section.actions")}
+          {"Hành động"}
         </h2>
         <div className="mt-[18px] grid w-full max-w-[625px] grid-cols-1 gap-4 sm:grid-cols-2">
           <DashboardActionCard
             href="/upload"
-            title={t("dashboard.actions.createNew.title")}
-            ariaLabel={t("dashboard.actions.createNew.ariaLabel")}
+            title={"Tạo bài thuyết trình mới"}
+            ariaLabel={"Tạo bài thuyết trình mới"}
             media={
               <Image
                 src="/create_presentation_bg.png"
@@ -301,12 +297,12 @@ const DashboardPage: React.FC = () => {
             disabled={isCreatingBlankPresentation}
             isLoading={isCreatingBlankPresentation}
             title={
-              isCreatingBlankPresentation ? t("dashboard.actions.blank.creating") : t("dashboard.actions.blank.title")
+              isCreatingBlankPresentation ? "Đang tạo…" : "Bài thuyết trình trắng"
             }
             ariaLabel={
               isCreatingBlankPresentation
-                ? t("dashboard.actions.blank.creatingAriaLabel")
-                : t("dashboard.actions.blank.ariaLabel")
+                ? "Đang tạo bài thuyết trình trắng"
+                : "Tạo bài thuyết trình trắng"
             }
             mediaClassName="w-[90px]"
             media={
@@ -320,14 +316,14 @@ const DashboardPage: React.FC = () => {
       <section className="relative z-10 mt-[46px] pl-3 pr-3 sm:pl-6 sm:pr-[9px]">
         <div className="mb-[14px] flex items-center justify-between gap-4">
           <h2 className="font-unbounded text-base font-normal tracking-[-0.03em] text-[var(--gslide-ink)]">
-            {t("dashboard.section.decks")}
+            {"Slide của tôi"}
           </h2>
           <div className="flex items-center gap-[17px]">
             <div className="flex items-center rounded-lg border border-[var(--gslide-border)] p-1">
               <button
                 type="button"
                 onClick={() => setDeckViewMode("grid")}
-                aria-label={t("dashboard.decks.gridViewAria")}
+                aria-label={"Xem dạng lưới"}
                 aria-pressed={deckViewMode === "grid"}
                 className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] ${deckViewMode === "grid" ? "bg-[var(--gslide-accent-soft)]" : "hover:bg-[#FAFAFC]"}`}
               >
@@ -336,7 +332,7 @@ const DashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDeckViewMode("list")}
-                aria-label={t("dashboard.decks.listViewAria")}
+                aria-label={"Xem dạng danh sách"}
                 aria-pressed={deckViewMode === "list"}
                 className={`flex items-center rounded px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] ${deckViewMode === "list" ? "bg-[var(--gslide-accent-soft)]" : "hover:bg-[#FAFAFC]"}`}
               >

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
-import { useT } from "@/i18n/provider";
 
 const SAVE_BUTTON_GRADIENT =
   "linear-gradient(270deg, rgb(213, 202, 252) 2.4038%, rgb(227, 210, 235) 27.885%, rgb(244, 220, 211) 69.231%, rgb(253, 228, 194) 100%)";
@@ -77,13 +76,12 @@ export function TemplateEditorHeader({
   onSave,
   onUndo,
 }: TemplateEditorHeaderProps) {
-  const t = useT();
   const skipNameCommitRef = useRef(false);
 
   return (
     <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-[#EDEEEF] bg-white">
       <div className="flex h-full min-w-0 flex-1 items-center gap-[12px] px-5 text-left sm:w-[347px] sm:flex-none sm:px-[24px]">
-        <button onClick={onBack} aria-label={t("templateStudio.editor.dashboard")} type="button">
+        <button onClick={onBack} aria-label={"Trang chủ"} type="button">
           <GSlideWordmark className="text-base" />
         </button>
         <label
@@ -93,10 +91,10 @@ export function TemplateEditorHeader({
               ? "cursor-text hover:border-[#EDEEEF] hover:bg-[#FAFAFB] focus-within:border-[var(--gslide-input-focus)] focus-within:bg-white focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
               : "cursor-default",
           )}
-          title={canEdit ? t("templateStudio.editor.editName") : t("templateStudio.editor.defaultTemplate")}
+          title={canEdit ? "Sửa tên mẫu" : "Mẫu mặc định"}
         >
           <input
-            aria-label={t("templateStudio.editor.templateName")}
+            aria-label={"Tên mẫu"}
             className="h-[24px] min-w-0 flex-1 truncate bg-transparent p-0 text-[16px] font-semibold leading-normal tracking-[0.16px] text-[#101323] outline-none placeholder:text-[#9B9B9B] disabled:opacity-60"
             aria-readonly={!canEdit}
             onBlur={() => {
@@ -123,7 +121,7 @@ export function TemplateEditorHeader({
                 event.currentTarget.blur();
               }
             }}
-            placeholder={t("templateStudio.editor.untitled")}
+            placeholder={"Mẫu không tiêu đề"}
             readOnly={!canEdit}
             spellCheck={false}
             tabIndex={canEdit ? 0 : -1}
@@ -145,7 +143,7 @@ export function TemplateEditorHeader({
           title={activeLayoutToken}
           type="button"
         >
-          {t("templateStudio.editor.copyId")}
+          {"Sao chép ID"}
           <Copy className="h-4 w-4" />
         </button>
         <div className="hidden h-[16.5px] w-px bg-[#EDEEEF] sm:block" />
@@ -154,7 +152,7 @@ export function TemplateEditorHeader({
             className="flex h-[34px] w-[24px] items-center justify-center rounded-full text-[#101323] transition-colors hover:bg-[#F7F6F9] disabled:text-[#B9B9B9]"
             disabled={!canEdit || !canUndo}
             onClick={onUndo}
-            title={t("templateStudio.editor.undo")}
+            title={"Hoàn tác"}
             type="button"
           >
             <Undo2 className="h-[14px] w-[14px]" />
@@ -163,7 +161,7 @@ export function TemplateEditorHeader({
             className="flex h-[34px] w-[24px] items-center justify-center rounded-full text-[#101323] transition-colors hover:bg-[#F7F6F9] disabled:text-[#B9B9B9]"
             disabled={!canEdit || !canRedo}
             onClick={onRedo}
-            title={t("templateStudio.editor.redo")}
+            title={"Làm lại"}
             type="button"
           >
             <Redo2 className="h-[14px] w-[14px]" />
@@ -175,11 +173,11 @@ export function TemplateEditorHeader({
             <button
               className="hidden h-[33px] items-center gap-[6px] rounded-[48px] px-[10px] py-[8px] text-[14px] font-medium text-red-600 transition-colors hover:bg-red-50 md:flex"
               onClick={onDelete}
-              title={t("templateStudio.editor.deleteTemplate")}
+              title={"Xóa mẫu"}
               type="button"
             >
               <Trash2 className="h-4 w-4" />
-              <span className="hidden xl:inline">{t("templateStudio.editor.deleteTemplate")}</span>
+              <span className="hidden xl:inline">{"Xóa mẫu"}</span>
             </button>
             <div className="hidden h-[16.5px] w-px bg-[#EDEEEF] md:block" />
           </>
@@ -188,9 +186,9 @@ export function TemplateEditorHeader({
           <GradientActionButton
             onClick={onSave}
             disabled={isSaving}
-            title={hasUnsavedChanges ? t("templateStudio.editor.saveChanges") : t("templateStudio.editor.saveTemplate")}
+            title={hasUnsavedChanges ? "Lưu thay đổi" : "Lưu mẫu"}
           >
-            {isSaving ? t("templateStudio.editor.saving") : t("templateStudio.editor.save")}
+            {isSaving ? "Đang lưu" : "Lưu"}
             {isSaving ? (
               <Loader2 className="h-[15.4px] w-[15.4px] animate-spin" />
             ) : (

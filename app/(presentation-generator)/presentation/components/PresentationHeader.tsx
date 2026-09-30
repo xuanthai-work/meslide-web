@@ -46,7 +46,6 @@ import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
-import { useT } from "@/i18n/provider";
 import { buildSafeExportFileName } from "@/utils/exportFilename";
 
 function PresentationExportOptions({
@@ -99,7 +98,6 @@ const PresentationHeader = ({
   isPresentationSaving: boolean;
   currentSlide?: number;
 }) => {
-  const t = useT();
   const [open, setOpen] = useState(false);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
   const router = useRouter();
@@ -141,7 +139,7 @@ const PresentationHeader = ({
       return;
     }
     const trimmed = draftTitle.normalize("NFC").trim();
-    const next = trimmed || presentationData.title || t("presentation.header.fallbackTitle");
+    const next = trimmed || presentationData.title || "Bài thuyết trình";
     if (next !== presentationData.title) {
       dispatch(updateTitle(next));
     }
@@ -178,8 +176,8 @@ const PresentationHeader = ({
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
-        t("presentation.export.exportingPptx"),
-        t("presentation.export.exportingDescription")
+        "Đang xuất PPTX",
+        "Bài thuyết trình đang được xuất. Quá trình này có thể mất một lúc."
       );
       setIsExporting(true);
       const safePptxFileName = buildSafeExportFileName(
@@ -207,15 +205,15 @@ const PresentationHeader = ({
 
       downloadLink(pptxPath, safePptxFileName);
       notify.success(
-        t("presentation.export.complete"),
-        t("presentation.export.pptxDownloaded"),
+        "Xuất hoàn tất",
+        "Tệp PPTX đã được tải xuống.",
         { id: exportToastId }
       );
     } catch (error) {
       console.error("Export failed:", error);
       notify.error(
-        t("presentation.export.failed"),
-        t("presentation.export.failedDescription"),
+        "Xuất thất bại",
+        "Không thể xuất bài thuyết trình. Vui lòng thử lại.",
         exportToastId !== undefined ? { id: exportToastId } : undefined
       );
     } finally {
@@ -229,8 +227,8 @@ const PresentationHeader = ({
     let exportToastId: string | number | undefined;
     try {
       exportToastId = notify.loading(
-        t("presentation.export.exportingPdf"),
-        t("presentation.export.exportingDescription")
+        "Đang xuất PDF",
+        "Bài thuyết trình đang được xuất. Quá trình này có thể mất một lúc."
       );
       setIsExporting(true);
       const safePdfFileName = buildSafeExportFileName(
@@ -257,15 +255,15 @@ const PresentationHeader = ({
         throw new Error("Failed to export PDF");
       }
       notify.success(
-        t("presentation.export.complete"),
-        t("presentation.export.pdfDownloaded"),
+        "Xuất hoàn tất",
+        "Tệp PDF đã được tải xuống.",
         { id: exportToastId }
       );
     } catch (error) {
       console.error(error);
       notify.error(
-        t("presentation.export.failed"),
-        t("presentation.export.failedDescription"),
+        "Xuất thất bại",
+        "Không thể xuất bài thuyết trình. Vui lòng thử lại.",
         exportToastId !== undefined ? { id: exportToastId } : undefined
       );
     } finally {
@@ -313,29 +311,29 @@ const PresentationHeader = ({
                 cancelTitleEdit();
               }
             }}
-            placeholder={t("presentation.header.titlePlaceholder")}
+            placeholder={"Tiêu đề bài thuyết trình"}
             className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-unbounded text-base leading-tight text-[#101323] placeholder:text-[#101323]/35 outline-none border-0 focus:ring-0"
-            aria-label={t("presentation.header.titleAria")}
+            aria-label={"Tiêu đề bài thuyết trình"}
           />
           <div className="flex shrink-0 items-center gap-0.5 border-l border-[#EDECEC] pl-1 ml-0.5">
-            <ToolTip content={t("presentation.header.saveTitle")}>
+            <ToolTip content={"Lưu · Enter"}>
               <button
                 type="button"
                 onMouseDown={onTitleSaveMouseDown}
                 onClick={commitTitleEdit}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--gslide-accent)] hover:bg-[var(--gslide-accent)]/10 transition-colors"
-                aria-label={t("presentation.header.saveAria")}
+                aria-label={"Lưu tiêu đề"}
               >
                 <Check className="h-4 w-4" strokeWidth={2.25} />
               </button>
             </ToolTip>
-            <ToolTip content={t("presentation.header.cancelTitle")}>
+            <ToolTip content={"Hủy · Esc"}>
               <button
                 type="button"
                 onMouseDown={onTitleCancelMouseDown}
                 onClick={cancelTitleEdit}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-[#101323]/55 hover:bg-[var(--gslide-accent-soft)] hover:text-[#101323] transition-colors"
-                aria-label={t("presentation.header.cancelAria")}
+                aria-label={"Hủy chỉnh sửa tiêu đề"}
               >
                 <X className="h-4 w-4" strokeWidth={2.25} />
               </button>
@@ -355,7 +353,7 @@ const PresentationHeader = ({
         >
           <h2 className="min-w-0 flex-1 font-unbounded text-lg leading-snug text-[#101323]">
             <MarkdownRenderer
-              content={presentationData?.title || t("presentation.header.fallbackTitle")}
+              content={presentationData?.title || "Bài thuyết trình"}
               className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-[#101323] prose-p:my-0 prose-headings:my-0"
             />
           </h2>
@@ -379,13 +377,13 @@ const PresentationHeader = ({
             onClick={() => {
               router.push("/dashboard");
             }}
-            aria-label={t("presentation.header.dashboardAria")}
+            aria-label={"Về trang chủ"}
             className="hidden shrink-0 sm:block"
           >
             <GSlideWordmark className="text-base" />
           </button>
           {presentationData && !isStreaming && !isEditingTitle ? (
-            <ToolTip content={t("presentation.header.rename")}>{titleBlock}</ToolTip>
+            <ToolTip content={"Đổi tên bài thuyết trình"}>{titleBlock}</ToolTip>
           ) : (
             titleBlock
           )}
@@ -399,7 +397,7 @@ const PresentationHeader = ({
             </div>
           )}
           <div className="flex items-center gap-2 bg-[var(--gslide-bg)] px-3.5 h-[38px] border border-[#EDECEC] rounded-[80px]">
-            <ToolTip content={t("presentation.header.regenerate")}>
+            <ToolTip content={"Tạo lại bài thuyết trình"}>
               <button
                 type="button"
                 onClick={() => setIsRegenerateConfirmOpen(true)}
@@ -409,7 +407,7 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
-            <ToolTip content={t("presentation.header.undo")}>
+            <ToolTip content={"Hoàn tác"}>
               <button
                 disabled={!canUndo}
                 className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
@@ -421,7 +419,7 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
-            <ToolTip content={t("presentation.header.redo")}>
+            <ToolTip content={"Làm lại"}>
               <button
                 disabled={!canRedo}
                 className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
@@ -433,7 +431,7 @@ const PresentationHeader = ({
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4 w-[2px]" />
-            <ToolTip content={t("presentation.header.present")}>
+            <ToolTip content={"Trình chiếu"}>
               <button
                 onClick={() => {
                   const to = `?id=${presentation_id}&mode=present&slide=${
@@ -454,10 +452,10 @@ const PresentationHeader = ({
           </div>
 
         {
-          <ToolTip content={t("presentation.header.shortcuts")}>
+          <ToolTip content={"Phím tắt (?)"}>
             <button
               type="button"
-              aria-label={t("presentation.header.shortcutsAria")}
+              aria-label={"Phím tắt"}
               aria-haspopup="dialog"
               aria-expanded={shortcutsDialogOpen}
               aria-keyshortcuts="?"
@@ -482,7 +480,7 @@ const PresentationHeader = ({
                 {isExporting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <span className="hidden sm:inline">{t("presentation.header.export")}</span>
+                  <span className="hidden sm:inline">{"Xuất"}</span>
                 )}{" "}
                 <ArrowRightFromLine className="w-3.5 h-3.5" />
               </button>
@@ -493,7 +491,7 @@ const PresentationHeader = ({
             >
               <PresentationExportOptions
                 mobile={false}
-                exportAsLabel={t("presentation.header.exportAs")}
+                exportAsLabel={"Xuất dưới dạng"}
                 onExportPdf={() => {
                   handleExportPdf();
                   setOpen(false);
@@ -517,10 +515,10 @@ const PresentationHeader = ({
               <AlertTriangle className="h-6 w-6 text-red-500" />
             </div>
             <DialogTitle className="text-lg font-semibold text-[#191919]">
-              {t("presentation.header.regenerateDialogTitle")}
+              {"Tạo lại bài thuyết trình?"}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed text-gray-500">
-              {t("presentation.header.regenerateDialogDescription")}
+              {"Thao tác này sẽ thay thế các slide hiện tại bằng phiên bản mới và xóa lịch sử hoàn tác. Các chỉnh sửa hiện tại có thể bị mất."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row border-t border-gray-100 p-0 sm:space-x-0">
@@ -530,7 +528,7 @@ const PresentationHeader = ({
               onClick={() => setIsRegenerateConfirmOpen(false)}
               className="h-auto flex-1 rounded-none rounded-bl-2xl px-4 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-700"
             >
-              {t("common.actions.cancel")}
+              {"Hủy"}
             </Button>
             <Button
               type="button"
@@ -538,7 +536,7 @@ const PresentationHeader = ({
               onClick={handleReGenerate}
               className="h-auto flex-1 rounded-none rounded-br-2xl border-l border-gray-100 px-4 py-3.5 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600"
             >
-              {t("common.actions.regenerate")}
+              {"Tạo lại"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -7,7 +7,6 @@ import {
   needsCancelConfirm,
   type GenerationLifecycleState,
 } from "@/lib/generation-lifecycle";
-import { useT } from "@/i18n/provider";
 
 type Props = {
   surface: "outline" | "presentation";
@@ -37,7 +36,6 @@ function GenerationToastActions({
   onRetry: () => void;
   onStop: () => void;
 }) {
-  const t = useT();
   return (
     <div className="generation-toast-actions" data-dismissible="false">
       {actions.includes("keepWaiting") && (
@@ -48,7 +46,7 @@ function GenerationToastActions({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={onKeepWaiting}
         >
-          {t("common.generation.keepWaiting")}
+          {"Tiếp tục chờ"}
         </button>
       )}
       {actions.includes("retry") && (
@@ -59,7 +57,7 @@ function GenerationToastActions({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={onRetry}
         >
-          {t("common.generation.retry")}
+          {"Thử lại"}
         </button>
       )}
       {actions.includes("stop") && (
@@ -70,7 +68,7 @@ function GenerationToastActions({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={onStop}
         >
-          {t("common.generation.stop")}
+          {"Dừng"}
         </button>
       )}
     </div>
@@ -87,7 +85,6 @@ const GenerationStatusBar: React.FC<Props> = ({
   onKeepWaiting,
   onRetry,
 }) => {
-  const t = useT();
   const onCancelRef = useRef(onCancel);
   const onKeepWaitingRef = useRef(onKeepWaiting);
   const onRetryRef = useRef(onRetry);
@@ -101,23 +98,18 @@ const GenerationStatusBar: React.FC<Props> = ({
   const handleStop = () => {
     const outlineDraftVisible = surface === "outline" && draftCount > 0;
     if (outlineDraftVisible) {
-      const message = t("common.generation.stopOutlineConfirm", {
-        count: draftCount,
-      });
+      const message = `Dừng tạo dàn ý? ${draftCount} mục đã tạo sẽ được giữ lại.`;
       if (!window.confirm(message)) return;
     } else if (surface !== "outline" && needsCancelConfirm(draftCount)) {
-      const message = t("common.generation.stopSlidesConfirm", {
-        draft: draftCount,
-        total: totalCount ?? draftCount,
-      });
+      const message = `Dừng tạo slide? ${draftCount}/${(totalCount ?? draftCount)} slide đã tạo sẽ được giữ lại.`;
       if (!window.confirm(message)) return;
     }
     void onCancelRef.current();
     if (surface === "outline") {
       notify.success(
         draftCount > 0
-          ? t("presentation.status.stoppedWithDraft")
-          : t("presentation.status.stopped"),
+          ? "Đã dừng tạo. Bản nháp hiện tại đã được giữ lại."
+          : "Đã dừng tạo.",
       );
     }
   };
@@ -180,7 +172,7 @@ const GenerationStatusBar: React.FC<Props> = ({
           // Auto-retry is handled by the stream hook. Keep the loading UI
           // visible and never show action buttons (keep waiting / retry / stop).
           notify.loading(
-            statusMessage || t("presentation.status.creating"),
+            statusMessage || "Đang tạo bài thuyết trình của bạn",
             undefined,
             publishOptions({
               description: undefined,
@@ -191,7 +183,7 @@ const GenerationStatusBar: React.FC<Props> = ({
         }
         case "cancelling":
           notify.loading(
-            t("presentation.status.stopping"),
+            "Đang dừng…",
             undefined,
             publishOptions({
               description: undefined,
@@ -202,8 +194,8 @@ const GenerationStatusBar: React.FC<Props> = ({
         case "failed": {
           const title =
             surface === "outline"
-              ? t("outline.toast.streamingFailed.title")
-              : t("presentation.status.streamingFailed");
+              ? "Tạo luồng dàn ý thất bại"
+              : "Tạo bài thuyết trình thất bại";
           notify.error(
             title,
             undefined,
@@ -218,8 +210,8 @@ const GenerationStatusBar: React.FC<Props> = ({
           if (surface === "presentation") {
             notify.success(
               draftCount > 0
-                ? t("presentation.status.stoppedWithDraft")
-                : t("presentation.status.stopped"),
+                ? "Đã dừng tạo. Bản nháp hiện tại đã được giữ lại."
+                : "Đã dừng tạo.",
               undefined,
               publishOptions({
                 description: undefined,

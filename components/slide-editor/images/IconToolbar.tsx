@@ -9,7 +9,6 @@ import {
 import type { ImageSlideElement } from "@/components/slide-editor/state/state";
 import { elementBox } from "@/components/slide-editor/model/element-model";
 import { DeferredColorInput } from "@/components/slide-editor/toolbar/DeferredColorInput";
-import { useT } from "@/i18n/provider";
 import {
   FloatingToolbar,
   type FloatingToolbarBox,
@@ -33,7 +32,6 @@ export function IconToolbar({
   onEditIcon: () => void;
   scale: number;
 }) {
-  const t = useT();
   const box = elementBox(element);
   const iconColor = withHash(element.color, "#000000");
   const update = (changes: Partial<ImageSlideElement>) => {
@@ -55,8 +53,8 @@ export function IconToolbar({
       className="inline-flex items-center gap-2 rounded-[6px] bg-white px-[10px] py-[6px] font-syne text-[#191919] shadow-[0_0_4px_rgba(0,0,0,0.15)]"
     >
       <label
-        title={t("slideEditor.icon.color")}
-        aria-label={t("slideEditor.icon.color")}
+        title={"Màu biểu tượng"}
+        aria-label={"Màu biểu tượng"}
         className="relative flex h-8 cursor-pointer items-center gap-2 rounded-[6px] px-2 text-[13px] font-medium hover:bg-[var(--gslide-accent-soft)]"
       >
         <span
@@ -64,9 +62,9 @@ export function IconToolbar({
           className="size-4 rounded-full border border-black/10"
           style={{ backgroundColor: iconColor }}
         />
-        <span>{t("slideEditor.common.color")}</span>
+        <span>{"Màu"}</span>
         <DeferredColorInput
-          aria-label={t("slideEditor.icon.color")}
+          aria-label={"Màu biểu tượng"}
           value={iconColor}
           onCommit={(color) => update({ color })}
           className="absolute inset-0 size-full cursor-pointer opacity-0"
@@ -77,13 +75,13 @@ export function IconToolbar({
 
       <button
         type="button"
-        title={t("slideEditor.icon.change")}
-        aria-label={t("slideEditor.icon.change")}
+        title={"Đổi biểu tượng"}
+        aria-label={"Đổi biểu tượng"}
         onClick={onEditIcon}
         className="flex h-8 items-center gap-2 rounded-[6px] px-2 text-[13px] font-medium hover:bg-[var(--gslide-accent-soft)]"
       >
         <Replace size={16} strokeWidth={1.7} aria-hidden="true" />
-        <span>{t("slideEditor.icon.change")}</span>
+        <span>{"Đổi biểu tượng"}</span>
       </button>
 
       {componentActions ? (

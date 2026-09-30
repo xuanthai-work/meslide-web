@@ -15,7 +15,6 @@ import {
   type FloatingToolbarBox,
 } from "@/components/slide-editor/toolbar/FloatingToolbar";
 import { inlineStyles } from "@/components/slide-editor/toolbar/inlineStyles";
-import { useT } from "@/i18n/provider";
 
 const DEFAULT_CHART_TOOLBAR_SIZE = { width: 2.5, height: 2.5 };
 const CHART_TYPE_OPTIONS: Array<{
@@ -48,9 +47,8 @@ export function ChartToolbarControls({
   onEdit?: () => void;
   onPaletteOpenChange?: (open: boolean) => void;
 }) {
-  const t = useT();
   const chartTypeLabels: Record<ChartSlideElement["chart_type"], string> = {
-    bar: t("slideEditor.chart.bar"), horizontal_bar: t("slideEditor.chart.horizontalBar"), stacked_bar: t("slideEditor.chart.stackedBar"), horizontal_stacked_bar: t("slideEditor.chart.horizontalStackedBar"), line: t("slideEditor.chart.line"), area: t("slideEditor.chart.area"), pie: t("slideEditor.chart.pie"), donut: t("slideEditor.chart.donut"), scatter: t("slideEditor.chart.scatter"), bubble: t("slideEditor.chart.scatter"), radar: t("slideEditor.chart.radar"), polar_area: t("slideEditor.chart.polarArea"),
+    bar: "Biểu đồ cột", horizontal_bar: "Biểu đồ thanh ngang", stacked_bar: "Biểu đồ cột chồng", horizontal_stacked_bar: "Biểu đồ thanh ngang chồng", line: "Biểu đồ đường", area: "Biểu đồ miền", pie: "Biểu đồ tròn", donut: "Biểu đồ vành khuyên", scatter: "Biểu đồ phân tán", bubble: "Biểu đồ phân tán", radar: "Biểu đồ radar", polar_area: "Biểu đồ miền cực",
   };
   const [uncontrolledPaletteOpen, setUncontrolledPaletteOpen] =
     useState(false);
@@ -81,8 +79,8 @@ export function ChartToolbarControls({
       >
         <BarChart3 size={16} strokeWidth={2} />
         <select
-          aria-label={t("slideEditor.chart.type")}
-          title={t("slideEditor.chart.type")}
+          aria-label={"Loại biểu đồ"}
+          title={"Loại biểu đồ"}
           value={element.chart_type}
           onChange={(event) =>
             onChange({
@@ -109,8 +107,8 @@ export function ChartToolbarControls({
       {onEdit ? (
         <button
           type="button"
-          aria-label={t("slideEditor.chart.editData")}
-          title={t("slideEditor.chart.editData")}
+          aria-label={"Sửa dữ liệu"}
+          title={"Sửa dữ liệu"}
           onClick={() => {
             setPaletteOpen(false);
             onEdit();
@@ -125,8 +123,8 @@ export function ChartToolbarControls({
         <button
           type="button"
           aria-expanded={paletteOpen}
-          aria-label={t("slideEditor.chart.colors")}
-          title={t("slideEditor.chart.colors")}
+          aria-label={"Màu biểu đồ"}
+          title={"Màu biểu đồ"}
           onClick={() => setPaletteOpen(!paletteOpen)}
           style={{
             ...inlineStyles.iconButton,

@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useT } from "@/i18n/provider";
 
 export default function GlobalError({
   error,
 }: {
   error: Error & { digest?: string };
 }) {
-  const t = useT();
 
   useEffect(() => {
     console.error("Global error:", error);
@@ -32,10 +30,10 @@ export default function GlobalError({
           }}
         >
           <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
-            {t("errors.global.title")}
+            {"Đã có lỗi xảy ra"}
           </h1>
           <p style={{ fontSize: 16, color: "#4b5563", margin: 0 }}>
-            {t("errors.global.body")}
+            {"Đã xảy ra lỗi không mong muốn. Vui lòng tải lại trang."}
           </p>
         </div>
       </body>

@@ -14,7 +14,6 @@ import type Konva from "konva";
 import { useDispatch, useSelector } from "react-redux";
 import { Loader2 } from "lucide-react";
 import { notify } from "@/components/ui/sonner";
-import { useT } from "@/i18n/provider";
 import type { TemplateV2Layout } from "@/components/slide-editor/importing/template-v2-import";
 import {
   templateFontOptionsFromMap,
@@ -55,7 +54,6 @@ import {
   type TemplateV2TextEditStyle,
   wordWrappedTextRuns,
 } from "@/components/slide-editor/text/template-v2-text-editing";
-
 
 import { updateSlideUi } from "@/store/slices/presentationGeneration";
 import type { RootState } from "@/store/store";
@@ -268,7 +266,6 @@ function TemplateV2KonvaSlideComponent({
   const selectorEnabled = useSelector(
     (state: RootState) => state.presentationGeneration.enableHtmlSelector,
   );
-  const t = useT();
   const effectiveDisplayScale = Number.isFinite(displayScale)
     ? Math.max(0.1, Math.abs(displayScale))
     : 1;
@@ -1668,11 +1665,11 @@ function TemplateV2KonvaSlideComponent({
       if (!file || !target) return;
 
       if (!file.type.startsWith("image/")) {
-        notify.warning(t("slideEditor.surface.invalidFile"), t("slideEditor.surface.uploadImageOnly"));
+        notify.warning("Tệp không hợp lệ", "Vui lòng tải lên tệp ảnh.");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        notify.warning(t("slideEditor.surface.tooLarge"), t("slideEditor.surface.imageTooLarge"));
+        notify.warning("Tệp quá lớn", "Tệp ảnh phải nhỏ hơn 5 MB.");
         return;
       }
 
@@ -1680,7 +1677,7 @@ function TemplateV2KonvaSlideComponent({
         setIsUploadingImage(true);
         const uploaded = await ImagesApi.uploadImage(file);
         const imageUrl = resolveBackendAssetSource(uploaded);
-        if (!imageUrl) throw new Error(t("slideEditor.surface.uploadFallback"));
+        if (!imageUrl) throw new Error("Không thể tải ảnh lên.");
         updateElement(target, (element) => ({
           ...element,
           data: imageUrl,
@@ -1689,20 +1686,20 @@ function TemplateV2KonvaSlideComponent({
           focus_y: 50,
           crop_scale: null,
         }));
-        notify.success(t("slideEditor.surface.updated"), t("slideEditor.surface.replaced"));
+        notify.success("Đã cập nhật ảnh", "Ảnh đã chọn đã được thay thế.");
       } catch (error) {
         notify.error(
-          t("slideEditor.surface.uploadFailed"),
+          "Tải ảnh thất bại",
           error instanceof Error
             ? error.message
-            : t("slideEditor.image.updateFallback"),
+            : "Không thể tải ảnh lên. Vui lòng thử lại.",
         );
       } finally {
         pendingImageUploadRef.current = null;
         setIsUploadingImage(false);
       }
     },
-    [t, updateElement],
+    [updateElement],
   );
 
   const handleElementDoubleClick = useCallback(
@@ -1844,7 +1841,7 @@ function TemplateV2KonvaSlideComponent({
     return (
       <div className="flex h-full aspect-video flex-col items-center justify-center rounded-lg bg-[var(--gslide-accent-soft)]">
         <Loader2 className="mb-2 h-4 w-4 animate-spin text-[var(--gslide-accent)]" />
-        <p className="text-center text-sm text-[var(--gslide-muted)]">{t("slideEditor.surface.loadingLayout")}</p>
+        <p className="text-center text-sm text-[var(--gslide-muted)]">{"Đang tải bố cục slide…"}</p>
       </div>
     );
   }

@@ -12,7 +12,6 @@ import {
 
 import { Textarea } from "@/components/ui/textarea";
 import { PromptComposerBoundaryContext } from "./PromptComposerBoundary";
-import { useT } from "@/i18n/provider";
 
 /**
  * Progress phases of an AI outline request, in execution order: the
@@ -108,10 +107,9 @@ export function OutlineComposer({
   disabled = false,
   children,
 }: OutlineComposerProps) {
-  const t = useT();
   const composerRef = useRef<HTMLDivElement>(null);
-  const ideaLabel = t("upload.outline.ideaLabel");
-  const contentLabel = t("upload.outline.contentLabel");
+  const ideaLabel = "Soạn với AI";
+  const contentLabel = "Dàn ý hoặc nội dung bài thuyết trình";
 
   const handleContentKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter") return;
@@ -131,13 +129,13 @@ export function OutlineComposer({
   // region present without spamming announcements.
   const statusText = isGenerating
     ? phase === "uploading_documents"
-      ? t("upload.prompt.rewrite.aria.uploading")
+      ? "Đang tải tài liệu của bạn lên."
       : phase === "reading_documents"
-        ? t("upload.prompt.rewrite.aria.reading")
-        : t("upload.prompt.rewrite.aria.loading")
+        ? "Đang đọc tài liệu để làm cơ sở cho dàn ý."
+        : "Đang tạo dàn ý bằng AI."
     : error
-      ? t("upload.prompt.rewrite.aria.error")
-      : t("upload.prompt.rewrite.aria.success");
+      ? "Tạo dàn ý thất bại."
+      : "Đã tạo dàn ý thành công.";
 
   return (
     <PromptComposerBoundaryContext.Provider value={composerRef}>
@@ -163,7 +161,7 @@ export function OutlineComposer({
               </label>
             </div>
             <span className="inline-flex shrink-0 items-center rounded-full border border-[var(--gslide-border)] bg-[#F6F6F9] px-2 py-0.5 text-[11px] font-medium text-[var(--gslide-muted)]">
-              {t("upload.outline.optionalPill")}
+              {"Tùy chọn"}
             </span>
           </div>
 
@@ -174,7 +172,7 @@ export function OutlineComposer({
               rows={3}
               disabled={disabled}
               onChange={(event) => onIdeaChange(event.target.value)}
-              placeholder={t("upload.outline.ideaPlaceholder")}
+              placeholder={"Nhập ý tưởng, chủ đề cho AI..."}
               aria-label={ideaLabel}
               data-testid="idea-input"
               className={`${TEXTAREA_CLASS} min-h-[72px]`}
@@ -213,7 +211,7 @@ export function OutlineComposer({
         >
           <span className="h-px flex-1 border-t border-dashed border-[var(--gslide-border)]" />
           <span className="mx-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--gslide-border)] bg-white px-3 py-1 text-[11px] font-medium text-[var(--gslide-muted)]">
-            {t("upload.outline.orDivider")}
+            {"Hoặc dán trực tiếp nội dung bên dưới"}
             <ArrowDown className="h-3 w-3 text-[var(--gslide-accent)]" />
           </span>
           <span className="h-px flex-1 border-t border-dashed border-[var(--gslide-border)]" />
@@ -238,9 +236,7 @@ export function OutlineComposer({
                 data-testid="detected-slides-badge"
                 className="inline-flex shrink-0 items-center rounded-full border border-[color-mix(in_srgb,#059669_18%,white)] bg-[#ECFDF5] px-2 py-0.5 text-[11px] font-medium leading-none text-[#047857]"
               >
-                {t("upload.outline.detectedCount", {
-                  count: detectedSlidesCount,
-                })}
+                {`Phát hiện ${detectedSlidesCount} slide`}
               </span>
             ) : null}
           </div>
@@ -253,7 +249,7 @@ export function OutlineComposer({
               disabled={disabled}
               onChange={(event) => onContentChange(event.target.value)}
               onKeyDown={handleContentKeyDown}
-              placeholder={t("upload.outline.contentPlaceholder")}
+              placeholder={"Dán bộ dàn ý hoặc báo cáo chi tiết ..."}
               aria-label={contentLabel}
               data-testid="prompt-input"
               className={`${TEXTAREA_CLASS} custom_scrollbar min-h-[210px] resize-y overflow-y-auto font-mono placeholder:font-sans`}
@@ -271,7 +267,7 @@ export function OutlineComposer({
                     aria-hidden="true"
                   />
                   <p className="text-sm font-normal leading-normal text-[#7A4A00]">
-                    {error.trim() || t("upload.prompt.rewrite.errorFallback")}
+                    {error.trim() || "Đã xảy ra lỗi khi tạo dàn ý. Hãy thử lại; nội dung bạn đã nhập vẫn được giữ nguyên."}
                   </p>
                 </div>
                 {onRetry && (
@@ -282,7 +278,7 @@ export function OutlineComposer({
                     className="inline-flex h-8 w-max items-center gap-1.5 rounded-full border border-[var(--gslide-border)] bg-white px-3 font-manrope text-xs font-medium text-[var(--gslide-ink)] transition hover:bg-[#F6F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
                   >
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                    {t("upload.prompt.rewrite.retryAction")}
+                    {"Thử lại"}
                   </button>
                 )}
               </div>

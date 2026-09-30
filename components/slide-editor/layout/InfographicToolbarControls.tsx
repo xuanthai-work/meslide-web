@@ -14,7 +14,6 @@ import {
   preventInvalidNumberInput,
   sanitizeNumericInput,
 } from "@/components/slide-editor/toolbar/numericInput";
-import { useT } from "@/i18n/provider";
 
 type RawRecord = Record<string, unknown>;
 type InfographicPanelId = "infographic-colors" | "infographic-range";
@@ -49,7 +48,6 @@ export function TemplateV2InfographicToolbarControls({
   onToggle: (panel: InfographicPanelId) => void;
   openPanel: string | null;
 }) {
-  const t = useT();
   const data = readInfographicData(element);
   const infographicType = data.type;
   const minValue = data.min_value;
@@ -74,8 +72,8 @@ export function TemplateV2InfographicToolbarControls({
       <div className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-1.5 text-[#191919]">
         <SlidersHorizontal size={16} strokeWidth={1.6} aria-hidden />
         <select
-          aria-label={t("slideEditor.layout.infographicType")}
-          title={t("slideEditor.layout.infographicType")}
+          aria-label={"Loại đồ họa thông tin"}
+          title={"Loại đồ họa thông tin"}
           value={infographicType}
           onChange={(event) =>
             commitDataChange({
@@ -86,38 +84,38 @@ export function TemplateV2InfographicToolbarControls({
         >
           {INFOGRAPHIC_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.value === "progress_bar" ? t("slideEditor.layout.progressBar") : t("slideEditor.layout.gauge")}
+              {option.value === "progress_bar" ? "Thanh tiến trình" : "Đồng hồ"}
             </option>
           ))}
         </select>
       </div>
 
       <InlineNumberInput
-        label={t("slideEditor.layout.value")}
+        label={"Giá trị"}
         value={value}
         onCommit={(nextValue) => commitDataChange({ value: nextValue })}
       />
 
       <div className="relative">
         <ToolbarIconButton
-          title={t("slideEditor.layout.range")}
+          title={"Phạm vi"}
           open={openPanel === "infographic-range"}
           onClick={() => onToggle("infographic-range")}
         >
           <span className="text-[11px] font-semibold leading-none" aria-hidden>
-            {t("slideEditor.layout.min")}
+            {"Tối thiểu"}
           </span>
         </ToolbarIconButton>
         {openPanel === "infographic-range" ? (
           <Panel className="w-[230px] space-y-3 p-3">
             <NumberField
-              label={t("slideEditor.layout.min")}
+              label={"Tối thiểu"}
               value={minValue}
               step={1}
               onCommit={(min_value) => commitDataChange({ min_value })}
             />
             <NumberField
-              label={t("slideEditor.layout.max")}
+              label={"Tối đa"}
               value={maxValue}
               step={1}
               onCommit={(max_value) => commitDataChange({ max_value })}
@@ -128,7 +126,7 @@ export function TemplateV2InfographicToolbarControls({
 
       <div className="relative">
         <ToolbarIconButton
-          title={t("slideEditor.layout.colors")}
+          title={"Màu"}
           open={openPanel === "infographic-colors"}
           onClick={() => onToggle("infographic-colors")}
         >
@@ -137,12 +135,12 @@ export function TemplateV2InfographicToolbarControls({
         {openPanel === "infographic-colors" ? (
           <Panel className="w-[230px] space-y-3 p-3">
             <ColorField
-              label={t("slideEditor.layout.base")}
+              label={"Nền"}
               color={baseColor}
               onCommit={(baseColor) => commitColorChange(0, baseColor)}
             />
             <ColorField
-              label={t("slideEditor.layout.highlight")}
+              label={"Nổi bật"}
               color={highlightColor}
               onCommit={(highlightColor) => commitColorChange(1, highlightColor)}
             />

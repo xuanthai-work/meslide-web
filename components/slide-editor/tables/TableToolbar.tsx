@@ -35,7 +35,6 @@ import {
   FloatingToolbarPanel,
   type FloatingToolbarBox,
 } from "@/components/slide-editor/toolbar/FloatingToolbar";
-import { useT } from "@/i18n/provider";
 
 type TableCellAlignment = NonNullable<TableCell["alignment"]>;
 
@@ -57,7 +56,6 @@ export function TableToolbarControls({
   selectedCell: TableCellSelection | null;
   onChange: (index: number, element: TableSlideElement) => void;
 }) {
-  const t = useT();
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const colorInputRef = useRef<HTMLInputElement | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
@@ -239,8 +237,8 @@ export function TableToolbarControls({
     <div ref={toolbarRef} style={tableControlsStyle}>
       <button
         type="button"
-        aria-label={t("slideEditor.table.cellBackground")}
-        title={t("slideEditor.table.cellBackground")}
+        aria-label={"Màu nền ô"}
+        title={"Màu nền ô"}
         style={iconButtonStyle}
         onClick={() => colorInputRef.current?.click()}
       >
@@ -264,8 +262,8 @@ export function TableToolbarControls({
       <Divider />
       <button
         type="button"
-        aria-label={t("slideEditor.table.alignment")}
-        title={t("slideEditor.table.align", { alignment: nextAlignmentLabel(activeCellAlignment) })}
+        aria-label={"Căn chỉnh bảng"}
+        title={`Căn ${(nextAlignmentLabel(activeCellAlignment))}`}
         style={iconButtonStyle}
         onClick={cycleActiveCellAlignment}
       >
@@ -274,8 +272,8 @@ export function TableToolbarControls({
       <Divider />
       <button
         type="button"
-        aria-label={t("slideEditor.table.deleteRow")}
-        title={t("slideEditor.table.deleteRow")}
+        aria-label={"Xóa hàng"}
+        title={"Xóa hàng"}
         disabled={!canDeleteRow}
         style={{
           ...iconButtonStyle,
@@ -289,9 +287,9 @@ export function TableToolbarControls({
       <Divider />
       <button
         type="button"
-        aria-label={t("slideEditor.table.cellActions")}
+        aria-label={"Thao tác với ô bảng"}
         aria-expanded={tableMenuOpen}
-        title={t("slideEditor.table.cellActions")}
+        title={"Thao tác với ô bảng"}
         style={{
           ...iconButtonStyle,
           ...(tableMenuOpen ? activeButtonStyle : null),
@@ -390,7 +388,6 @@ function TableToolbarMenu({
   onMoveColumnLeft: () => void;
   onMoveColumnRight: () => void;
 }) {
-  const t = useT();
   if (!menuOpen) return null;
 
   return (
@@ -398,38 +395,38 @@ function TableToolbarMenu({
       <MenuItem
         disabled={!canDeleteRow}
         icon={<Rows3 size={20} strokeWidth={2.2} />}
-        label={t("slideEditor.table.deleteRow")}
+        label={"Xóa hàng"}
         onClick={onDeleteRow}
       />
       <MenuItem
         disabled={!canDeleteColumn}
         icon={<Columns3 size={20} strokeWidth={2.2} />}
-        label={t("slideEditor.table.deleteColumn")}
+        label={"Xóa cột"}
         onClick={onDeleteColumn}
       />
       <MenuItem
         disabled={!canAddRow}
         icon={<Plus size={20} strokeWidth={2.4} />}
-        label={t("slideEditor.table.addRow")}
+        label={"Thêm hàng"}
         onClick={onAddRow}
       />
       <MenuItem
         disabled={!canAddColumn}
         icon={<Plus size={20} strokeWidth={2.4} />}
-        label={t("slideEditor.table.addColumn")}
+        label={"Thêm cột"}
         onClick={onAddColumn}
       />
       <div style={menuDividerStyle} />
       <MenuItem
         disabled={!canMoveColumnRight}
         icon={<ChevronRight size={20} strokeWidth={2.4} />}
-        label={t("slideEditor.table.moveColumnRight")}
+        label={"Di chuyển cột sang phải"}
         onClick={onMoveColumnRight}
       />
       <MenuItem
         disabled={!canMoveColumnLeft}
         icon={<ChevronLeft size={20} strokeWidth={2.4} />}
-        label={t("slideEditor.table.moveColumnLeft")}
+        label={"Di chuyển cột sang trái"}
         onClick={onMoveColumnLeft}
       />
     </FloatingToolbarPanel>

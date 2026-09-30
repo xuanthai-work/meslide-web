@@ -27,7 +27,6 @@ import {
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import MarkdownRenderer from "@/components/MarkDownRender";
 import ToolTip from "@/components/ToolTip";
-import { useI18n, useT } from "@/i18n/provider";
 
 export const PresentationCard = ({
   id,
@@ -45,8 +44,6 @@ export const PresentationCard = ({
   onDuplicated?: (presentation: any) => void;
 }) => {
   const router = useRouter();
-  const t = useT();
-  const { locale } = useI18n();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showActions, setShowActions] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -57,8 +54,8 @@ export const PresentationCard = ({
     e.preventDefault();
     if (isUnsupported) {
       notify.warning(
-        t("dashboard.card.unsupported.title"),
-        t("dashboard.card.unsupported.description")
+        "Bài thuyết trình không được hỗ trợ",
+        "Bộ slide này được tạo bằng phiên bản GSlide cũ. Hãy dùng phiên bản tương thích để mở."
       );
       return;
     }
@@ -72,8 +69,8 @@ export const PresentationCard = ({
     e.stopPropagation();
     if (isUnsupported) {
       notify.warning(
-        t("dashboard.card.unsupported.title"),
-        t("dashboard.card.unsupported.description")
+        "Bài thuyết trình không được hỗ trợ",
+        "Bộ slide này được tạo bằng phiên bản GSlide cũ. Hãy dùng phiên bản tương thích để mở."
       );
       return;
     }
@@ -82,20 +79,19 @@ export const PresentationCard = ({
 
   const hasSlides = (presentation?.n_slides ?? presentation?.slides?.length ?? 0) > 0;
 
-
   const handleDelete = async () => {
     if (isDeleting) return;
     setIsDeleting(true);
     const response = await DashboardApi.deletePresentation(id);
 
     if (response?.success) {
-      notify.success(t("dashboard.card.deleted.title"), t("dashboard.card.deleted.description"));
+      notify.success("Đã xóa bài thuyết trình", "Bài thuyết trình đã được xóa khỏi trang chủ của bạn.");
       setShowDeleteDialog(false);
       if (onDeleted) {
         onDeleted(id);
       }
     } else {
-      notify.error(t("dashboard.card.deleteError.title"), response?.message || t("dashboard.card.deleteError.fallback"));
+      notify.error("Không thể xóa bài thuyết trình", response?.message || "Đã xảy ra lỗi khi xóa bài thuyết trình.");
     }
     setIsDeleting(false);
   };
@@ -105,12 +101,12 @@ export const PresentationCard = ({
     setIsDuplicating(true);
     try {
       const duplicated = await DashboardApi.duplicatePresentation(id);
-      notify.success(t("dashboard.card.duplicated.title"), t("dashboard.card.duplicated.description"));
+      notify.success("Đã nhân bản bài thuyết trình", "Một bản sao đã được thêm vào trang chủ của bạn.");
       onDuplicated?.(duplicated);
     } catch (error) {
       notify.error(
-        t("dashboard.card.duplicateError.title"),
-        error instanceof Error ? error.message : t("dashboard.card.duplicateError.fallback")
+        "Không thể nhân bản bài thuyết trình",
+        error instanceof Error ? error.message : "Đã xảy ra lỗi khi nhân bản bài thuyết trình."
       );
     } finally {
       setIsDuplicating(false);
@@ -127,7 +123,7 @@ export const PresentationCard = ({
         suppressHydrationWarning={true}
         onClick={handlePreview}
         aria-disabled={isUnsupported}
-        title={isUnsupported ? t("dashboard.card.unsupportedTitle") : undefined}
+        title={isUnsupported ? "Không được hỗ trợ trong phiên bản GSlide này" : undefined}
         className={`relative flex flex-col overflow-hidden rounded-xl border-[var(--gslide-border)] bg-white p-0 shadow-none transition-all duration-500 sm:shadow-none presentation-card group slide-theme ${
           isUnsupported
             ? "cursor-not-allowed border-[#EDEEEF]"
@@ -151,7 +147,7 @@ export const PresentationCard = ({
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]">
                 <Archive className="h-[18px] w-[18px]" aria-hidden="true" />
               </span>
-              <p className="text-xs font-medium">{t("dashboard.card.previewUnavailable")}</p>
+              <p className="text-xs font-medium">{"Không có bản xem trước"}</p>
             </div>
           ) : useTemplateV2HtmlPreview ? (
             <TemplateV2HtmlSlidePreview
@@ -177,16 +173,16 @@ export const PresentationCard = ({
                 <MarkdownRenderer content={title} className="mb-0 line-clamp-1 overflow-hidden text-sm font-semibold text-[var(--gslide-ink)]" />
               </div>
               <p className="text-sm text-[var(--gslide-muted)]">
-                {new Date(presentation?.created_at).toLocaleDateString(locale)}
+                {new Date(presentation?.created_at).toLocaleDateString("vi-VN")}
               </p>
 
             </div>
             <div className="flex items-center gap-1">
             {!isUnsupported && hasSlides && (
-              <ToolTip content={t("dashboard.card.present")}>
+              <ToolTip content={"Trình chiếu nhanh"}>
                 <button
                   type="button"
-                  aria-label={t("dashboard.card.presentAria")}
+                  aria-label={"Trình chiếu nhanh bộ slide này"}
                   data-testid={`quick-present-${id}`}
                   onClick={handleQuickPresent}
                   className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/40"
@@ -211,7 +207,7 @@ export const PresentationCard = ({
                       void handleDuplicate();
                     }}
                   >
-                    <p>{isDuplicating ? t("common.status.duplicating") : t("common.actions.duplicate")}</p>
+                    <p>{isDuplicating ? "Đang nhân bản…" : "Nhân bản"}</p>
                     {isDuplicating ? (
                       <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                     ) : (
@@ -228,7 +224,7 @@ export const PresentationCard = ({
                     setShowDeleteDialog(true);
                   }}
                 >
-                  <p>{t("common.actions.delete")}</p>
+                  <p>{"Xóa"}</p>
                   <Trash className="h-4 w-4 text-red-500" />
                 </button>
               </PopoverContent>
@@ -261,21 +257,21 @@ export const PresentationCard = ({
               />
             </div>
             <DialogTitle className="text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#191919]">
-              {t("dashboard.card.deleteDialog.title")}
+              {"Xóa bài thuyết trình?"}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="w-full pt-2 text-sm leading-6 text-[#667085]">
-                <p>{t("dashboard.card.deleteDialog.body")}</p>
+                <p>{"Thao tác này sẽ xóa vĩnh viễn bài thuyết trình bên dưới."}</p>
                 <div
                   className="mt-4 rounded-[12px] border border-[#EAECF0] bg-[#F9FAFB] px-4 py-3 text-left"
-                  title={title || t("common.untitledPresentation")}
+                  title={title || "Bài thuyết trình không tiêu đề"}
                 >
                   <p className="line-clamp-2 break-words text-sm font-medium leading-5 text-[#344054]">
-                    {title || t("common.untitledPresentation")}
+                    {title || "Bài thuyết trình không tiêu đề"}
                   </p>
                 </div>
                 <p className="mt-3 text-[13px] text-[#98A2B3]">
-                  {t("dashboard.card.deleteDialog.disclaimer")}
+                  {"Thao tác này không thể hoàn tác."}
                 </p>
               </div>
             </DialogDescription>
@@ -288,7 +284,7 @@ export const PresentationCard = ({
               disabled={isDeleting}
               className="h-11 rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-medium text-[#344054] shadow-sm transition-colors hover:bg-[#F9FAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {t("common.actions.cancel")}
+              {"Hủy"}
             </button>
             <button
               type="button"
@@ -299,12 +295,12 @@ export const PresentationCard = ({
               {isDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  {t("common.status.deleting")}
+                  {"Đang xóa…"}
                 </>
               ) : (
                 <>
                   <Trash className="h-4 w-4" aria-hidden="true" />
-                  {t("common.actions.delete")}
+                  {"Xóa"}
                 </>
               )}
             </button>

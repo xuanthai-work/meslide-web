@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { TemplateV2HtmlSlidePreview } from "../../../components/TemplateV2HtmlSlidePreview";
 import { quickPromptGroups } from "./chat-prompts";
 import type { AssistantActivity, ChatEditPreview } from "./chat-types";
-import { useT } from "@/i18n/provider";
 
 const AssistantSparkleIcon = ({ size = 14 }: { size?: number }) => (
   <svg
@@ -26,11 +25,10 @@ const AssistantSparkleIcon = ({ size = 14 }: { size?: number }) => (
 );
 
 export const AssistantMarker = () => {
-  const t = useT();
   return (
     <div className="mb-2 flex items-center gap-1.5 text-[#8A8F98]">
       <AssistantSparkleIcon size={14} />
-      <span className="text-[11px] font-medium leading-4">{t("chat.title")}</span>
+      <span className="text-[11px] font-medium leading-4">{"Trợ lý"}</span>
     </div>
   );
 };
@@ -40,12 +38,11 @@ export const ActivityStatusIcon = ({
 }: {
   activity: AssistantActivity;
 }) => {
-  const t = useT();
   if (activity.state === "running") {
     return (
       <span
         className="activity-flow-dots relative mt-1 h-[9px] w-[22px] shrink-0"
-        aria-label={t("chat.widgets.working")}
+        aria-label={"Đang xử lý"}
       >
         <span className="absolute left-0 top-[1.5px] h-[6px] w-[6px] rounded-full bg-[#C3C3CB]" />
         <span className="absolute left-[8px] top-[1.5px] h-[6px] w-[6px] rounded-full bg-[#C3C3CB]" />
@@ -109,17 +106,16 @@ export const EditComparisonPreview = ({
   isApplying: boolean;
   onSelectVersion: (version: "original" | "modified") => void;
 }) => {
-  const t = useT();
   if (!preview.modifiedSlides?.length) return null;
 
   const cards = [
     {
-      label: t("chat.widgets.original"),
+      label: "Bản gốc",
       slides: preview.originalSlides,
       version: "original" as const,
     },
     {
-      label: t("chat.widgets.modified"),
+      label: "Đã chỉnh sửa",
       slides: preview.modifiedSlides,
       version: "modified" as const,
     },
@@ -136,13 +132,13 @@ export const EditComparisonPreview = ({
           className="h-[14px] w-[14px] shrink-0"
         />
         <span className="font-semibold text-[#191919]">
-          {t("chat.widgets.selectEdits")}
+          {"Chọn bản chỉnh sửa"}
         </span>
         <span className="ml-auto text-[11px] font-medium leading-[normal] text-[#1D6FE8]">
           {preview.changeCount}{" "}
           {preview.changeCount === 1
-            ? t("chat.widgets.change")
-            : t("chat.widgets.changes")}
+            ? "thay đổi"
+            : "thay đổi"}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-[5px]">
@@ -159,9 +155,7 @@ export const EditComparisonPreview = ({
                 : "border-[#EDEEEF]",
             )}
             aria-pressed={selectedVersion === card.version}
-            aria-label={t("chat.widgets.restoreAria", {
-              version: card.label.toLowerCase(),
-            })}
+            aria-label={`Khôi phục trạng thái slide ${(card.label.toLowerCase())}`}
           >
             <span className="mb-[7px] flex items-center justify-center gap-1 truncate text-center text-[13px] font-medium leading-[normal] text-[#191919]">
               {isApplying && selectedVersion === card.version && (

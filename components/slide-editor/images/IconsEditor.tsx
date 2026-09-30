@@ -7,7 +7,6 @@ import { Check, ChevronRight, Info, Loader2, Search, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n/provider";
 import type { RootState } from "@/store/store";
 import { setPresentationData } from "@/store/slices/presentationGeneration";
 import { useDispatch, useSelector } from "react-redux";
@@ -119,8 +118,7 @@ const IconsEditor = ({
   onClose,
   onIconChange,
 }: IconsEditorProps) => {
-  const t = useT();
-  const weightLabels: Record<IconWeight, string> = { thin: t("slideEditor.icon.thin"), light: t("slideEditor.icon.light"), regular: t("slideEditor.icon.regular"), bold: t("slideEditor.icon.bold"), fill: t("slideEditor.icon.fill"), duotone: t("slideEditor.icon.duotone") };
+  const weightLabels: Record<IconWeight, string> = { thin: "Mảnh", light: "Nhẹ", regular: "Thường", bold: "Đậm", fill: "Đặc", duotone: "Hai tông" };
   const dispatch = useDispatch();
   const presentationData = useSelector(
     (state: RootState) => state.presentationGeneration.presentationData
@@ -185,10 +183,10 @@ const IconsEditor = ({
         if (requestIdRef.current === requestId) {
           console.error("Error fetching icons:", error);
           notify.error(
-            t("slideEditor.icon.loadFailed"),
+            "Không thể tải biểu tượng",
             error instanceof Error
               ? error.message
-              : t("slideEditor.icon.loadFallback")
+              : "Không thể lấy biểu tượng. Vui lòng thử lại."
           );
           setIcons([]);
         }
@@ -198,7 +196,7 @@ const IconsEditor = ({
         }
       }
     },
-    [currentIconUrl, selectedWeight, t]
+    [currentIconUrl, selectedWeight]
   );
 
   useEffect(() => {
@@ -224,7 +222,7 @@ const IconsEditor = ({
     );
 
     if (!replacementIcon) {
-      notify.warning(t("slideEditor.icon.required"), t("slideEditor.icon.selectFirst"));
+      notify.warning("Cần chọn biểu tượng", "Hãy chọn một biểu tượng trước khi thay thế.");
       return;
     }
 
@@ -263,10 +261,10 @@ const IconsEditor = ({
             <header className="flex h-[85px] flex-none items-center border-b border-[#EDEEEF] bg-white px-6 shadow-[0_4px_7px_rgba(0,0,0,0.04)]">
               <div>
                 <DialogPrimitive.Title className="text-[18px] font-normal leading-normal">
-                  {t("slideEditor.icon.changeTitle")}
+                  {"Đổi biểu tượng"}
                 </DialogPrimitive.Title>
                 <DialogPrimitive.Description className="mt-0.5 text-[14px] font-normal tracking-[-0.42px] text-[#808080]">
-                  {t("slideEditor.icon.changeDescription")}
+                  {"Tìm biểu tượng tương tự và tùy chỉnh độ đậm nét."}
                 </DialogPrimitive.Description>
               </div>
             </header>
@@ -276,7 +274,7 @@ const IconsEditor = ({
                 <div className="flex items-center gap-4 sm:block">
                   <div>
                     <p className="mb-2 text-[12px] font-medium text-[#666]">
-                      {t("slideEditor.icon.selectedIcon")}
+                      {"Biểu tượng đã chọn"}
                     </p>
                     <div className="flex size-[78px] items-center justify-center rounded-[14px] border border-[#E1E1E5] bg-white shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
                       {previewIconSource ? (
@@ -298,12 +296,12 @@ const IconsEditor = ({
                   <div className="min-w-0 flex-1 sm:mt-5">
                     <div className="mb-2.5 flex items-center gap-1.5">
                       <p className="text-[12px] font-medium text-[#666]">
-                        {t("slideEditor.icon.iconWeight")}
+                        {"Độ đậm nét"}
                       </p>
                       <span
                         role="img"
-                        aria-label={t("slideEditor.icon.weightHelp")}
-                        title={t("slideEditor.icon.weightHelp")}
+                        aria-label={"Chọn độ đậm nét dùng khi tìm kiếm và thay thế biểu tượng."}
+                        title={"Chọn độ đậm nét dùng khi tìm kiếm và thay thế biểu tượng."}
                         className="inline-flex size-4 items-center justify-center text-[#A1A1AA]"
                       >
                         <Info className="size-3" />
@@ -360,14 +358,14 @@ const IconsEditor = ({
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#E1E1E5] pt-4">
                   <div>
                     <p className="text-[12px] font-medium text-[#191919]">
-                      {t("slideEditor.icon.applyPresentation")}
+                      {"Áp dụng cho bài thuyết trình"}
                     </p>
                     <p className="mt-0.5 text-[10px] leading-4 text-[#808080]">
-                      {t("slideEditor.icon.useEveryIcon")}
+                      {"Dùng độ đậm nét này cho mọi biểu tượng."}
                     </p>
                   </div>
                   <Switch
-                    aria-label={t("slideEditor.icon.applyAll")}
+                    aria-label={"Áp dụng độ đậm nét biểu tượng cho toàn bộ bài thuyết trình"}
                     checked={applyStylesToPresentation}
                     onCheckedChange={setApplyStylesToPresentation}
                     className="h-5 w-9 flex-none data-[state=checked]:bg-[var(--gslide-accent)] data-[state=unchecked]:bg-[#DDDEE3]"
@@ -394,13 +392,13 @@ const IconsEditor = ({
                         autoFocus
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder={t("slideEditor.icon.searchSimilar")}
+                        placeholder={"Tìm biểu tượng tương tự"}
                         className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-normal outline-none placeholder:text-[#999]"
                       />
                     </label>
                     <button
                       type="submit"
-                      aria-label={t("slideEditor.icon.search")}
+                      aria-label={"Tìm biểu tượng"}
                       disabled={!activeQuery || loading}
                       className="flex w-[104px] items-center justify-center gap-1.5 rounded-[38.4px] bg-[#EDEEEF] px-3 text-[12px] text-[#191919] transition hover:bg-[#E1E1E5] disabled:cursor-not-allowed disabled:text-[#999]"
                     >
@@ -409,7 +407,7 @@ const IconsEditor = ({
                       ) : (
                         <Search className="size-3.5" />
                       )}
-                      {t("slideEditor.icon.search")}
+                      {"Tìm biểu tượng"}
                     </button>
                   </form>
                 </div>
@@ -417,11 +415,11 @@ const IconsEditor = ({
                 <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-5">
                   <div className="mb-2 flex flex-none items-center justify-between">
                     <p className="text-[12px] font-medium text-[#666]">
-                      {t("slideEditor.icon.similarIcons")}
+                      {"Biểu tượng tương tự"}
                     </p>
                     {!loading && icons.length > 0 ? (
                       <p className="text-[11px] text-[#999]">
-                        {t("slideEditor.icon.results", { count: icons.length })}
+                        {`${icons.length} kết quả`}
                       </p>
                     ) : null}
                   </div>
@@ -445,7 +443,7 @@ const IconsEditor = ({
                             <button
                               key={`${iconSrc}-${index}`}
                               type="button"
-                              aria-label={t("slideEditor.icon.select", { number: index + 1 })}
+                              aria-label={`Chọn biểu tượng ${(index + 1)}`}
                               aria-pressed={isSelected}
                               onClick={() => setSelectedIconUrl(iconSrc)}
                               className={cn(
@@ -479,10 +477,10 @@ const IconsEditor = ({
                         <div>
                           <Search className="mx-auto mb-3 size-7 text-[#B7B8BE]" />
                           <p className="text-[13px] font-medium text-[#666]">
-                            {t("slideEditor.icon.noIcons")}
+                            {"Không tìm thấy biểu tượng"}
                           </p>
                           <p className="mt-1 text-[12px] text-[#808080]">
-                            {t("slideEditor.icon.tryDifferent")}
+                            {"Hãy thử từ khóa khác."}
                           </p>
                         </div>
                       </div>
@@ -493,8 +491,8 @@ const IconsEditor = ({
                 <footer className="mt-3 flex h-[66px] flex-none items-center justify-between gap-3 border-t border-[#EDEEEF] px-4 sm:px-5">
                   <p className="hidden text-[11px] leading-4 text-[#808080] sm:block">
                     {applyStylesToPresentation
-                      ? t("slideEditor.icon.allHint")
-                      : t("slideEditor.icon.selectedHint")}
+                      ? "Độ đậm nét đã chọn sẽ được áp dụng cho mọi biểu tượng."
+                      : "Chỉ biểu tượng đã chọn được thay thế."}
                   </p>
                   <button
                     type="button"
@@ -502,7 +500,7 @@ const IconsEditor = ({
                     disabled={!selectedIconUrl && !currentIconUrl}
                     className="ml-auto flex h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--gslide-accent)] px-5 text-[13px] font-semibold text-white shadow-none transition hover:bg-[var(--gslide-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {t("slideEditor.icon.replace")}
+                    {"Thay biểu tượng"}
                     <ChevronRight className="size-4" aria-hidden="true" />
                   </button>
                 </footer>
@@ -511,7 +509,7 @@ const IconsEditor = ({
           </div>
 
           <DialogPrimitive.Close
-            aria-label={t("slideEditor.icon.close")}
+            aria-label={"Đóng trình sửa biểu tượng"}
             className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[var(--gslide-accent-soft)] sm:-right-[68px] sm:top-0 sm:size-[52px]"
           >
             <X className="size-5" strokeWidth={1.5} aria-hidden="true" />

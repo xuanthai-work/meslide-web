@@ -25,8 +25,10 @@ import {
   type GenerationLifecycleState,
   type StallCause,
 } from "@/lib/generation-lifecycle";
-import { useT } from "@/i18n/provider";
-import { translateBackendError, translateBackendStatus } from "@/i18n/backend-messages";
+import {
+  translateBackendError,
+  translateBackendStatus,
+} from "@/lib/backend-messages";
 
 const MAX_STREAM_RETRIES = 3;
 const STALL_INTERVAL_MS = 1_000;
@@ -115,7 +117,6 @@ export const usePresentationStreaming = (
     skipSlideFetch?: boolean;
   } = {}
 ) => {
-  const t = useT();
   const dispatch = useDispatch();
   const presentationData = useSelector(
     (state: RootState) => state.presentationGeneration.presentationData
@@ -123,7 +124,7 @@ export const usePresentationStreaming = (
   const previousSlidesLength = useRef(0);
   const preloadPresentationData = Boolean(options.preloadPresentationData);
   const skipSlideFetch = Boolean(options.skipSlideFetch);
-  const defaultStatusMessage = t("presentation.status.creating");
+  const defaultStatusMessage = "Đang tạo bài thuyết trình của bạn";
 
   const [lifecycle, setLifecycle] =
     useState<GenerationLifecycleState>("idle");
@@ -206,10 +207,10 @@ export const usePresentationStreaming = (
         const cause: StallCause = eventSourceRef.current ? "silence" : "socket";
         stallCauseRef.current = cause;
         setStallCause(cause);
-        finalizeFailureRef.current?.(t("presentation.status.stalled"));
+        finalizeFailureRef.current?.("Luồng tạo bài thuyết trình đang tạm dừng — đang chờ máy chủ.");
       }
     }, STALL_INTERVAL_MS);
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     if (!stream) {
@@ -256,9 +257,9 @@ export const usePresentationStreaming = (
     let streamIsTemplateV2 = preloadPresentationData;
     const localizeBackendStatus = (status: string) => {
       const known: Record<string, string> = {
-        "Reading source documents": t("presentation.status.readingDocuments"),
-        "Searching the web": t("presentation.status.searchingWeb"),
-        "Designing the complete presentation": t("presentation.status.designingComplete"),
+        "Reading source documents": "Đang đọc tài liệu nguồn",
+        "Searching the web": "Đang tìm kiếm trên web",
+        "Designing the complete presentation": "Đang thiết kế toàn bộ bài thuyết trình",
       };
       return known[status] ?? status;
     };
@@ -327,7 +328,7 @@ export const usePresentationStreaming = (
       accumulatedChunks = "";
       accumulatedChunksRef.current = "";
       previousSlidesLength.current = 0;
-      setStatusMessage(t("presentation.status.reconnecting"));
+      setStatusMessage("Đang kết nối lại luồng tạo bài thuyết trình");
       setLifecycle("connecting");
 
       retryTimerRef.current = setTimeout(() => {
@@ -399,8 +400,8 @@ export const usePresentationStreaming = (
           ?.slides?.length ?? 0;
       setStatusMessage(
         total
-          ? t("presentation.status.generatingSlideOf", { current: slidesLength, total })
-          : t("presentation.status.generatingSlide", { current: slidesLength })
+          ? `Đang tạo slide ${slidesLength}/${total}…`
+          : `Đang tạo slide ${slidesLength}…`
       );
     };
 
@@ -594,7 +595,7 @@ export const usePresentationStreaming = (
                 // Coded warnings (image search / generation) localize through
                 // the catalog; legacy plain-text warnings stay verbatim.
                 const detail = errorCode
-                  ? translateBackendError(t, {
+                  ? translateBackendError({
                       detail: legacyDetail,
                       error_code: errorCode,
                     })
@@ -608,8 +609,8 @@ export const usePresentationStreaming = (
                 }
                 shownAssetWarnings.add(dedupeKey);
                 const title = errorCode?.startsWith("image_search.")
-                  ? t("presentation.data.imageSearchWarningTitle")
-                  : t("presentation.data.imageWarningTitle");
+                  ? "Một số ảnh slide dùng ảnh giữ chỗ"
+                  : "Không thể tạo một số hình ảnh";
                 notify.warning(title, detail, {
                   duration: 12_000,
                 });
@@ -654,7 +655,7 @@ export const usePresentationStreaming = (
               clearRetryTimer();
               clearStallInterval();
               retryCountRef.current = 0;
-              setStatusMessage(t("presentation.status.ready"));
+              setStatusMessage("Bài thuyết trình đã sẵn sàng");
               setLifecycle("complete");
 
               // Remove stream parameter from URL
@@ -662,7 +663,7 @@ export const usePresentationStreaming = (
             } catch (error) {
               console.error("Could not finalize presentation stream:", error);
               if (!scheduleRetry("failed to parse complete payload")) {
-                finalizeFailure(t("presentation.status.completedLoadFailed"));
+                finalizeFailure("Không thể tải bài thuyết trình đã hoàn tất.");
               }
             }
             accumulatedChunks = "";
@@ -685,7 +686,7 @@ export const usePresentationStreaming = (
             clearRetryTimer();
             clearStallInterval();
             retryCountRef.current = 0;
-            setStatusMessage(t("presentation.status.ready"));
+            setStatusMessage("Bài thuyết trình đã sẵn sàng");
             setLifecycle("complete");
 
             // Remove stream parameter from URL
@@ -699,14 +700,14 @@ export const usePresentationStreaming = (
               break;
             }
             finalizeFailure(
-              translateBackendError(t, data) ||
-                t("presentation.status.connectFailed")
+              translateBackendError(data) ||
+                "Không thể kết nối với máy chủ. Vui lòng thử lại."
             );
             break;
 
           case "status":
             if (data.status) {
-              setStatusMessage(translateBackendStatus(t, {
+              setStatusMessage(translateBackendStatus({
                 ...data,
                 status: localizeBackendStatus(data.status),
               }));
@@ -730,7 +731,7 @@ export const usePresentationStreaming = (
         if (scheduleRetry("socket error/disconnect")) {
           return;
         }
-        finalizeFailure(t("presentation.status.connectFailed"));
+        finalizeFailure("Không thể kết nối với máy chủ. Vui lòng thử lại.");
       };
 
       // Stall watcher: ticks every STALL_INTERVAL_MS and flips to "stalled"
@@ -780,7 +781,6 @@ export const usePresentationStreaming = (
     preloadPresentationData,
     defaultStatusMessage,
     startStallWatcher,
-    t,
   ]);
 
   // isStreaming is derived from lifecycle so it always agrees.
@@ -827,12 +827,12 @@ export const usePresentationStreaming = (
         );
       } catch {
         notify.error(
-          t("presentation.data.draftNotSavedTitle"),
-          t("presentation.data.draftNotSavedDescription")
+          "Bản nháp chưa được lưu",
+          "Việc tải lại có thể làm mất các slide đã dừng."
         );
       }
     }
-  }, [dispatch, setLoading, t]);
+  }, [dispatch, setLoading]);
 
   const keepWaiting = useCallback(() => {
     if (!eventSourceRef.current) {

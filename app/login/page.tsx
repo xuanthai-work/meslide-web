@@ -4,10 +4,8 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { GSlideButton, GSlideInput, GSlideWordmark } from "@/components/gslide";
-import { useT } from "@/i18n/provider";
 
 export default function LoginPage() {
-  const t = useT();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -26,12 +24,12 @@ export default function LoginPage() {
         body: JSON.stringify({ username: username.trim(), password }),
       });
       if (!response.ok) {
-        setError(t("auth.invalid"));
+        setError("Tên đăng nhập hoặc mật khẩu không đúng");
         return;
       }
       router.replace("/dashboard");
     } catch {
-      setError(t("auth.invalid"));
+      setError("Tên đăng nhập hoặc mật khẩu không đúng");
     } finally {
       setSubmitting(false);
     }
@@ -45,13 +43,13 @@ export default function LoginPage() {
       >
         <GSlideWordmark className="mb-6 text-[28px]" />
         <h1 className="text-xl font-semibold text-[var(--gslide-ink)]">
-          {t("auth.title")}
+          {"Đăng nhập"}
         </h1>
         <p className="mt-1 mb-6 text-sm text-[var(--gslide-muted)]">
-          {t("auth.subtitle")}
+          {"Đăng nhập để tiếp tục dùng GSlide"}
         </p>
         <label className="mb-2 block text-xs font-medium text-[var(--gslide-ink)]">
-          {t("auth.username")}
+          {"Tên đăng nhập"}
         </label>
         <GSlideInput
           autoComplete="username"
@@ -62,7 +60,7 @@ export default function LoginPage() {
           minLength={3}
         />
         <label className="mt-4 mb-2 block text-xs font-medium text-[var(--gslide-ink)]">
-          {t("auth.password")}
+          {"Mật khẩu"}
         </label>
         <GSlideInput
           type="password"
@@ -83,7 +81,7 @@ export default function LoginPage() {
           className="mt-6"
           disabled={submitting}
         >
-          {submitting ? t("auth.submitting") : t("auth.submit")}
+          {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
         </GSlideButton>
       </form>
     </main>

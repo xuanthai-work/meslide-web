@@ -27,7 +27,6 @@ import {
 import MarkdownRenderer from "@/components/MarkDownRender";
 import ToolTip from "@/components/ToolTip";
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n/provider";
 import { TemplateV2HtmlSlidePreview } from "../../../components/TemplateV2HtmlSlidePreview";
 import {
   editorQuickPrompts,
@@ -42,11 +41,11 @@ import type {
   PastedChatImage,
 } from "./chat-types";
 import { createChatLayoutPreviewSlide } from "./chat-utils";
-import { stripBackendContextFromUserMessage } from "./chat-activity";
 import {
   localizeActivityLabelText,
   localizeQuickPromptText,
 } from "./chat-i18n";
+import { stripBackendContextFromUserMessage } from "./chat-activity";
 import { AssistantMarker } from "./chat-widgets";
 
 export type ChatPresentationLayoutProps = {
@@ -132,11 +131,10 @@ export function ChatPresentationLayout({
   setAttachedDocuments,
   setIsFollowAgentEnabled,
 }: ChatPresentationLayoutProps) {
-  const t = useT();
   const localizeQuickPrompt = (value: string) =>
-    localizeQuickPromptText(t, value);
+    localizeQuickPromptText(value);
   const localizeActivityLabel = (value: string) =>
-    localizeActivityLabelText(t, value);
+    localizeActivityLabelText(value);
 
   return (
     <div
@@ -171,12 +169,12 @@ export function ChatPresentationLayout({
                   fill="#1D6FE8"
                 />
               </svg>
-              {t("chat.assistantTitle")}
+              {"Trợ lý AI"}
             </h4>
             {isSending && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gslide-accent-soft)] px-2 py-0.5 text-[10px] font-medium text-[var(--gslide-accent)]">
                 <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                {t("chat.live")}
+                {"Trực tiếp"}
               </span>
             )}
           </div>
@@ -186,8 +184,8 @@ export function ChatPresentationLayout({
               onClick={() => void resetChat()}
               disabled={isSending || isHistoryLoading}
               className="rounded-full p-1 text-[#8C8C8C] transition-colors hover:bg-[#F7F7F7] hover:text-[#191919] disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label={t("chat.reset")}
-              title={t("chat.reset")}
+              aria-label={"Đặt lại cuộc trò chuyện"}
+              title={"Đặt lại cuộc trò chuyện"}
             >
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -204,18 +202,18 @@ export function ChatPresentationLayout({
         {isHistoryLoading && messages.length === 0 ? (
           <div className="flex items-center justify-center py-8 text-sm text-[#99A1AF]">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {t("chat.loading")}
+            {"Đang tải cuộc trò chuyện…"}
           </div>
         ) : showEditorEmptyState ? (
           <h3 className="-translate-y-7 text-center text-[clamp(20px,1.55vw,24px)] font-normal leading-[1.08] tracking-[-0.72px] text-[#4A4A4A]">
-            {t("chat.emptyHeading")}
+            {"Hôm nay tôi có thể giúp gì cho bài thuyết trình của bạn?"}
           </h3>
         ) : messages.length === 0 ? (
           <>
             {isTemplateV2Variant ? (
               <div>
                 <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
-                  {t("chat.quickPromptsLabel")}
+                  {"LỜI NHẮC NHANH"}
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {templateV2QuickPrompts.map((prompt) => (
@@ -236,7 +234,7 @@ export function ChatPresentationLayout({
               <>
                 <div>
                   <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
-                    {t("chat.suggestionsLabel")}
+                    {"GỢI Ý"}
                   </h4>
                   <div className="flex flex-col gap-1.5">
                     {suggestions.map((suggestion) => (
@@ -260,7 +258,7 @@ export function ChatPresentationLayout({
 
                 <div className="mt-10">
                   <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
-                    {t("chat.quickPromptsLabel")}
+                    {"LỜI NHẮC NHANH"}
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {presentationQuickPrompts.map((prompt) => (
@@ -351,7 +349,7 @@ export function ChatPresentationLayout({
                           ? localizeActivityLabel(
                               message.activity[message.activity.length - 1].label,
                             )
-                          : t("chat.working")
+                          : "Đang xử lý…"
                         : ""}
                     </div>
                   )}
@@ -367,7 +365,7 @@ export function ChatPresentationLayout({
                         ) : (
                           <ChevronRight className="h-3 w-3" />
                         )}
-                        <span>{t("chat.thinking")}</span>
+                        <span>{"Đang suy nghĩ"}</span>
                         {message.activity.some(
                           (item) => item.state === "running"
                         ) && (
@@ -431,7 +429,7 @@ export function ChatPresentationLayout({
         {(chatSlideReference || chatTargetReference) && (
           <div
             className="mb-2 flex max-w-full items-center gap-1.5 overflow-hidden"
-            aria-label={t("chat.aria.currentSelection")}
+            aria-label={"Đối tượng đang chọn trong trình chỉnh sửa"}
           >
             {chatSlideReference && (
               <span
@@ -463,8 +461,8 @@ export function ChatPresentationLayout({
                     type="button"
                     onClick={clearChatTargetReference}
                     className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--gslide-muted)] transition-colors hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/40"
-                    aria-label={t("chat.aria.removeSelection")}
-                    title={t("chat.aria.removeSelection")}
+                    aria-label={"Bỏ đối tượng đã chọn khỏi ngữ cảnh"}
+                    title={"Bỏ đối tượng đã chọn khỏi ngữ cảnh"}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -493,8 +491,8 @@ export function ChatPresentationLayout({
                       )
                     }
                     className="rounded-full p-0.5 text-[var(--gslide-accent)] transition-colors hover:bg-[var(--gslide-accent-soft)]"
-                    aria-label={t("chat.aria.removeLink")}
-                    title={t("chat.aria.removeLink")}
+                    aria-label={"Xóa liên kết"}
+                    title={"Xóa liên kết"}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -515,8 +513,8 @@ export function ChatPresentationLayout({
                       )
                     }
                     className="rounded-full p-0.5 text-[#667085] transition-colors hover:bg-[#E4E7EC]"
-                    aria-label={t("chat.aria.removeImage")}
-                    title={t("chat.aria.removeImage")}
+                    aria-label={"Xóa hình ảnh đã dán"}
+                    title={"Xóa hình ảnh đã dán"}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -537,8 +535,8 @@ export function ChatPresentationLayout({
                       )
                     }
                     className="rounded-full p-0.5 text-[#667085] transition-colors hover:bg-[#E4E7EC]"
-                    aria-label={t("chat.aria.removeDocument")}
-                    title={t("chat.aria.removeDocument")}
+                    aria-label={"Xóa tài liệu đính kèm"}
+                    title={"Xóa tài liệu đính kèm"}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -572,10 +570,10 @@ export function ChatPresentationLayout({
           onKeyDown={handleKeyDown}
           placeholder={
             showEditorEmptyState
-              ? t("chat.placeholder.general")
+              ? "Hỏi bất kỳ điều gì.\nGõ / để xem lời nhắc nhanh."
               : isTemplateV2Variant
-                ? t("chat.placeholder.changeTitle")
-                : t("chat.placeholder.improveDesign")
+                ? "Đổi tiêu đề slide 2"
+                : "Cải thiện thiết kế slide"
           }
           aria-invalid={Boolean(errorMessage)}
         />
@@ -587,11 +585,11 @@ export function ChatPresentationLayout({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isTemplateV2Variant || chatInputDisabled}
                 className="inline-flex h-[28px] items-center rounded-[64px] disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label={t("chat.aria.attach")}
+                aria-label={"Đính kèm tệp"}
                 title={
                   isTemplateV2Variant
-                    ? t("chat.aria.attach")
-                    : t("chat.attachment.templateOnly")
+                    ? "Đính kèm tệp"
+                    : "Tệp đính kèm chỉ dùng được trong chat Template V2."
                 }
               >
                 <Plus className="h-3 w-3 text-black" />
@@ -608,8 +606,8 @@ export function ChatPresentationLayout({
               <ToolTip
                 content={
                   isFollowAgentEnabled
-                    ? t("chat.follow.disable")
-                    : t("chat.follow.enable")
+                    ? "Tắt chế độ theo dõi AI"
+                    : "Bật chế độ theo dõi AI"
                 }
               >
                 <button
@@ -621,13 +619,13 @@ export function ChatPresentationLayout({
                   className="inline-flex h-[28px] items-center gap-1 rounded-[64px] text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label={
                     isFollowAgentEnabled
-                      ? t("chat.follow.disable")
-                      : t("chat.follow.enable")
+                      ? "Tắt chế độ theo dõi AI"
+                      : "Bật chế độ theo dõi AI"
                   }
                   title={
                     isFollowAgentEnabled
-                      ? t("chat.follow.on")
-                      : t("chat.follow.off")
+                      ? "Theo dõi AI đang bật: tự động chuyển đến slide đang xử lý"
+                      : "Theo dõi AI đang tắt"
                   }
                 >
                   <svg
@@ -689,7 +687,7 @@ export function ChatPresentationLayout({
               onClick={() => inputRef.current?.focus()}
               disabled={chatInputDisabled}
               className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-[var(--gslide-border)] bg-white px-3 text-[12px] font-medium text-[var(--gslide-muted)] transition-colors hover:bg-[var(--gslide-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label={t("chat.aria.focusInput")}
+              aria-label={"Đưa con trỏ vào ô nhập lời nhắc"}
             >
               <svg
                 width="13"
@@ -716,7 +714,7 @@ export function ChatPresentationLayout({
                 type="button"
                 onClick={stopStreaming}
                 className="flex items-center gap-1.5 whitespace-nowrap rounded-[34px] border border-[#E4E7EC] bg-white px-3 py-2 text-sm font-medium text-[#344054] transition-colors hover:bg-[#F9FAFB]"
-                aria-label={t("chat.aria.stop")}
+                aria-label={"Dừng phản hồi"}
               >
                 <Loader2
                   className="h-3 w-3 animate-spin text-[#667085]"
@@ -737,7 +735,7 @@ export function ChatPresentationLayout({
                   isUploadingPastedImage
                 }
                 className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--gslide-accent)] text-white transition hover:bg-[var(--gslide-accent-hover)] transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
-                aria-label={t("chat.aria.send")}
+                aria-label={"Gửi lời nhắc"}
               >
                 <ArrowUp className="h-4 w-4" />
               </button>

@@ -25,7 +25,6 @@ import { useSelector } from "react-redux";
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import type { ImageAssetResponse } from "@/app/(presentation-generator)/services/api/types";
 import { notify } from "@/components/ui/sonner";
-import { useT } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { RootState } from "@/store/store";
 import { resolveBackendAssetSource } from "@/utils/api";
@@ -80,10 +79,9 @@ export function ImagePickerModal({
   onClose: () => void;
   onSelect: (url: string, prompt?: string) => void;
 }) {
-  const t = useT();
   const llmConfig = useSelector((state: RootState) => state.userConfig.llm_config);
   const provider = (llmConfig?.IMAGE_PROVIDER || "").trim().toLowerCase();
-  const providerLabel = IMAGE_PROVIDERS[provider]?.label ?? t("slideEditor.image.aiProvider");
+  const providerLabel = IMAGE_PROVIDERS[provider]?.label ?? "nhà cung cấp ảnh AI";
   const generationDisabled = Boolean(llmConfig?.DISABLE_IMAGE_GENERATION);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [view, setView] = useState<PickerView>("discover");
@@ -132,7 +130,7 @@ export function ImagePickerModal({
           setError(
             loadError instanceof Error
               ? loadError.message
-              : t("slideEditor.image.loadGeneratedFailed"),
+              : "Không thể tải ảnh đã tạo.",
           );
         }
       })
@@ -143,7 +141,7 @@ export function ImagePickerModal({
     return () => {
       cancelled = true;
     };
-  }, [open, t, view]);
+  }, [open, view]);
 
   useEffect(() => {
     if (!open || view !== "uploads" || isUploading) return;
@@ -167,7 +165,7 @@ export function ImagePickerModal({
           setError(
             loadError instanceof Error
               ? loadError.message
-              : t("slideEditor.image.loadUploadedFailed"),
+              : "Không thể tải ảnh đã tải lên.",
           );
         }
       })
@@ -178,7 +176,7 @@ export function ImagePickerModal({
     return () => {
       cancelled = true;
     };
-  }, [isUploading, open, t, view]);
+  }, [isUploading, open, view]);
 
   const chooseImage = (image: PickerImage) => {
     const prompt = image.prompt || (view === "discover" ? query.trim() : undefined);
@@ -208,24 +206,24 @@ export function ImagePickerModal({
           (response): response is PromiseRejectedResult =>
             response.status === "rejected",
         );
-        throw failure?.reason ?? new Error(t("slideEditor.image.generationFailedDescription"));
+        throw failure?.reason ?? new Error("Không thể tạo ảnh.");
       }
       setDiscoverImages((previous) =>
         dedupePickerImages([...images, ...previous]),
       );
       if (images.length < variationCount) {
         notify.warning(
-          t("slideEditor.image.someVariantsFailed"),
-          t("slideEditor.image.variantsGenerated", { generated: images.length, total: variationCount }),
+          "Một số biến thể thất bại",
+          `Đã tạo ${images.length}/${variationCount} ảnh được yêu cầu.`,
         );
       }
     } catch (generationError: unknown) {
       const message =
         generationError instanceof Error
           ? generationError.message
-          : t("slideEditor.image.generationFailedDescription");
+          : "Không thể tạo ảnh.";
       setError(message);
-      notify.error(t("slideEditor.image.generationFailed"), message);
+      notify.error("Tạo ảnh thất bại", message);
     } finally {
       setIsWorking(false);
     }
@@ -239,11 +237,11 @@ export function ImagePickerModal({
   const uploadFile = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setError(t("slideEditor.image.invalidFile"));
+      setError("Vui lòng chọn tệp ảnh hợp lệ.");
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setError(t("slideEditor.image.tooLarge"));
+      setError("Tệp ảnh phải nhỏ hơn 5 MB.");
       return;
     }
 
@@ -253,17 +251,17 @@ export function ImagePickerModal({
     try {
       const asset = await ImagesApi.uploadImage(file);
       const image = assetToPickerImage(asset, "uploaded");
-      if (!image) throw new Error(t("slideEditor.image.uploadFallback"));
+      if (!image) throw new Error("Không thể tải ảnh lên.");
       setUploadedImages((previous) => [
         image,
         ...previous.filter((item) => item.id !== image.id),
       ]);
-      notify.success(t("slideEditor.image.uploaded"), t("slideEditor.image.selectFromLibrary"));
+      notify.success("Đã tải ảnh lên", "Hãy chọn ảnh trong thư viện của bạn.");
     } catch (uploadError: unknown) {
       const message =
-        uploadError instanceof Error ? uploadError.message : t("slideEditor.image.uploadFailed");
+        uploadError instanceof Error ? uploadError.message : "Tải ảnh thất bại";
       setError(message);
-      notify.error(t("slideEditor.image.uploadFailed"), message);
+      notify.error("Tải ảnh thất bại", message);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -287,11 +285,11 @@ export function ImagePickerModal({
       setUploadedImages((previous) =>
         previous.filter((candidate) => candidate.id !== image.id),
       );
-      notify.success(t("slideEditor.image.deleted"), t("slideEditor.image.removedFromLibrary"));
+      notify.success("Đã xóa ảnh", "Ảnh tải lên đã được xóa khỏi thư viện.");
     } catch (deleteError: unknown) {
       notify.error(
-        t("slideEditor.image.deleteFailed"),
-        deleteError instanceof Error ? deleteError.message : t("slideEditor.image.deleteFallback"),
+        "Không thể xóa ảnh",
+        deleteError instanceof Error ? deleteError.message : "Xóa ảnh thất bại.",
       );
     }
   };
@@ -316,16 +314,16 @@ export function ImagePickerModal({
             <header className="flex h-[85px] flex-none items-center justify-between border-b border-[#EDEEEF] bg-white px-6 shadow-[0_4px_7px_rgba(0,0,0,0.04)]">
               <div>
                 <DialogPrimitive.Title className="text-[18px] font-normal leading-normal">
-                  {t("slideEditor.image.changeTitle")}
+                  {"Đổi ảnh"}
                 </DialogPrimitive.Title>
                 <DialogPrimitive.Description className="mt-0.5 text-[14px] font-normal tracking-[-0.42px] text-[#808080]">
-                  {t("slideEditor.image.changeDescription")}
+                  {"Chọn ảnh trong thư viện hoặc tải ảnh của bạn lên."}
                 </DialogPrimitive.Description>
               </div>
               <button
                 type="button"
-                aria-label={t("slideEditor.image.upload")}
-                title={t("slideEditor.image.upload")}
+                aria-label={"Tải ảnh lên"}
+                title={"Tải ảnh lên"}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex h-9 w-[100px] items-center justify-center rounded-full border border-[#EDEEEF] bg-white transition hover:bg-[#F9FAFB] disabled:cursor-wait"
@@ -335,7 +333,7 @@ export function ImagePickerModal({
                 ) : (
                   <Upload className="size-4 mr-1.5" strokeWidth={1.8} aria-hidden="true" />
                 )}
-                {t("slideEditor.image.uploadAction")}
+                {"Tải lên"}
               </button>
               <input
                 ref={fileInputRef}
@@ -351,7 +349,7 @@ export function ImagePickerModal({
                 <PickerNavButton
                   active={view === "discover"}
                   icon={<ImagePlus className="size-4" strokeWidth={1.7} />}
-                  label={t("slideEditor.image.discover")}
+                  label={"Khám phá ảnh"}
                   onClick={() => {
                     setView("discover");
                     setIsLoadingLibrary(false);
@@ -361,7 +359,7 @@ export function ImagePickerModal({
                 <PickerNavButton
                   active={view === "uploads"}
                   icon={<Grid2X2 className="size-4" strokeWidth={1.7} />}
-                  label={t("slideEditor.image.useYours")}
+                  label={"Dùng ảnh của bạn"}
                   onClick={() => {
                     setView("uploads");
                     setError(null);
@@ -415,8 +413,8 @@ export function ImagePickerModal({
                       images={discoverImages}
                       emptyMessage={
                         generationDisabled
-                          ? t("slideEditor.image.generationDisabled")
-                          : t("slideEditor.image.discoverEmpty")
+                          ? "Tính năng tạo ảnh đã bị tắt trong Cài đặt."
+                          : "Hãy mô tả ảnh bạn muốn tạo ở trên để bắt đầu."
                       }
                       onSelect={chooseImage}
                     />
@@ -425,7 +423,7 @@ export function ImagePickerModal({
                       compact
                       currentSource={currentSource}
                       images={uploadedImages}
-                      emptyMessage={t("slideEditor.image.uploadEmpty")}
+                      emptyMessage={"Tải ảnh lên để thêm vào thư viện."}
                       onDelete={deleteUploadedImage}
                       onSelect={chooseImage}
                     />
@@ -436,8 +434,8 @@ export function ImagePickerModal({
                   <div className="pointer-events-none absolute inset-4 z-20 flex items-center justify-center rounded-[16px] border-2 border-dashed border-[#191919] bg-white/95 text-center">
                     <div>
                       <Upload className="mx-auto mb-2 size-6" aria-hidden="true" />
-                      <p className="text-[14px] font-medium">{t("slideEditor.image.dropUpload")}</p>
-                      <p className="mt-1 text-[12px] text-[#808080]">{t("slideEditor.image.maxSize")}</p>
+                      <p className="text-[14px] font-medium">{"Thả ảnh để tải lên"}</p>
+                      <p className="mt-1 text-[12px] text-[#808080]">{"Kích thước tệp tối đa: 5 MB"}</p>
                     </div>
                   </div>
                 ) : null}
@@ -446,7 +444,7 @@ export function ImagePickerModal({
           </div>
 
           <DialogPrimitive.Close
-            aria-label={t("slideEditor.image.closePicker")}
+            aria-label={"Đóng trình chọn ảnh"}
             className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[var(--gslide-accent-soft)] sm:-right-[68px] sm:top-0 sm:size-[52px]"
           >
             <X className="size-5" strokeWidth={1.5} aria-hidden="true" />
@@ -504,11 +502,10 @@ function DiscoverControls({
   onRun: () => void;
   onVariationChange: (delta: number) => void;
 }) {
-  const t = useT();
   const canRun = query.trim().length > 0 && !isWorking && !disabled;
 
   return (
-    <div className="flex h-[76px] flex-none gap-2.5" aria-label={t("slideEditor.image.generateWith", { provider: providerLabel })}>
+    <div className="flex h-[76px] flex-none gap-2.5" aria-label={`Tạo bằng ${providerLabel}`}>
       <textarea
         autoFocus
         value={query}
@@ -518,14 +515,14 @@ function DiscoverControls({
             onRun();
           }
         }}
-        placeholder={t("slideEditor.image.describe")}
+        placeholder={"Mô tả ảnh của bạn"}
         className="min-w-0 flex-1 resize-none rounded-[8px] border border-[rgba(219,219,219,0.6)] bg-white px-2.5 py-3 text-[14px] font-normal outline-none shadow-[0_4px_7px_rgba(0,0,0,0.04)] placeholder:text-[#999] focus:border-[#B9BBC1]"
       />
       <div className="flex w-[150px] flex-none flex-col gap-2.5">
         <div className="flex h-[34px] items-center rounded-full border border-[#EDEEEF] bg-white">
           <button
             type="button"
-            aria-label={t("slideEditor.image.fewerVariations")}
+            aria-label={"Giảm số biến thể"}
             disabled={variationCount <= 1 || isWorking}
             onClick={() => onVariationChange(-1)}
             className="flex h-full w-9 items-center justify-center rounded-l-full hover:bg-[#F9FAFB] disabled:opacity-35"
@@ -533,11 +530,11 @@ function DiscoverControls({
             <Minus className="size-3.5" />
           </button>
           <span className="flex h-4 flex-1 items-center justify-center border-x border-[#EDEEEF] text-[12px] font-semibold">
-            {t("slideEditor.image.variations", { count: variationCount })}
+            {`${variationCount} biến thể`}
           </span>
           <button
             type="button"
-            aria-label={t("slideEditor.image.moreVariations")}
+            aria-label={"Tăng số biến thể"}
             disabled={variationCount >= 4 || isWorking}
             onClick={() => onVariationChange(1)}
             className="flex h-full w-9 items-center justify-center rounded-r-full hover:bg-[#F9FAFB] disabled:opacity-35"
@@ -547,7 +544,7 @@ function DiscoverControls({
         </div>
         <button
           type="button"
-          aria-label={t("slideEditor.image.generateVariations", { count: variationCount, provider: providerLabel })}
+          aria-label={`Tạo ${variationCount} biến thể ảnh bằng ${providerLabel}`}
           onClick={onRun}
           disabled={!canRun}
           className="flex h-8 items-center justify-center rounded-[38.4px] bg-[#EDEEEF] px-[12.8px] py-2 text-[#191919] transition hover:bg-[#E1E1E5] disabled:cursor-not-allowed disabled:text-[#999]"
@@ -587,7 +584,6 @@ function ImageResults({
   onDelete?: (image: PickerImage) => void;
   onSelect: (image: PickerImage) => void;
 }) {
-  const t = useT();
   if (!images.length) {
     return (
       <div className="flex h-full min-h-[220px] items-center justify-center rounded-[14px] border border-dashed border-[#E1E1E5] bg-[#F9FAFB] px-6 text-center">
@@ -608,7 +604,7 @@ function ImageResults({
         >
           <button
             type="button"
-            aria-label={t("slideEditor.image.useImage")}
+            aria-label={"Dùng ảnh này"}
             onClick={() => onSelect(image)}
             className="absolute inset-0 h-full w-full overflow-hidden rounded-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
           >
@@ -621,13 +617,13 @@ function ImageResults({
               className="object-cover transition duration-300 group-hover:scale-[1.025]"
             />
             <span className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/45 via-transparent to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-              <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-medium text-[#191919]">{t("slideEditor.image.useImage")}</span>
+              <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-medium text-[#191919]">{"Dùng ảnh này"}</span>
             </span>
           </button>
           {onDelete && image.deletable && image.id ? (
             <button
               type="button"
-              aria-label={t("slideEditor.image.deleteUploaded")}
+              aria-label={"Xóa ảnh đã tải lên"}
               onClick={(event) => {
                 event.stopPropagation();
                 onDelete(image);

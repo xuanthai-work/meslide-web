@@ -21,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useT } from "@/i18n/provider";
 
 const LEGACY_RELEASE_URL =
   "https://presenton.ai/download";
@@ -45,7 +44,6 @@ export function LegacyPresentationsTable({
 }: LegacyPresentationsTableProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const t = useT();
 
   if (presentations.length === 0) return null;
 
@@ -66,14 +64,14 @@ export function LegacyPresentationsTable({
     if (deletedIds.length > 0) {
       onPresentationsDeleted(deletedIds);
       notify.success(
-        t("dashboard.legacy.deleted.title"),
-        t("dashboard.legacy.deleted.description", { count: deletedIds.length })
+        "Đã xóa các bài thuyết trình cũ",
+        `Đã xóa ${deletedIds.length} bài thuyết trình.`
       );
     }
     if (deletedIds.length !== presentations.length) {
       notify.error(
-        t("dashboard.legacy.deleteError.title"),
-        t("dashboard.legacy.deleteError.description")
+        "Không thể xóa một số bài thuyết trình",
+        "Vui lòng thử lại."
       );
     }
     setIsDeleting(false);
@@ -87,15 +85,15 @@ export function LegacyPresentationsTable({
           id="legacy-presentations-heading"
           className="font-syne text-base font-medium text-[#191919]"
         >
-          {t("dashboard.legacy.title")}
+          {"Bài thuyết trình cũ"}
         </h2>
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => setShowDeleteDialog(true)}
             disabled={isDeleting}
-            aria-label={t("dashboard.legacy.deleteAllAria")}
-            title={t("dashboard.legacy.deleteAllAria")}
+            aria-label={"Xóa tất cả bài thuyết trình cũ"}
+            title={"Xóa tất cả bài thuyết trình cũ"}
             className="flex h-[35px] min-w-[51px] items-center justify-center rounded-full border border-[#EDEEEF] bg-white px-3 text-[#191919] transition-colors hover:bg-[var(--gslide-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? (
@@ -114,14 +112,14 @@ export function LegacyPresentationsTable({
           aria-hidden="true"
         />
         <p className="text-[#4C4C4C]">
-          {t("dashboard.legacy.notice.body")}{" "}
+          {"Các bài thuyết trình này được tạo bằng định dạng cũ và không thể mở trong phiên bản GSlide hiện tại."}{" "}
           <a
             href={LEGACY_RELEASE_URL}
             target="_blank"
             rel="noreferrer"
             className="text-[#C4320A] underline decoration-[#C4320A] underline-offset-2"
           >
-            {t("dashboard.legacy.notice.downloadLink")}
+            {"Tải xuống phiên bản tương thích để truy cập"}
           </a>
           .
         </p>
@@ -130,9 +128,9 @@ export function LegacyPresentationsTable({
       <div className="w-full overflow-x-auto border-t border-[#EDEEEF]">
         <div className="min-w-[760px]">
           <div className="grid min-h-[56px] grid-cols-[minmax(280px,1fr)_272px_272px] border-b border-[#EDEEEF] text-sm font-semibold tracking-[0.14px] text-[#333333]">
-            <div className="flex items-center px-[14px]">{t("dashboard.legacy.column.name")}</div>
-            <div className="flex items-center px-[14px]">{t("dashboard.legacy.column.createdOn")}</div>
-            <div className="flex items-center px-[14px]">{t("dashboard.legacy.column.format")}</div>
+            <div className="flex items-center px-[14px]">{"Tên"}</div>
+            <div className="flex items-center px-[14px]">{"Ngày tạo"}</div>
+            <div className="flex items-center px-[14px]">{"Định dạng"}</div>
           </div>
           {presentations.map((presentation) => (
             <div
@@ -140,7 +138,7 @@ export function LegacyPresentationsTable({
               className="grid h-[50px] grid-cols-[minmax(280px,1fr)_272px_272px] border-b border-[#EDEEEF] text-sm text-[#333333]"
             >
               <div className="flex min-w-0 items-center px-4 font-syne font-medium">
-                <span className="truncate">{presentation.title || t("common.untitledPresentation")}</span>
+                <span className="truncate">{presentation.title || "Bài thuyết trình không tiêu đề"}</span>
               </div>
               <div className="flex items-center px-4 font-medium">
                 {formatLegacyDate(presentation.created_at)}
@@ -148,7 +146,7 @@ export function LegacyPresentationsTable({
               <div className="flex items-center px-4">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-[#C4320A]">
                   <LockKeyhole className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
-                  {t("dashboard.legacy.notAccessible")}
+                  {"Không thể truy cập"}
                 </span>
               </div>
             </div>
@@ -175,13 +173,13 @@ export function LegacyPresentationsTable({
               id="delete-legacy-title"
               className="font-syne text-[24px] font-medium leading-[30px] tracking-[-0.02em] text-[#191919]"
             >
-              {t("dashboard.legacy.deleteDialog.title")}
+              {"Xóa các bài thuyết trình cũ?"}
             </DialogTitle>
             <DialogDescription
               id="delete-legacy-description"
               className="max-w-[296px] pt-1 text-[15px] leading-6 text-[#667085]"
             >
-              {t("dashboard.legacy.deleteDialog.body", { count: presentations.length })}
+              {`Thao tác này sẽ xóa vĩnh viễn tất cả ${presentations.length} bài thuyết trình cũ. Thao tác này không thể hoàn tác.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row border-t border-[#EAECF0] p-0 sm:space-x-0">
@@ -191,7 +189,7 @@ export function LegacyPresentationsTable({
               disabled={isDeleting}
               className="h-[56px] flex-1 rounded-none rounded-bl-[24px] px-4 text-sm font-medium text-[#344054] transition-colors hover:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {t("common.actions.cancel")}
+              {"Hủy"}
             </button>
             <button
               type="button"
@@ -205,10 +203,10 @@ export function LegacyPresentationsTable({
                     className="h-4 w-4 animate-spin"
                     aria-hidden="true"
                   />
-                  {t("common.status.deleting")}
+                  {"Đang xóa…"}
                 </>
               ) : (
-                t("common.actions.delete")
+                "Xóa"
               )}
             </button>
           </DialogFooter>

@@ -35,7 +35,6 @@ const BANNED = /posthog|telemetry-status|captureError|initPostHog|setTelemetryEn
 const SOURCE_DIRS = [
   "app",
   "components",
-  "i18n",
   "lib",
   "models",
   "store",

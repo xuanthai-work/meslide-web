@@ -25,7 +25,6 @@ import {
   ShortcutKeys,
   useAppleShortcutPlatform,
 } from "@/components/slide-editor/shortcuts/ShortcutKeys";
-import { useT } from "@/i18n/provider";
 
 const SECTION_ICONS: Record<EditorShortcutSection["id"], LucideIcon> = {
   selection: MousePointer2,
@@ -42,7 +41,6 @@ export function KeyboardShortcutsDialog({
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }) {
-  const t = useT();
   const detectedApplePlatform = useAppleShortcutPlatform();
   const [platformOverride, setPlatformOverride] = useState<boolean | null>(null);
   const applePlatform = platformOverride ?? detectedApplePlatform;
@@ -86,21 +84,21 @@ export function KeyboardShortcutsDialog({
               </span>
               <div>
                 <DialogTitle className="text-[18px] font-semibold leading-6 text-[#101323]">
-                  {t("presentation.shortcuts.title")}
+                  {"Phím tắt"}
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-[13px] leading-5 text-[#667085]">
-                  {t("presentation.shortcuts.description")}
+                  {"Làm việc nhanh hơn khi vùng slide đang hoạt động. Phím tắt sẽ tạm dừng khi bạn nhập trong trường văn bản."}
                 </DialogDescription>
               </div>
             </div>
             <div
-              aria-label={t("presentation.shortcuts.platformAria")}
+              aria-label={"Nền tảng phím tắt"}
               className="inline-flex w-fit shrink-0 rounded-[9px] border border-[#E1E3E9] bg-[#F6F6F9] p-1"
               role="group"
             >
               <PlatformButton
                 active={!applePlatform}
-                label={t("presentation.shortcuts.windowsLinux")}
+                label={"Windows / Linux"}
                 onClick={() => setPlatformOverride(false)}
               />
               <PlatformButton
@@ -129,11 +127,11 @@ export function KeyboardShortcutsDialog({
                         strokeWidth={1.8}
                       />
                       <h3 className="text-[14px] font-semibold text-[#101323]">
-                        {sectionTitle(section.id, t)}
+                        {sectionTitle(section.id)}
                       </h3>
                     </div>
                     <p className="mt-1 text-[11px] leading-4 text-[#7A8295]">
-                      {sectionDescription(section.id, t)}
+                      {sectionDescription(section.id)}
                     </p>
                   </div>
                   <div className="divide-y divide-[#EAECF0]">
@@ -144,10 +142,10 @@ export function KeyboardShortcutsDialog({
                       >
                         <div className="min-w-0">
                           <p className="text-[13px] font-semibold text-[#344054]">
-                            {shortcutLabel(shortcut.id, t)}
+                            {shortcutLabel(shortcut.id)}
                           </p>
                           <p className="mt-0.5 text-[11px] leading-4 text-[#7A8295]">
-                            {shortcutDescription(shortcut.id, t)}
+                            {shortcutDescription(shortcut.id)}
                           </p>
                         </div>
                         <ShortcutKeys
@@ -164,36 +162,30 @@ export function KeyboardShortcutsDialog({
         </div>
 
         <div className="border-t border-[#EAECF0] bg-[#FCFCFD] px-6 py-3 text-center text-[11px] text-[#7A8295]">
-          {t("presentation.shortcuts.showingFor", {
-            platform: applePlatform
-              ? "macOS"
-              : t("presentation.shortcuts.windowsLinux"),
-          })}
+          {`Đang hiển thị phím tắt cho ${applePlatform ? "macOS" : "Windows / Linux"}.`}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-type Translator = ReturnType<typeof useT>;
-
-function sectionTitle(id: EditorShortcutSection["id"], t: Translator) {
+function sectionTitle(id: EditorShortcutSection["id"]) {
   switch (id) {
-    case "selection": return t("presentation.shortcuts.sections.selection.title");
-    case "editing": return t("presentation.shortcuts.sections.editing.title");
-    case "arrange": return t("presentation.shortcuts.sections.arrange.title");
-    case "navigation": return t("presentation.shortcuts.sections.navigation.title");
-    case "help": return t("presentation.shortcuts.sections.help.title");
+    case "selection": return "Lựa chọn";
+    case "editing": return "Chỉnh sửa";
+    case "arrange": return "Sắp xếp lớp";
+    case "navigation": return "Điều hướng slide";
+    case "help": return "Trợ giúp";
   }
 }
 
-function sectionDescription(id: EditorShortcutSection["id"], t: Translator) {
+function sectionDescription(id: EditorShortcutSection["id"]) {
   switch (id) {
-    case "selection": return t("presentation.shortcuts.sections.selection.description");
-    case "editing": return t("presentation.shortcuts.sections.editing.description");
-    case "arrange": return t("presentation.shortcuts.sections.arrange.description");
-    case "navigation": return t("presentation.shortcuts.sections.navigation.description");
-    case "help": return t("presentation.shortcuts.sections.help.description");
+    case "selection": return "Chọn và sắp xếp đối tượng trên slide đang mở.";
+    case "editing": return "Các lệnh chỉnh sửa thường dùng cho đối tượng trên slide.";
+    case "arrange": return "Thay đổi vị trí lớp của đối tượng đã chọn.";
+    case "navigation": return "Di chuyển giữa các slide mà không rời vùng soạn thảo.";
+    case "help": return "Mở lại nhanh bảng tham khảo này.";
   }
 }
 
@@ -205,18 +197,18 @@ const shortcutKeyById = {
   "next-slide": "nextSlide", "shortcut-help": "help",
 } as const;
 
-function shortcutLabel(id: keyof typeof shortcutKeyById, t: Translator) {
+function shortcutLabel(id: keyof typeof shortcutKeyById) {
   const key = shortcutKeyById[id];
   const labels = {
-    multiSelect: t("presentation.shortcuts.items.multiSelect.label"), group: t("presentation.shortcuts.items.group.label"), delete: t("presentation.shortcuts.items.delete.label"), undo: t("presentation.shortcuts.items.undo.label"), redo: t("presentation.shortcuts.items.redo.label"), copy: t("presentation.shortcuts.items.copy.label"), paste: t("presentation.shortcuts.items.paste.label"), bringForward: t("presentation.shortcuts.items.bringForward.label"), bringToFront: t("presentation.shortcuts.items.bringToFront.label"), sendBackward: t("presentation.shortcuts.items.sendBackward.label"), sendToBack: t("presentation.shortcuts.items.sendToBack.label"), previousSlide: t("presentation.shortcuts.items.previousSlide.label"), nextSlide: t("presentation.shortcuts.items.nextSlide.label"), help: t("presentation.shortcuts.items.help.label"),
+    multiSelect: "Thêm vào vùng chọn", group: "Nhóm đối tượng", delete: "Xóa vùng chọn", undo: "Hoàn tác", redo: "Làm lại", copy: "Sao chép vùng chọn", paste: "Dán", bringForward: "Đưa lên một lớp", bringToFront: "Đưa lên trên cùng", sendBackward: "Đưa xuống một lớp", sendToBack: "Đưa xuống dưới cùng", previousSlide: "Slide trước", nextSlide: "Slide sau", help: "Phím tắt",
   };
   return labels[key];
 }
 
-function shortcutDescription(id: keyof typeof shortcutKeyById, t: Translator) {
+function shortcutDescription(id: keyof typeof shortcutKeyById) {
   const key = shortcutKeyById[id];
   const descriptions = {
-    multiSelect: t("presentation.shortcuts.items.multiSelect.description"), group: t("presentation.shortcuts.items.group.description"), delete: t("presentation.shortcuts.items.delete.description"), undo: t("presentation.shortcuts.items.undo.description"), redo: t("presentation.shortcuts.items.redo.description"), copy: t("presentation.shortcuts.items.copy.description"), paste: t("presentation.shortcuts.items.paste.description"), bringForward: t("presentation.shortcuts.items.bringForward.description"), bringToFront: t("presentation.shortcuts.items.bringToFront.description"), sendBackward: t("presentation.shortcuts.items.sendBackward.description"), sendToBack: t("presentation.shortcuts.items.sendToBack.description"), previousSlide: t("presentation.shortcuts.items.previousSlide.description"), nextSlide: t("presentation.shortcuts.items.nextSlide.description"), help: t("presentation.shortcuts.items.help.description"),
+    multiSelect: "Giữ Shift khi nhấp để thêm hoặc bỏ một đối tượng.", group: "Gộp hai hoặc nhiều đối tượng đã chọn thành một nhóm.", delete: "Xóa đối tượng đang chọn khỏi slide.", undo: "Hoàn tác thay đổi gần nhất trên slide đang mở.", redo: "Khôi phục thay đổi vừa được hoàn tác.", copy: "Sao chép các đối tượng đang chọn.", paste: "Dán các đối tượng đã sao chép với độ lệch nhỏ.", bringForward: "Đưa đối tượng đã chọn lên trước một lớp.", bringToFront: "Đưa đối tượng đã chọn lên trên tất cả đối tượng khác.", sendBackward: "Đưa đối tượng đã chọn xuống sau một lớp.", sendToBack: "Đưa đối tượng đã chọn xuống sau tất cả đối tượng khác.", previousSlide: "Mở slide đứng trước slide hiện tại.", nextSlide: "Mở slide đứng sau slide hiện tại.", help: "Mở hướng dẫn phím tắt này.",
   };
   return descriptions[key];
 }

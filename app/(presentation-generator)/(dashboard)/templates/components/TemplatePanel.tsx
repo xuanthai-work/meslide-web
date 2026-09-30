@@ -8,11 +8,9 @@ import {
   TemplateListLoadingState,
   TemplateListEmptyState,
 } from "../../../components/TemplateListUi";
-import { useT } from "@/i18n/provider";
 import { GSlideHeader } from "@/components/gslide";
 
 const LayoutPreview = () => {
-  const t = useT();
   const router = useRouter();
   const {
     defaultTemplates,
@@ -33,16 +31,16 @@ const LayoutPreview = () => {
 
   return (
     <div className="relative min-h-[100dvh] bg-[var(--gslide-bg)]">
-      <GSlideHeader title={t("templates.page.title")} />
+      <GSlideHeader title={"Mẫu"} />
 
       <div className="mx-auto px-6 py-8">
         <section className="my-12">
           {loading ? (
-            <TemplateListLoadingState message={t("templates.loading.default")} />
+            <TemplateListLoadingState message={"Đang tải mẫu…"} />
           ) : error ? (
-            <TemplateListEmptyState message={t("templates.error.loadFailed", { error })} />
+            <TemplateListEmptyState message={`Không thể tải mẫu: ${error}`} />
           ) : defaultTemplates.length === 0 ? (
-            <TemplateListEmptyState message={t("templates.empty.noBuiltin")} />
+            <TemplateListEmptyState message={"Không có mẫu có sẵn."} />
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {defaultTemplates.map((template) => (

@@ -3,7 +3,6 @@
 import { type ReactNode } from "react";
 import { Circle, Scan, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n/provider";
 import {
   ColorField,
   NumberField,
@@ -176,7 +175,6 @@ export function TemplateV2ContainerToolbarControls({
   onToggle: (panel: ContainerPanelId) => void;
   openPanel: string | null;
 }) {
-  const t = useT();
   const alignment = asRecord(element.alignment);
   const fill = asRecord(element.fill);
   const stroke = asRecord(element.stroke);
@@ -223,7 +221,7 @@ export function TemplateV2ContainerToolbarControls({
     <>
       <div className="relative">
         <ContainerControlButton
-          title={t("slideEditor.common.fill")}
+          title={"Màu nền"}
           open={openPanel === "fill"}
           onClick={() => onToggle("fill")}
           className="w-7 px-0"
@@ -237,12 +235,12 @@ export function TemplateV2ContainerToolbarControls({
         {openPanel === "fill" ? (
           <Panel className="flex w-[250px] flex-col items-start gap-[14px] rounded-[12px] border border-[#E8E9EE] p-3 font-manrope text-[12px] font-medium leading-6 text-[#191919] shadow-[0_8px_24px_rgba(16,24,40,0.12)]">
             <ColorField
-              label={t("slideEditor.common.color")}
+              label={"Màu"}
               color={fillColor}
               onCommit={(color) => onChange({ fill: { ...fill, color } })}
             />
             <NumberField
-              label={t("slideEditor.common.opacity")}
+              label={"Độ mờ"}
               value={readNumber(fill.opacity, 1)}
               min={0}
               max={1}
@@ -255,7 +253,7 @@ export function TemplateV2ContainerToolbarControls({
 
       <div className="relative">
         <ContainerControlButton
-          title={t("slideEditor.common.stroke")}
+          title={"Đường viền"}
           open={openPanel === "stroke"}
           onClick={() => onToggle("stroke")}
           className="w-7 px-0"
@@ -265,12 +263,12 @@ export function TemplateV2ContainerToolbarControls({
         {openPanel === "stroke" ? (
           <Panel className="flex w-[250px] flex-col items-start gap-[14px] rounded-[12px] border border-[#E8E9EE] p-3 font-manrope text-[12px] font-medium leading-6 text-[#191919] shadow-[0_8px_24px_rgba(16,24,40,0.12)]">
             <ColorField
-              label={t("slideEditor.common.color")}
+              label={"Màu"}
               color={strokeColor}
               onCommit={(color) => onChange({ stroke: { ...stroke, color } })}
             />
             <NumberField
-              label={t("slideEditor.common.width")}
+              label={"Độ rộng"}
               value={readNumber(stroke.width)}
               min={0}
               max={32}
@@ -279,7 +277,7 @@ export function TemplateV2ContainerToolbarControls({
               onCommit={(width) => onChange({ stroke: { ...stroke, width } })}
             />
             <NumberField
-              label={t("slideEditor.common.opacity")}
+              label={"Độ mờ"}
               value={readNumber(stroke.opacity, 1)}
               min={0}
               max={1}
@@ -292,7 +290,7 @@ export function TemplateV2ContainerToolbarControls({
 
       <div className="relative">
         <ContainerControlButton
-          title={t("slideEditor.layout.cornerRadius")}
+          title={"Bo góc"}
           open={openPanel === "radius"}
           onClick={() => onToggle("radius")}
           className="w-7 px-0"
@@ -312,7 +310,7 @@ export function TemplateV2ContainerToolbarControls({
               />
             </div>
             <CompactNumberInput
-              label={t("slideEditor.common.radius")}
+              label={"Bán kính"}
               marker="R"
               value={radius}
               min={0}
@@ -351,7 +349,7 @@ export function TemplateV2ContainerToolbarControls({
 
       <div className="relative">
         <ContainerControlButton
-          title={t("slideEditor.common.shadow")}
+          title={"Đổ bóng"}
           open={openPanel === "shadow"}
           onClick={() => onToggle("shadow")}
           className="px-3"
@@ -361,7 +359,7 @@ export function TemplateV2ContainerToolbarControls({
         {openPanel === "shadow" ? (
           <Panel className="flex w-[320px] flex-col items-start gap-[14px] rounded-[12px] border border-[#E8E9EE] p-3 font-manrope text-[12px] font-medium leading-6 text-[#191919] shadow-[0_8px_24px_rgba(16,24,40,0.12)]">
             <CompactNumberInput
-              label={t("slideEditor.common.position")}
+              label={"Vị trí"}
               marker="X"
               value={readNumber(shadow.offset_x)}
               step={0.5}
@@ -376,7 +374,7 @@ export function TemplateV2ContainerToolbarControls({
               }
             />
             <CompactNumberInput
-              label={t("slideEditor.common.position")}
+              label={"Vị trí"}
               marker="Y"
               value={readNumber(shadow.offset_y)}
               step={0.5}
@@ -391,7 +389,7 @@ export function TemplateV2ContainerToolbarControls({
               }
             />
             <CompactNumberInput
-              label={t("slideEditor.common.blur")}
+              label={"Độ nhòe"}
               marker="X"
               min={0}
               max={100}
@@ -400,12 +398,12 @@ export function TemplateV2ContainerToolbarControls({
               onCommit={(blur) => onChange({ shadow: { ...shadow, blur } })}
             />
             <ColorField
-              label={t("slideEditor.common.color")}
+              label={"Màu"}
               color={readColor(shadow.color, "#4A6FF3")}
               onCommit={(color) => onChange({ shadow: { ...shadow, color } })}
             />
             <NumberField
-              label={t("slideEditor.common.opacity")}
+              label={"Độ mờ"}
               value={clampNumber(readNumber(shadow.opacity, 0.24), 0, 1) * 100}
               min={0}
               max={100}
@@ -426,7 +424,7 @@ export function TemplateV2ContainerToolbarControls({
 
       <div className="relative">
         <ContainerControlButton
-          title={t("slideEditor.layout.layoutSettings")}
+          title={"Cài đặt bố cục"}
           open={openPanel === "padding"}
           onClick={() => onToggle("padding")}
           className="w-7 px-0"
@@ -475,7 +473,7 @@ export function TemplateV2ContainerToolbarControls({
               </div>
             </div>
             <CompactNumberInput
-              label={t("slideEditor.common.position")}
+              label={"Vị trí"}
               marker="X"
               min={0}
               value={paddingX}
@@ -483,7 +481,7 @@ export function TemplateV2ContainerToolbarControls({
               onCommit={updatePaddingX}
             />
             <CompactNumberInput
-              label={t("slideEditor.common.position")}
+              label={"Vị trí"}
               marker="Y"
               min={0}
               value={paddingY}

@@ -1,5 +1,5 @@
 import { LanguageType, PresentationConfig } from "../type";
-import { LANGUAGE_LABEL_KEY } from "../language";
+import { LANGUAGE_LABEL } from "../language";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -28,7 +28,6 @@ import {
   clampSlideCountValue,
   MAX_NUMBER_OF_SLIDES,
 } from "@/utils/presentationLimits";
-import { useT } from "@/i18n/provider";
 
 // Types
 interface ConfigurationSelectsProps {
@@ -81,7 +80,6 @@ const SlideCountSelect: React.FC<{
   onOpenChange: (open: boolean) => void;
   compact?: boolean;
 }> = ({ value, onValueChange, open, onOpenChange, compact = false }) => {
-  const t = useT();
   const [customInput, setCustomInput] = useState(
     value && !SLIDE_OPTIONS.includes(value as SlideOption) ? value : "",
   );
@@ -113,7 +111,7 @@ const SlideCountSelect: React.FC<{
     }
   };
 
-  const displayLabel = value ? t("upload.config.slides", { count: value }) : t("upload.config.autoSlides");
+  const displayLabel = value ? `${value} slide` : "Số slide tự động";
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -173,7 +171,7 @@ const SlideCountSelect: React.FC<{
                   : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
               )}
             >
-              {compact && value ? t("upload.config.slides", { count: value }) : displayLabel}
+              {compact && value ? `${value} slide` : displayLabel}
             </span>
             {compact && (
               <ChevronUp
@@ -227,7 +225,7 @@ const SlideCountSelect: React.FC<{
               className="h-8 w-16 px-2 text-sm min-[1800px]:h-9 min-[1800px]:w-20 min-[1800px]:text-base"
             />
             <span className="text-sm font-medium min-[1800px]:text-base">
-              {t("upload.config.slideUnit")}
+              {"slide"}
             </span>
           </div>
         </div>
@@ -259,7 +257,7 @@ const SlideCountSelect: React.FC<{
                       value === option ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  {t("upload.config.slides", { count: option })}
+                  {`${option} slide`}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -280,7 +278,6 @@ const LanguageSelect: React.FC<{
   onOpenChange: (open: boolean) => void;
   compact?: boolean;
 }> = ({ value, onValueChange, open, onOpenChange, compact = false }) => {
-  const t = useT();
   return (
   <Popover open={open} onOpenChange={onOpenChange}>
     <PopoverTrigger asChild>
@@ -321,7 +318,7 @@ const LanguageSelect: React.FC<{
                 : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
             )}
           >
-            {value ? t(LANGUAGE_LABEL_KEY[value]) : t("upload.config.selectLanguage")}
+            {value ? LANGUAGE_LABEL[value] : "Chọn ngôn ngữ"}
           </span>
           {compact && (
             <ChevronUp
@@ -343,17 +340,17 @@ const LanguageSelect: React.FC<{
     >
       <Command>
         <CommandInput
-          placeholder={t("upload.config.searchLanguage")}
+          placeholder={"Tìm ngôn ngữ..."}
           className="font-instrument_sans"
         />
         <CommandList>
-          <CommandEmpty>{t("upload.config.noLanguage")}</CommandEmpty>
+          <CommandEmpty>{"Không tìm thấy ngôn ngữ."}</CommandEmpty>
           <CommandGroup>
             {Object.values(LanguageType).map((language) => (
               <CommandItem
                 key={language}
                 value={language}
-                keywords={[t(LANGUAGE_LABEL_KEY[language])]}
+                keywords={[LANGUAGE_LABEL[language]]}
                 role="option"
                 onSelect={(currentValue) => {
                   onValueChange(currentValue);
@@ -367,7 +364,7 @@ const LanguageSelect: React.FC<{
                     value === language ? "opacity-100" : "opacity-0",
                   )}
                 />
-                {t(LANGUAGE_LABEL_KEY[language])}
+                {LANGUAGE_LABEL[language]}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -383,7 +380,6 @@ const WebSearchToggle: React.FC<{
   onToggle: (enabled: boolean) => void;
   compact?: boolean;
 }> = ({ enabled, onToggle, compact = false }) => {
-  const t = useT();
 
   return (
     <button
@@ -392,7 +388,7 @@ const WebSearchToggle: React.FC<{
       name="web-search"
       data-testid="web-search-toggle"
       aria-checked={enabled}
-      aria-label={t("upload.config.webSearchAria")}
+      aria-label={"Bật hoặc tắt tìm kiếm web cho bài thuyết trình này"}
       onClick={() => onToggle(!enabled)}
       className={cn(
         "flex h-[34px] items-center gap-2 overflow-hidden rounded-full bg-white px-3.5 font-medium text-[var(--gslide-ink)]",
@@ -419,7 +415,7 @@ const WebSearchToggle: React.FC<{
             : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
         )}
       >
-        {t("upload.config.webSearch")}
+        {"Tìm kiếm web"}
       </span>
       <span
         className={cn(
@@ -429,7 +425,7 @@ const WebSearchToggle: React.FC<{
           enabled ? "text-[var(--gslide-accent)]" : "text-[var(--gslide-muted)]",
         )}
       >
-        {enabled ? t("upload.config.on") : t("upload.config.off")}
+        {enabled ? "Bật" : "Tắt"}
       </span>
     </button>
   );

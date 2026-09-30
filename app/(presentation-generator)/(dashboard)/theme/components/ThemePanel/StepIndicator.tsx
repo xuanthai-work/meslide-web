@@ -1,17 +1,15 @@
 import React from 'react'
-import { useT } from '@/i18n/provider'
 
 interface StepIndicatorProps {
   currentStep: number
 }
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
-  const t = useT()
   const steps = [
-    { step: 1, label: t('themes.steps.brand') },
-    { step: 2, label: t('themes.steps.palette') },
-    { step: 3, label: t('themes.steps.fonts') },
-    { step: 4, label: t('themes.steps.logo') },
+    { step: 1, label: "Thương hiệu" },
+    { step: 2, label: "Bảng màu" },
+    { step: 3, label: "Font" },
+    { step: 4, label: "Logo" },
   ]
   return (
     <div className="flex flex-col items-center gap-7 px-4 min-w-[104px] pt-8 border-r border-[#EDEEEF]">
@@ -25,7 +23,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => 
                 : 'bg-white text-[#404348] border border-[#EDEEEF]'
                 }`}
             >
-              {t('themes.steps.stepLabel', { step })}
+              {`Bước-${step}`}
             </span>
             <span className="text-[11px] font-normal text-black">{label}</span>
           </div>

@@ -8,7 +8,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { templateCardCopy } from "../../components/builtin-template-copy";
 import { TemplateThumbnailPreview } from "../../components/TemplateListUi";
@@ -60,7 +59,6 @@ export function UploadTemplatePicker({
   onConfirmSelection,
   disabled = false,
 }: UploadTemplatePickerProps) {
-  const { locale, t } = useI18n();
   const totalItems = templates.length + 1;
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -71,11 +69,11 @@ export function UploadTemplatePicker({
     : (isConfirmed ? selectedTemplateId : null);
   const isConfirmedSelection = confirmedId !== null && templates.some((t) => t.id === confirmedId);
   const confirmedTemplate = isConfirmedSelection ? templates.find((t) => t.id === confirmedId) ?? null : null;
-  const confirmedCopy = confirmedTemplate ? templateCardCopy(confirmedTemplate, locale) : null;
+  const confirmedCopy = confirmedTemplate ? templateCardCopy(confirmedTemplate) : null;
 
   const isAutoActive = activeIndex === 0;
   const activeTemplate = !isAutoActive ? templates[activeIndex - 1] ?? null : null;
-  const activeCopy = activeTemplate ? templateCardCopy(activeTemplate, locale) : null;
+  const activeCopy = activeTemplate ? templateCardCopy(activeTemplate) : null;
 
   useEffect(() => {
     if (loading) return;
@@ -166,23 +164,23 @@ export function UploadTemplatePicker({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#63748F]">{t("upload.template.label")}</span>
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#63748F]">{"Mẫu thiết kế"}</span>
           <span className="mt-0.5 block truncate text-sm font-semibold text-[#17243C]">
             {loading
-              ? t("upload.template.loading")
+              ? "Đang tải mẫu..."
               : error || templates.length === 0
-                ? t("upload.template.unavailable")
+                ? "Chọn mẫu"
                 : isConfirmedSelection && confirmedCopy?.name
                   ? confirmedCopy.name
-                  : t("upload.template.auto")}
+                  : "Auto"}
           </span>
         </span>
         {isConfirmedSelection && confirmedTemplate && (
           <span
             role="button"
             tabIndex={0}
-            title={t("upload.template.resetToAuto")}
-            aria-label={t("upload.template.resetToAuto")}
+            title={"Đổi về tự động"}
+            aria-label={"Đổi về tự động"}
             data-testid="template-reset-auto-button"
             onClick={(event) => {
               event.stopPropagation();
@@ -205,14 +203,14 @@ export function UploadTemplatePicker({
 
       {!loading && (error || templates.length === 0) && (
         <div className="flex items-center justify-center gap-3 text-xs text-[#67758D]">
-          <span>{t(error ? "upload.template.loadError" : "upload.template.empty")}</span>
+          <span>{error ? "Không thể tải mẫu." : "Chưa có mẫu khả dụng."}</span>
           <button
             type="button"
             data-testid="template-retry-button"
             onClick={retry}
             className="font-semibold text-[#1D6FE8] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40"
           >
-            {t("upload.template.retry")}
+            {"Thử lại"}
           </button>
         </div>
       )}
@@ -224,8 +222,8 @@ export function UploadTemplatePicker({
         >
           <div className="px-5 pb-5 pt-7 sm:px-8 sm:pb-7 sm:pt-8">
             <div className="pr-8">
-              <DialogTitle className="text-xl font-bold leading-tight sm:text-2xl">{t("upload.template.dialogTitle")}</DialogTitle>
-              <DialogDescription className="mt-1.5 text-sm text-[#6B6D78]">{t("upload.template.dialogDescription")}</DialogDescription>
+              <DialogTitle className="text-xl font-bold leading-tight sm:text-2xl">{"Chọn phong cách cho slide"}</DialogTitle>
+              <DialogDescription className="mt-1.5 text-sm text-[#6B6D78]">{"Xem các mẫu và chọn phong cách cho bài thuyết trình."}</DialogDescription>
             </div>
 
             <div className="mt-6 grid gap-5 md:grid-cols-[minmax(0,1fr)_246px] md:gap-7">
@@ -234,7 +232,7 @@ export function UploadTemplatePicker({
                   data-testid="template-carousel"
                   tabIndex={0}
                   role="group"
-                  aria-label={t("upload.template.carouselAria")}
+                  aria-label={"Xem trước mẫu. Dùng phím mũi tên trái và phải để duyệt."}
                   className="touch-pan-y rounded-xl bg-[#F6F8FB] p-3 outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] sm:p-5"
                   onKeyDown={(event) => {
                     if (event.key === "ArrowRight") {
@@ -276,10 +274,10 @@ export function UploadTemplatePicker({
                             <Sparkles size={24} className="text-white drop-shadow" />
                           </div>
                           <span className="text-xl font-bold tracking-tight text-white drop-shadow sm:text-2xl">
-                            {t("upload.template.auto")}
+                            {"Auto"}
                           </span>
                           <span className="max-w-[360px] text-xs font-normal text-white/90 sm:text-sm">
-                            {t("upload.template.autoDescription")}
+                            {"AI tự động phân tích dàn ý để chọn mẫu thiết kế phù hợp nhất"}
                           </span>
                         </div>
                       </div>
@@ -290,18 +288,18 @@ export function UploadTemplatePicker({
                 </div>
                 <div className="mt-4 min-w-0">
                   <span data-testid="template-active-name" aria-live="polite" aria-atomic="true" className="block truncate text-base font-bold sm:text-lg">
-                    {isAutoActive ? t("upload.template.auto") : activeCopy?.name}
+                    {isAutoActive ? "Auto" : activeCopy?.name}
                   </span>
                   <span className="text-xs tabular-nums text-[#6B6D78]">{activeIndex + 1} / {totalItems}</span>
                 </div>
               </div>
 
               <div className="min-w-0 border-t border-[#EDEEF4] pt-4 md:border-l md:border-t-0 md:pl-7 md:pt-0">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-[#6B6D78]">{t("upload.template.railAria")}</div>
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-[#6B6D78]">{"Tất cả mẫu"}</div>
                 <div
                   className="hide-scrollbar flex gap-2 overflow-x-auto pb-2 md:max-h-[420px] md:flex-col md:overflow-x-hidden md:overflow-y-auto md:pr-1"
                   role="group"
-                  aria-label={t("upload.template.railAria")}
+                  aria-label={"Tất cả mẫu"}
                   onMouseLeave={() => {
                     if (!selectedTemplateId) {
                       setActiveIndex(0);
@@ -317,7 +315,7 @@ export function UploadTemplatePicker({
                     data-testid="template-rail-item-auto"
                     data-selected={selectedTemplateId === null || undefined}
                     aria-pressed={activeIndex === 0}
-                    aria-label={t("upload.template.previewAria", { name: t("upload.template.auto") })}
+                    aria-label={`Xem mẫu Auto`}
                     onMouseEnter={() => goTo(0)}
                     onFocus={() => goTo(0)}
                     onClick={() => selectAt(0)}
@@ -334,14 +332,14 @@ export function UploadTemplatePicker({
                       <AutoTemplateThumbnail />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[#101323]">
-                      {t("upload.template.auto")}
+                      {"Auto"}
                     </span>
                     {!isConfirmedSelection && <Check aria-hidden="true" size={15} className="hidden shrink-0 text-[#1D6FE8] md:block" />}
                   </button>
 
                   {/* Templates 1..N */}
                   {templates.map((template, index) => {
-                    const copy = templateCardCopy(template, locale);
+                    const copy = templateCardCopy(template);
                     const isSelected = selectedTemplateId === template.id;
                     const isItemConfirmed = isConfirmedSelection && confirmedId === template.id;
                     const isPreviewing = activeIndex === index + 1;
@@ -352,7 +350,7 @@ export function UploadTemplatePicker({
                         data-testid={`template-rail-item-${template.id}`}
                         data-selected={isSelected || undefined}
                         aria-pressed={isPreviewing}
-                        aria-label={t("upload.template.previewAria", { name: copy.name })}
+                        aria-label={`Xem mẫu ${copy.name}`}
                         onMouseEnter={() => goTo(index + 1)}
                         onFocus={() => goTo(index + 1)}
                         onClick={() => selectAt(index + 1)}
@@ -376,7 +374,7 @@ export function UploadTemplatePicker({
             </div>
 
             <div className="mt-5 flex justify-end border-t border-[#EDEEF4] pt-5 sm:mt-6">
-              <button type="button" data-testid="template-choose-button" onClick={chooseActive} className="rounded-lg bg-[#1D6FE8] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1558C0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2">{t("upload.template.choose")}</button>
+              <button type="button" data-testid="template-choose-button" onClick={chooseActive} className="rounded-lg bg-[#1D6FE8] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1558C0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2">{"Dùng mẫu này"}</button>
             </div>
           </div>
         </DialogContent>

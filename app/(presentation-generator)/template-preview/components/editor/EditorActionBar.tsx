@@ -11,7 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n/provider";
 
 const slideMenuItemClass =
   "flex h-9 cursor-pointer select-none items-center gap-2.5 px-4 text-[14px] font-normal leading-none text-[#191919] outline-none transition-colors focus:bg-[#F7F6F9] data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:text-[#9B9B9B]";
@@ -43,7 +42,6 @@ export function EditorActionBar({
   onMoveRight,
   onReconstruct,
 }: EditorActionBarProps) {
-  const t = useT();
   return (
     <div className="mx-auto flex h-[45px] w-fit max-w-full shrink-0 items-center gap-[12px] overflow-x-auto rounded-[10px] border border-[#EDEEEF] bg-white p-[6px]">
       <button
@@ -52,7 +50,7 @@ export function EditorActionBar({
         onClick={onReconstruct}
         type="button"
       >
-        <span className="whitespace-nowrap">{t("templateStudio.editor.reconstruct")}</span>
+        <span className="whitespace-nowrap">{"Tạo lại"}</span>
         <RefreshCw
           className={cn(
             "h-[14px] w-[14px] shrink-0",
@@ -64,10 +62,10 @@ export function EditorActionBar({
       <button
         className="flex h-[33px] shrink-0 items-center justify-center gap-[7px] whitespace-nowrap rounded-[48px] px-[10px] py-[8px] text-[14px] font-medium text-[#101323] transition-colors hover:bg-[#F7F6F9]"
         onClick={onAddBlank}
-        title={t("templateStudio.editor.addBlank")}
+        title={"Thêm slide trống"}
         type="button"
       >
-        <span>{t("templateStudio.editor.blank")}</span>
+        <span>{"Trống"}</span>
         <Plus className="h-4 w-4 shrink-0" />
       </button>
       <div className="h-[20px] w-0 shrink-0 border-l border-[#EDEEEF]" />
@@ -76,7 +74,7 @@ export function EditorActionBar({
         onClick={onCopy}
         type="button"
       >
-        <span className="whitespace-nowrap">{t("templateStudio.editor.copyId")}</span>
+        <span className="whitespace-nowrap">{"Sao chép ID"}</span>
         <Copy className="h-4 w-4 shrink-0" />
       </button>
       <div className="h-[20px] w-0 shrink-0 border-l border-[#EDEEEF]" />
@@ -84,7 +82,7 @@ export function EditorActionBar({
         <DropdownMenu.Trigger asChild>
           <button
             className="flex h-[33px] w-9 shrink-0 items-center justify-center rounded-[6px] text-[#191919] transition-colors hover:bg-[#F7F6F9]"
-            title={t("templateStudio.editor.slideActions")}
+            title={"Thao tác slide"}
             type="button"
           >
             <EllipsisVertical className="h-4 w-4" />
@@ -101,7 +99,7 @@ export function EditorActionBar({
               onSelect={onDuplicate}
             >
               <Copy className="h-4 w-4" />
-              {t("templateStudio.editor.duplicateSlide")}
+              {"Nhân bản slide"}
             </DropdownMenu.Item>
             <DropdownMenu.Item
               className={slideMenuItemClass}
@@ -109,7 +107,7 @@ export function EditorActionBar({
               onSelect={onMoveRight}
             >
               <MoveRight className="h-4 w-4" />
-              {t("templateStudio.editor.moveRight")}
+              {"Di chuyển sang phải"}
             </DropdownMenu.Item>
             <DropdownMenu.Item
               className={slideMenuItemClass}
@@ -117,7 +115,7 @@ export function EditorActionBar({
               onSelect={onMoveLeft}
             >
               <MoveLeft className="h-4 w-4" />
-              {t("templateStudio.editor.moveLeft")}
+              {"Di chuyển sang trái"}
             </DropdownMenu.Item>
             <DropdownMenu.Separator className="my-2 h-px bg-[#EDEEEF]" />
             <DropdownMenu.Item
@@ -126,7 +124,7 @@ export function EditorActionBar({
               onSelect={onDelete}
             >
               <Trash2 className="h-4 w-4" />
-              {t("templateStudio.editor.deleteSlide")}
+              {"Xóa slide"}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

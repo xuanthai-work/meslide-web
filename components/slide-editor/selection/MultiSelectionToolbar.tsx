@@ -7,7 +7,6 @@ import {
   ShortcutKeys,
   useAppleShortcutPlatform,
 } from "@/components/slide-editor/shortcuts/ShortcutKeys";
-import { useT } from "@/i18n/provider";
 
 const GROUP_SHORTCUT = editorShortcutById("group");
 
@@ -20,7 +19,6 @@ export function TemplateV2MultiSelectionToolbar({
   onGroup: () => void;
   position: { left: number; top: number } | null;
 }) {
-  const t = useT();
   const applePlatform = useAppleShortcutPlatform();
   if (!position || !GROUP_SHORTCUT || typeof document === "undefined") {
     return null;
@@ -37,7 +35,7 @@ export function TemplateV2MultiSelectionToolbar({
     >
       <div className="inline-flex h-8 items-center gap-2 px-2">
         <span className="whitespace-nowrap text-[13px] font-semibold text-[#344054]">
-          {t("slideEditor.selection.selected", { count })}
+          {`Đã chọn ${count}`}
         </span>
       </div>
       <span aria-hidden="true" className="h-5 w-px bg-[#E7E8EC]" />
@@ -48,7 +46,7 @@ export function TemplateV2MultiSelectionToolbar({
         onClick={onGroup}
       >
         <Group aria-hidden="true" className="size-4" strokeWidth={1.8} />
-        <span>{t("slideEditor.common.group")}</span>
+        <span>{"Nhóm"}</span>
         <ShortcutKeys
           applePlatform={applePlatform}
           compact

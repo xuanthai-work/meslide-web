@@ -11,7 +11,6 @@ import {
   type RawElement,
   type UnknownRecord,
 } from "@/components/slide-editor/model/core";
-import { translate } from "@/i18n/translate";
 
 const DATA_LABEL_POSITIONS = new Set(["base", "mid", "top", "outside"]);
 
@@ -34,7 +33,7 @@ export function rawChartToEditorChart(element: RawElement): ChartElement {
         (item) => readNumber(item) ?? 0,
       );
       return {
-        name: readString(record.name) ?? translate("slideEditor.chart.series", { number: index + 1 }),
+        name: readString(record.name) ?? `Chuỗi ${(index + 1)}`,
         values,
       };
     })
@@ -45,7 +44,7 @@ export function rawChartToEditorChart(element: RawElement): ChartElement {
       : legacyData.length > 0
         ? [
             {
-              name: readString(element.title) ?? translate("slideEditor.chart.series", { number: 1 }),
+              name: readString(element.title) ?? `Chuỗi ${(1)}`,
               values: legacyData.map((item) => item.value),
             },
           ]
@@ -53,7 +52,7 @@ export function rawChartToEditorChart(element: RawElement): ChartElement {
   const inputCategories =
     categories.length > 0
       ? categories
-      : legacyData.map((item, index) => item.label || translate("slideEditor.chart.item", { number: index + 1 }));
+      : legacyData.map((item, index) => item.label || `Mục ${(index + 1)}`);
   const chartType = rawChartType(element.chart_type ?? element.chartType);
   const supportedSeries =
     chartType === "pie" || chartType === "donut"
@@ -62,7 +61,7 @@ export function rawChartToEditorChart(element: RawElement): ChartElement {
   const normalizedSeries =
     supportedSeries.length > 0
       ? supportedSeries
-      : [{ name: translate("slideEditor.chart.series", { number: 1 }), values: [0] }];
+      : [{ name: `Chuỗi ${(1)}`, values: [0] }];
   const categoryLength = Math.max(
     inputCategories.length,
     ...normalizedSeries.map((item) => item.values.length),
@@ -71,9 +70,9 @@ export function rawChartToEditorChart(element: RawElement): ChartElement {
     inputCategories.length > 0
       ? Array.from(
           { length: categoryLength },
-          (_, index) => inputCategories[index] ?? translate("slideEditor.chart.item", { number: index + 1 }),
+          (_, index) => inputCategories[index] ?? `Mục ${(index + 1)}`,
         )
-      : Array.from({ length: categoryLength }, (_, index) => translate("slideEditor.chart.item", { number: index + 1 }));
+      : Array.from({ length: categoryLength }, (_, index) => `Mục ${(index + 1)}`);
   const legacyColors = legacyData
     .map((item) => item.color)
     .filter((value): value is string => Boolean(value));
@@ -97,7 +96,7 @@ export function rawChartToEditorChart(element: RawElement): ChartElement {
     ...withoutRemovedChartFields(element),
     type: "chart",
     chart_type: chartType,
-    data: data.length > 0 ? data : [{ label: translate("slideEditor.chart.item", { number: 1 }), value: 0 }],
+    data: data.length > 0 ? data : [{ label: `Mục ${(1)}`, value: 0 }],
     categories: normalizedCategories,
     series: normalizedSeries,
     colors: chartColors,

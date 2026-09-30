@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
-import { useT } from "@/i18n/provider";
-import {
-  translateBackendError,
-  translateBackendStatus,
-} from "@/i18n/backend-messages";
 import {
   isStalled,
   isUsefulStreamEvent,
@@ -21,6 +16,10 @@ import {
 import { store } from "@/store/store";
 import { getApiUrl } from "@/utils/api";
 import { validateAndLimitOutlines } from "@/utils/presentationLimits";
+import {
+  translateBackendError,
+  translateBackendStatus,
+} from "@/lib/backend-messages";
 
 const STALL_INTERVAL_MS = 1_000;
 
@@ -67,8 +66,7 @@ export function useBackgroundOutlineStream(
   enabled = true,
 ): BackgroundOutlineStream {
   const dispatch = useDispatch();
-  const t = useT();
-  const defaultStatus = t("outline.status.preparing");
+  const defaultStatus = "Đang chuẩn bị dàn ý bài thuyết trình";
   const [statusMessage, setStatusMessage] = useState(defaultStatus);
   const [statusCode, setStatusCode] = useState<string | null>(null);
   const [lifecycle, setLifecycle] =
@@ -132,10 +130,10 @@ export function useBackgroundOutlineStream(
         stallCauseRef.current = cause;
         setStallCause(cause);
         setLifecycle("stalled");
-        setStatusMessage(t("outline.status.stalled"));
+        setStatusMessage("Luồng dàn ý đang tạm dừng — đang chờ máy chủ.");
       }
     }, STALL_INTERVAL_MS);
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     if (!enabled || !presentationId) {
@@ -184,7 +182,7 @@ export function useBackgroundOutlineStream(
 
       closeEventSourceLocal();
       clearRetryTimerLocal();
-      setStatusMessage(t("outline.status.reconnecting"));
+      setStatusMessage("Đang kết nối lại luồng dàn ý");
       setLifecycle("connecting");
 
       retryTimerRef.current = setTimeout(() => {
@@ -226,7 +224,7 @@ export function useBackgroundOutlineStream(
           typeof raw === "string" ? parseOutlineStreamPayload(raw) : null;
         if (!data?.type) {
           if (!scheduleRetry("invalid SSE payload")) {
-            failStream(t("outline.toast.parseFailed.description"));
+            failStream("Không thể phân tích dữ liệu bài thuyết trình.");
           }
           return;
         }
@@ -242,7 +240,7 @@ export function useBackgroundOutlineStream(
           case "status": {
             const rawCode = (data.status_code || data.code || data.status) as string | undefined;
             if (rawCode) setStatusCode(String(rawCode));
-            if (data.status) setStatusMessage(translateBackendStatus(t, data));
+            if (data.status) setStatusMessage(translateBackendStatus(data));
             setLifecycle("generating");
             break;
           }
@@ -271,7 +269,7 @@ export function useBackgroundOutlineStream(
             if (outlinesData.length === 0) {
               closeStreamResources();
               setLifecycle("failed");
-              setStatusMessage(t("outline.toast.parseFailed.description"));
+              setStatusMessage("Không thể phân tích dữ liệu bài thuyết trình.");
               break;
             }
             dispatch(setOutlines(outlinesData));
@@ -284,14 +282,14 @@ export function useBackgroundOutlineStream(
           case "closing":
             closeStreamResources();
             setLifecycle("failed");
-            setStatusMessage(t("outline.toast.connectFailed.description"));
+            setStatusMessage("Không kết nối được tới máy chủ. Vui lòng thử lại.");
             break;
 
           case "error":
             // The server already failed the job: do not silent-retry.
             failStream(
-              translateBackendError(t, data) ||
-                t("outline.toast.connectFailed.description"),
+              translateBackendError(data) ||
+                "Không kết nối được tới máy chủ. Vui lòng thử lại.",
             );
             break;
         }
@@ -303,7 +301,7 @@ export function useBackgroundOutlineStream(
         }
         if (!hasUsefulEventRef.current) {
           if (!scheduleRetry("connection lost")) {
-            failStream(t("outline.toast.connectFailed.description"));
+            failStream("Không kết nối được tới máy chủ. Vui lòng thử lại.");
           }
           return;
         }
@@ -313,7 +311,7 @@ export function useBackgroundOutlineStream(
         stallCauseRef.current = "socket";
         setStallCause("socket");
         setLifecycle("stalled");
-        setStatusMessage(t("outline.status.stalled"));
+        setStatusMessage("Luồng dàn ý đang tạm dừng — đang chờ máy chủ.");
       };
 
       clearStallIntervalLocal();
@@ -345,7 +343,6 @@ export function useBackgroundOutlineStream(
     enabled,
     presentationId,
     startStallWatcher,
-    t,
   ]);
 
   const cancel = useCallback(async () => {

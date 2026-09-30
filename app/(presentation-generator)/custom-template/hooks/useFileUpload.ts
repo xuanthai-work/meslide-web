@@ -1,27 +1,25 @@
 import { useState, useCallback } from "react";
 import { notify } from "@/components/ui/sonner";
-import { useT } from "@/i18n/provider";
 
 export const useFileUpload = () => {
-  const t = useT();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleRawFileSelect = useCallback((file: File) => {
     const lowerName = file.name.toLowerCase();
     const isPptx = lowerName.endsWith(".pptx");
     if (!isPptx) {
-      notify.error(t("templateStudio.upload.invalidFileTitle"), t("templateStudio.upload.invalidFileDescription"));
+      notify.error("Tệp không hợp lệ", "Vui lòng chọn một tệp PPTX hợp lệ.");
       return;
     }
 
     const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
-      notify.error(t("templateStudio.upload.tooLargeTitle"), t("templateStudio.upload.tooLargeDescription"));
+      notify.error("Tệp quá lớn", "Kích thước tệp phải nhỏ hơn 100 MB.");
       return;
     }
 
     setSelectedFile(file);
-  }, [t]);
+  }, []);
 
   const handleFileSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {

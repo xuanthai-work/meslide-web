@@ -44,7 +44,6 @@ test-nextjs:
   script:
     - npm ci
     - npm test
-    - npm run check:i18n-copy
     - npm run typecheck
     - npm run lint
     - npm run deadcode

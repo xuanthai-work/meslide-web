@@ -5,10 +5,8 @@ import {
   LEGACY_LANGUAGE_VALUE,
   toLegacyLanguageValue,
   parseLanguageValue,
-  LANGUAGE_LABEL_KEY,
+  LANGUAGE_LABEL,
 } from "../app/(presentation-generator)/upload/language.ts";
-import vi from "../i18n/locales/vi.ts";
-import en from "../i18n/locales/en.ts";
 
 /**
  * Phase 4 — presentation-language model. Stable codes are stored internally
@@ -16,18 +14,6 @@ import en from "../i18n/locales/en.ts";
  * gslide-api/servers/fastapi/utils/ocr_language.py) are sent to the outline
  * and direct-generation APIs via toLegacyLanguageValue.
  */
-
-/** Resolve a dot-path key to a string leaf in a catalog, or undefined. */
-function lookup(catalog, key) {
-  let node = catalog;
-  for (const part of key.split(".")) {
-    if (!node || typeof node !== "object" || !(part in node)) {
-      return undefined;
-    }
-    node = node[part];
-  }
-  return typeof node === "string" ? node : undefined;
-}
 
 const CODES = Object.values(LanguageType);
 
@@ -92,16 +78,12 @@ test("toLegacyLanguageValue returns null for absent input", () => {
   assert.equal(toLegacyLanguageValue(undefined), null);
 });
 
-test("every LANGUAGE_LABEL_KEY resolves to a non-empty string in both catalogs", () => {
+test("every language code has a non-empty inlined Vietnamese label", () => {
   for (const code of CODES) {
-    const key = LANGUAGE_LABEL_KEY[code];
+    const label = LANGUAGE_LABEL[code];
     assert.ok(
-      typeof key === "string" && key.length > 0,
-      `missing label key for ${code}`,
+      typeof label === "string" && label.length > 0,
+      `missing Vietnamese label for ${code}`,
     );
-    const viLabel = lookup(vi, key);
-    assert.ok(viLabel && viLabel.length > 0, `vi label ${key} is empty`);
-    const enLabel = lookup(en, key);
-    assert.ok(enLabel && enLabel.length > 0, `en label ${key} is empty`);
   }
 });

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 
-import { useT } from "@/i18n/provider";
 import type { GenerationLifecycleState } from "@/lib/generation-lifecycle";
 import {
   clearOutlines,
@@ -39,7 +38,6 @@ export function useAutomaticPresentationGeneration(
 ) {
   const dispatch = useDispatch();
   const router = useRouter();
-  const t = useT();
   const outlines = useSelector(
     (state: RootState) => state.presentationGeneration.outlines,
   );
@@ -122,7 +120,7 @@ export function useAutomaticPresentationGeneration(
         const message =
           error instanceof Error
             ? error.message
-            : t("outline.toast.connectFailed.description");
+            : "Không kết nối được tới máy chủ. Vui lòng thử lại.";
         setFailureMessage(message);
         setPhase("failed");
       });
@@ -131,7 +129,7 @@ export function useAutomaticPresentationGeneration(
       cancelled = true;
       prepareGenerationRef.current += 1;
     };
-  }, [dispatch, enabled, hydrationAttempt, presentationId, t, templateId]);
+  }, [dispatch, enabled, hydrationAttempt, presentationId, templateId]);
 
   const outlineReady =
     hasPersistedOutline || outlineStream.lifecycle === "complete";
@@ -179,7 +177,7 @@ export function useAutomaticPresentationGeneration(
         const message =
           error instanceof Error
             ? error.message
-            : t("outline.toast.generationError.fallbackDescription");
+            : "Có lỗi khi tạo bài thuyết trình.";
         setFailureMessage(message);
         setPhase("failed");
       })
@@ -195,7 +193,6 @@ export function useAutomaticPresentationGeneration(
     phase,
     presentationId,
     router,
-    t,
     templateId,
   ]);
 
@@ -247,14 +244,14 @@ export function useAutomaticPresentationGeneration(
     lifecycle = phase === "complete" ? "complete" : "idle";
   } else if (phase === "checking") {
     lifecycle = "connecting";
-    statusMessage = t("outline.status.preparing");
+    statusMessage = "Đang chuẩn bị dàn ý bài thuyết trình";
   } else if (phase === "preparing") {
     lifecycle = "generating";
-    statusMessage = t("outline.loading.generatingPresentationData");
+    statusMessage = "Đang tạo dữ liệu bài thuyết trình…";
   } else if (phase === "failed") {
     lifecycle = "failed";
     statusMessage =
-      failureMessage || t("outline.toast.generationError.fallbackDescription");
+      failureMessage || "Có lỗi khi tạo bài thuyết trình.";
   }
 
   return {

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { GSlideWordmark } from "@/components/gslide";
-import { useT } from "@/i18n/provider";
 
 const PATHS_WITH_HEADER_BACK = [
   "/upload",
@@ -19,14 +18,13 @@ function pathMatches(pathname: string | null, base: string) {
 
 const Header = () => {
   const pathname = usePathname();
-  const t = useT();
   const showHeaderBack = PATHS_WITH_HEADER_BACK.some((p) => pathMatches(pathname, p));
 
   const backToUpload = pathMatches(pathname, "/documents-preview");
   const backToTemplates = pathMatches(pathname, "/template-preview");
 
   const backHref = backToUpload ? "/upload" : backToTemplates ? "/templates" : "/dashboard";
-  const backLabel = t("common.actions.back");
+  const backLabel = "Quay lại";
 
   return (
     <div className="w-full   sticky top-0 z-50 py-7 "

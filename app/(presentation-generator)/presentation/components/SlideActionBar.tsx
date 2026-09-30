@@ -38,7 +38,6 @@ import {
 } from "../../_shared/blank-slide";
 import NewSlide from "./NewSlide";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
-import { useT } from "@/i18n/provider";
 
 interface SlideActionBarProps {
   slide: any;
@@ -64,7 +63,6 @@ const SlideActionBar = ({
   onSlideSelected,
   revealOnGroupHover = false,
 }: SlideActionBarProps) => {
-  const t = useT();
   const dispatch = useDispatch();
   const store = useStore();
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
@@ -118,8 +116,8 @@ const SlideActionBar = ({
 
   const notifySlideLimitReached = () => {
     notify.warning(
-      t("presentation.slideLimit"),
-      t("presentation.slideLimitDescription", { max: MAX_NUMBER_OF_SLIDES })
+      "Đã đạt giới hạn slide",
+      `Bạn có thể tạo tối đa ${MAX_NUMBER_OF_SLIDES} slide.`
     );
   };
 
@@ -131,8 +129,8 @@ const SlideActionBar = ({
 
     if (!templateId) {
       notify.error(
-        t("presentation.slideActions.missingContextTitle"),
-        t("presentation.slideActions.missingContextDescription")
+        "Không thể thêm slide trống",
+        "Slide này không có thông tin mẫu."
       );
       return;
     }
@@ -220,8 +218,8 @@ const SlideActionBar = ({
 
     if (!templateId) {
       notify.error(
-        t("presentation.slideActions.openTemplatesFailedTitle"),
-        t("presentation.slideActions.missingContextDescription")
+        "Không thể mở danh sách mẫu",
+        "Slide này không có thông tin mẫu."
       );
       return;
     }
@@ -280,7 +278,7 @@ const SlideActionBar = ({
                   hasReachedSlideLimit && "cursor-not-allowed opacity-50"
                 )}
               >
-                <span>{t("presentation.slideActions.blank")}</span>
+                <span>{"Slide trống"}</span>
                 <Plus className="h-4 w-4" strokeWidth={2.4} />
               </button>
 
@@ -296,7 +294,7 @@ const SlideActionBar = ({
                       hasReachedSlideLimit && "cursor-not-allowed opacity-50"
                     )}
                   >
-                    <span>{t("presentation.slideActions.useTemplate")}</span>
+                    <span>{"Dùng mẫu"}</span>
                     <Plus className="h-4 w-4" strokeWidth={2.4} />
                   </button>
                 </>
@@ -311,7 +309,7 @@ const SlideActionBar = ({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  aria-label={t("presentation.slideActions.speakerNotes")}
+                  aria-label={"Ghi chú thuyết trình"}
                   className={cn(
                     "flex h-8 w-10 shrink-0 items-center justify-center rounded-[6px] text-[#050505] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
                     isSpeakerPopoverOpen && "bg-[#F7F6F9]"
@@ -332,12 +330,12 @@ const SlideActionBar = ({
               >
                 <div className="border-b border-[#EDEEEF] px-5 py-4">
                   <p className="text-sm font-semibold text-[#191919]">
-                    {t("presentation.slideActions.speakerNotes")}
+                    {"Ghi chú thuyết trình"}
                   </p>
                 </div>
                 <div className="p-5">
                   <div className="max-h-[240px] min-h-[108px] overflow-auto whitespace-pre-wrap rounded-[12px] border border-[#EDEEEF] bg-[#FAFAFB] p-4 text-sm leading-relaxed text-[#333333]">
-                    {speakerNote || t("presentation.slideActions.noSpeakerNotes")}
+                    {speakerNote || "Slide này chưa có ghi chú thuyết trình."}
                   </div>
                 </div>
               </PopoverContent>
@@ -352,7 +350,7 @@ const SlideActionBar = ({
             <DropdownMenu.Trigger asChild>
               <button
                 type="button"
-                aria-label={t("presentation.slideActions.menuAria")}
+                aria-label={"Thao tác với slide"}
                 className={cn(
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] text-[#050505] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
                   isSlideMenuOpen && "bg-[#F7F6F9]"
@@ -374,7 +372,7 @@ const SlideActionBar = ({
                   onSelect={handleDuplicateSlide}
                 >
                   <Copy className="h-4 w-4 shrink-0 text-current" />
-                  <span>{t("presentation.slideActions.duplicate")}</span>
+                  <span>{"Nhân bản slide"}</span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   disabled={currentIndex <= 0}
@@ -382,7 +380,7 @@ const SlideActionBar = ({
                   onSelect={() => handleMoveSlide(currentIndex - 1)}
                 >
                   <ArrowUp className="h-4 w-4 shrink-0 text-current" />
-                  <span>{t("presentation.slideActions.moveUp")}</span>
+                  <span>{"Di chuyển lên"}</span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   disabled={currentIndex >= slideCount - 1}
@@ -390,7 +388,7 @@ const SlideActionBar = ({
                   onSelect={() => handleMoveSlide(currentIndex + 1)}
                 >
                   <ArrowDown className="h-4 w-4 shrink-0 text-current" />
-                  <span>{t("presentation.slideActions.moveDown")}</span>
+                  <span>{"Di chuyển xuống"}</span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="my-2 h-px bg-[#EDEEEF]" />
                 <DropdownMenu.Item
@@ -398,7 +396,7 @@ const SlideActionBar = ({
                   onSelect={handleDeleteSlide}
                 >
                   <Trash2 className="h-4 w-4 shrink-0 text-current" />
-                  <span>{t("presentation.slideActions.delete")}</span>
+                  <span>{"Xóa slide"}</span>
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>

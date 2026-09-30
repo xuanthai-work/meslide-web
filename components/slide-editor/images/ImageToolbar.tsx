@@ -43,7 +43,6 @@ import { ImagePickerModal } from "@/components/slide-editor/images/ImagePickerMo
 import { resolveBackendAssetSource } from "@/utils/api";
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import { notify } from "@/components/ui/sonner";
-import { useT } from "@/i18n/provider";
 
 type ImagePanel = "fit" | "crop" | "radius" | "opacity" | null;
 type ImageFit = "contain" | "cover" | "fill";
@@ -282,8 +281,7 @@ export function ImageToolbar({
   onChange: (index: number, element: ImageSlideElement) => void;
   onCropModeChange?: (active: boolean) => void;
 }) {
-  const t = useT();
-  const fitLabels: Record<ImageFit, string> = { contain: t("slideEditor.image.contain"), cover: t("slideEditor.image.fill"), fill: t("slideEditor.image.stretch") };
+  const fitLabels: Record<ImageFit, string> = { contain: "Vừa khung", cover: "Lấp đầy", fill: "Kéo giãn" };
   const [openPanel, setOpenPanel] = useState<ImagePanel>(null);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -508,11 +506,11 @@ export function ImageToolbar({
   const uploadReplacementImage = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      notify.error(t("slideEditor.image.uploadFailed"), t("slideEditor.image.invalidFile"));
+      notify.error("Tải ảnh thất bại", "Vui lòng chọn tệp ảnh hợp lệ.");
       return;
     }
     if (file.size > MAX_UPLOAD_FILE_SIZE) {
-      notify.error(t("slideEditor.image.uploadFailed"), t("slideEditor.image.tooLarge"));
+      notify.error("Tải ảnh thất bại", "Tệp ảnh phải nhỏ hơn 5 MB.");
       return;
     }
 
@@ -521,7 +519,7 @@ export function ImageToolbar({
     try {
       const asset = await ImagesApi.uploadImage(file);
       const url = resolveBackendAssetSource(asset);
-      if (!url) throw new Error(t("slideEditor.image.uploadFallback"));
+      if (!url) throw new Error("Không thể tải ảnh lên.");
       update({
         data: url,
         name: file.name,
@@ -529,11 +527,11 @@ export function ImageToolbar({
         focus_y: 50,
         crop_scale: null,
       });
-      notify.success(t("slideEditor.image.uploaded"), t("slideEditor.image.replaced"));
+      notify.success("Đã tải ảnh lên", "Ảnh đã chọn đã được thay thế.");
     } catch (uploadError: unknown) {
       notify.error(
-        t("slideEditor.image.uploadFailed"),
-        uploadError instanceof Error ? uploadError.message : t("slideEditor.image.uploadFallback"),
+        "Tải ảnh thất bại",
+        uploadError instanceof Error ? uploadError.message : "Không thể tải ảnh lên.",
       );
     } finally {
       setIsUploadingImage(false);
@@ -563,8 +561,8 @@ export function ImageToolbar({
         <div className="relative">
           <button
             type="button"
-            title={t("slideEditor.image.imageType", { type: fitLabels[fit] })}
-            aria-label={t("slideEditor.image.imageType", { type: fitLabels[fit] })}
+            title={`Kiểu ảnh: ${(fitLabels[fit])}`}
+            aria-label={`Kiểu ảnh: ${(fitLabels[fit])}`}
             aria-expanded={openPanel === "fit"}
             onClick={() => togglePanel("fit")}
             className="flex min-w-[83px] items-center justify-between gap-2 rounded-[10px] border-0 bg-transparent py-[6px] text-[14px] font-medium font-syne leading-4"
@@ -603,8 +601,8 @@ export function ImageToolbar({
 
         <button
           type="button"
-          title={t("slideEditor.image.upload")}
-          aria-label={t("slideEditor.image.upload")}
+          title={"Tải ảnh lên"}
+          aria-label={"Tải ảnh lên"}
           onClick={() => uploadInputRef.current?.click()}
           disabled={isUploadingImage}
           className="rounded-[2px] border-0 bg-transparent p-1 text-[#05070A] hover:bg-[var(--gslide-accent-soft)] disabled:cursor-wait disabled:opacity-50"
@@ -618,8 +616,8 @@ export function ImageToolbar({
 
         <button
           type="button"
-          title={t("slideEditor.image.replace")}
-          aria-label={t("slideEditor.image.replace")}
+          title={"Thay ảnh"}
+          aria-label={"Thay ảnh"}
           onClick={() => {
             setOpenPanel(null);
             setImagePickerOpen(true);
@@ -641,8 +639,8 @@ export function ImageToolbar({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            title={t("slideEditor.image.crop")}
-            aria-label={t("slideEditor.image.crop")}
+            title={"Cắt ảnh"}
+            aria-label={"Cắt ảnh"}
             aria-pressed={openPanel === "crop"}
             onClick={() => togglePanel("crop")}
             className={cn(
@@ -655,8 +653,8 @@ export function ImageToolbar({
 
           <button
             type="button"
-            title={t("slideEditor.image.flipHorizontal")}
-            aria-label={t("slideEditor.image.flipHorizontal")}
+            title={"Lật ngang"}
+            aria-label={"Lật ngang"}
             aria-pressed={element.flip_h === true}
             onClick={() => update({ flip_h: !(element.flip_h ?? false) })}
             className={cn(
@@ -669,8 +667,8 @@ export function ImageToolbar({
 
           <button
             type="button"
-            title={t("slideEditor.image.flipVertical")}
-            aria-label={t("slideEditor.image.flipVertical")}
+            title={"Lật dọc"}
+            aria-label={"Lật dọc"}
             aria-pressed={element.flip_v === true}
             onClick={() => update({ flip_v: !(element.flip_v ?? false) })}
             className={cn(
@@ -684,8 +682,8 @@ export function ImageToolbar({
           <div className="relative">
             <button
               type="button"
-              title={t("slideEditor.image.borderRadius")}
-              aria-label={t("slideEditor.image.borderRadius")}
+              title={"Bo góc ảnh"}
+              aria-label={"Bo góc ảnh"}
               aria-pressed={openPanel === "radius"}
               onClick={() => togglePanel("radius")}
               className={cn(
@@ -699,13 +697,13 @@ export function ImageToolbar({
               <Panel className="w-[220px] p-3">
                 <label className="block text-[12px] font-medium text-[#4B5563]">
                   <span className="mb-2 flex items-center justify-between">
-                    <span>{t("slideEditor.layout.borderRadius")}</span>
+                    <span>{"Bo góc"}</span>
                     <span className="font-medium text-[#191919]">
                       {formatRadiusValue(radiusDraft)}
                     </span>
                   </span>
                   <input
-                    aria-label={t("slideEditor.image.borderRadius")}
+                    aria-label={"Bo góc ảnh"}
                     type="range"
                     min={0}
                     max={maxRadius}
@@ -735,8 +733,8 @@ export function ImageToolbar({
         <div className="relative">
           <button
             type="button"
-            title={t("slideEditor.image.opacity")}
-            aria-label={t("slideEditor.image.opacity")}
+            title={"Độ mờ ảnh"}
+            aria-label={"Độ mờ ảnh"}
             aria-pressed={openPanel === "opacity"}
             onClick={() => togglePanel("opacity")}
             className={cn(
@@ -749,7 +747,7 @@ export function ImageToolbar({
           {openPanel === "opacity" ? (
             <Panel className="flex min-w-[115px] items-center p-2.5">
               <input
-                aria-label={t("slideEditor.image.opacity")}
+                aria-label={"Độ mờ ảnh"}
                 type="range"
                 min={0}
                 max={1}
@@ -892,11 +890,10 @@ function CropOverlay({
   onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
   onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
 }) {
-  const t = useT();
   const transform = [flipH ? "scaleX(-1)" : "", flipV ? "scaleY(-1)" : ""]
     .filter(Boolean)
     .join(" ");
-  const cropLabel = t("slideEditor.image.cropZoom", { percent: Math.round(cropDraft.scale * 100) });
+  const cropLabel = `Cắt ảnh. Thu phóng ${(Math.round(cropDraft.scale * 100))} phần trăm.`;
 
   return (
     <div
@@ -958,8 +955,8 @@ function CropOverlay({
           <button
             key={handle.value}
             type="button"
-            title={t("slideEditor.image.resizeHandle", { direction: handle.value })}
-            aria-label={t("slideEditor.image.resizeHandle", { direction: handle.value })}
+            title={`Điểm kéo đổi kích thước ${handle.value}`}
+            aria-label={`Điểm kéo đổi kích thước ${handle.value}`}
             className="pointer-events-auto absolute z-[5] rounded-full border border-[var(--gslide-border)] bg-white shadow-[0_1px_4px_rgba(17,24,39,0.24)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
             style={cropHandleStyle(handle.value, imageFrame)}
             onPointerCancel={(event) => onPointerCancel(event)}
@@ -1065,7 +1062,6 @@ function CropActions({
   onReset: () => void;
   onClose: () => void;
 }) {
-  const t = useT();
   return (
     <div
       data-template-v2-floating-toolbar="true"
@@ -1082,8 +1078,8 @@ function CropActions({
     >
       <button
         type="button"
-        title={t("slideEditor.image.resetCrop")}
-        aria-label={t("slideEditor.image.resetCrop")}
+        title={"Đặt lại vùng cắt"}
+        aria-label={"Đặt lại vùng cắt"}
         onClick={onReset}
         className="rounded-[6px] p-2 text-[#4B5563] hover:bg-[var(--gslide-accent-soft)] hover:text-[#191919]"
       >
@@ -1091,8 +1087,8 @@ function CropActions({
       </button>
       <button
         type="button"
-        title={t("slideEditor.image.applyCrop")}
-        aria-label={t("slideEditor.image.applyCrop")}
+        title={"Áp dụng vùng cắt"}
+        aria-label={"Áp dụng vùng cắt"}
         onClick={onDone}
         className="rounded-[6px] bg-[#111827] p-2 text-white hover:bg-[#0B1220]"
       >
@@ -1100,8 +1096,8 @@ function CropActions({
       </button>
       <button
         type="button"
-        title={t("slideEditor.image.closeCrop")}
-        aria-label={t("slideEditor.image.closeCrop")}
+        title={"Đóng điều khiển cắt ảnh"}
+        aria-label={"Đóng điều khiển cắt ảnh"}
         onClick={onClose}
         className="rounded-[6px] p-2 text-[#4B5563] hover:bg-[var(--gslide-accent-soft)] hover:text-[#191919]"
       >

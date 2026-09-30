@@ -2,7 +2,6 @@ import React from "react";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { Provider } from "react-redux";
 
-import { I18nProvider } from "../../i18n/provider";
 import { clearOutlines } from "../../store/slices/presentationGeneration";
 import { store } from "../../store/store";
 import { useAutomaticPresentationGeneration } from "../../app/(presentation-generator)/presentation/hooks/useAutomaticPresentationGeneration";
@@ -74,7 +73,7 @@ const mountHarness = (children: React.ReactNode) => {
   cy.mount(
     <AppRouterContext.Provider value={createRouter()}>
       <Provider store={store}>
-        <I18nProvider locale="vi-VN">{children}</I18nProvider>
+        {children}
       </Provider>
     </AppRouterContext.Provider>,
   );

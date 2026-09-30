@@ -19,7 +19,6 @@ import {
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import { normalizeBackendAssetUrls } from "@/utils/api";
 import { ensureTailwindBrowserScript } from "@/lib/tailwind-browser";
-import { useT } from "@/i18n/provider";
 
 const PDF_PRINT_STYLE = `
   html,
@@ -116,7 +115,6 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
   const { presentationData } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
-  const t = useT();
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -180,7 +178,7 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
 
     return ApiResponseHandler.handleResponse(
       response,
-      t("export.pdfMaker.error.notFound")
+      "Không tìm thấy bài thuyết trình"
     );
   };
 
@@ -205,7 +203,7 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
       }
     } catch (error) {
       setError(true);
-      notify.error(t("export.pdfMaker.error.toastTitle"), t("export.pdfMaker.error.toastDesc"));
+      notify.error("Tải bài thuyết trình thất bại", "Không thể tải bài thuyết trình. Vui lòng thử lại.");
       console.error("Error fetching user slides:", error);
     } finally {
       if (typeof document !== "undefined" && document.fonts?.ready) {
@@ -238,12 +236,12 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
             role="alert"
           >
             <AlertCircle className="w-16 h-16 mb-4 text-red-500" />
-            <strong className="font-bold text-4xl mb-2">{t("export.pdfMaker.error.oopsTitle")}</strong>
+            <strong className="font-bold text-4xl mb-2">{"Ôi!"}</strong>
             <p className="block text-2xl py-2">
-              {t("export.pdfMaker.error.message")}
+              {"Chúng tôi gặp sự cố khi tải bài thuyết trình của bạn."}
             </p>
             <p className="text-lg py-2">
-              {t("export.pdfMaker.error.suggestion")}
+              {"Vui lòng kiểm tra kết nối internet hoặc thử lại sau."}
             </p>
             <Button
               className="mt-4 bg-red-500 text-white hover:bg-red-600 focus:ring-4 focus:ring-red-300"
@@ -251,7 +249,7 @@ const PresentationPage = ({ presentation_id, exportCookie }: PresentationPagePro
                 window.location.reload();
               }}
             >
-              {t("common.actions.retry")}
+              {"Thử lại"}
             </Button>
           </div>
         </div>

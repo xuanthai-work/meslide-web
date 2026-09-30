@@ -8,8 +8,6 @@ import { applyPresentationThemeToElement } from "../utils/applyPresentationTheme
 import { normalizeBackendAssetUrls } from "@/utils/api";
 import { loadPresentationFonts } from "../../hooks/useFontLoad";
 import { DashboardApi } from "../../services/api/dashboard";
-import { useT } from "@/i18n/provider";
-
 
 export const usePresentationData = (
   presentationId: string,
@@ -18,7 +16,6 @@ export const usePresentationData = (
 ) => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const t = useT();
 
   const fetchUserSlides = useCallback(async (options?: { clearHistory?: boolean }) => {
     try {
@@ -28,8 +25,8 @@ export const usePresentationData = (
 
       if (data?.version === "v1-standard") {
         notify.warning(
-          t("presentation.data.unsupportedTitle"),
-          t("presentation.data.unsupportedDescription")
+          "Bài thuyết trình không được hỗ trợ",
+          "Bộ slide này được tạo bằng phiên bản GSlide cũ hơn. Hãy dùng phiên bản tương thích để mở."
         );
         setLoading(false);
         router.replace("/dashboard");
@@ -37,7 +34,6 @@ export const usePresentationData = (
       }
 
       const normalizedData = normalizeBackendAssetUrls(data);
-
 
       if (normalizedData) {
         dispatch(setPresentationData(normalizedData));
@@ -57,14 +53,14 @@ export const usePresentationData = (
     } catch (error) {
       setError(true);
       notify.error(
-        t("presentation.data.loadFailedTitle"),
-        t("presentation.data.loadFailedDescription")
+        "Không thể tải bài thuyết trình",
+        "Không thể tải bài thuyết trình. Vui lòng thử lại."
       );
       console.error("Error fetching user slides:", error);
       setLoading(false);
       return undefined;
     }
-  }, [presentationId, dispatch, router, setLoading, setError, t]);
+  }, [presentationId, dispatch, router, setLoading, setError]);
 
   return {
     fetchUserSlides,

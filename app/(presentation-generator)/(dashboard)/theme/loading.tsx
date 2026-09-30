@@ -1,6 +1,5 @@
 import { GSlideHeader } from '@/components/gslide'
 import { Skeleton } from '@/components/ui/skeleton'
-import { translate } from '@/i18n/translate'
 
 const ThemeCardSkeleton = () => (
     <div className="rounded-xl px-6 border border-[#EDEEEF] w-[305px] bg-white overflow-hidden">
@@ -36,7 +35,7 @@ const Loading = () => {
     return (
         <div className="min-h-[100dvh] bg-[var(--gslide-bg)]">
             <GSlideHeader
-                title={translate('themes.page.title')}
+                title={"Chủ đề"}
                 actions={<Skeleton className="h-10 w-36 rounded-full" />}
             />
 

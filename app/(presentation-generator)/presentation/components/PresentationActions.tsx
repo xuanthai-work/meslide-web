@@ -91,7 +91,6 @@ import Chat from "./Chat";
 import TemplateService from "../../services/api/template";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import { isTemplateFreePresentation } from "../../_shared/blank-slide";
-import { useT } from "@/i18n/provider";
 import { normalizeSearchText } from "@/utils/normalizeSearchText";
 
 type PresentationActionsProps = React.ComponentProps<typeof Chat> & {
@@ -874,7 +873,6 @@ function BlockGroupCard({
   group: TemplateBlockGroup;
   onInsertBlock: (block: TemplateBlock) => void;
 }) {
-  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [hasExpanded, setHasExpanded] = useState(false);
   const firstVariant = group.variants[0];
@@ -932,7 +930,7 @@ function BlockGroupCard({
           onClick={toggleExpanded}
         >
           <span className="shrink-0 rounded-full border border-[#BFDBFE] bg-[#FAF8FF] px-3 py-1.5 text-[11px] font-medium leading-4 text-[#7F00FF]">
-            {t("presentation.tools.layoutCount", { count: variantCount })}
+            {`${variantCount} bố cục`}
           </span>
           <ChevronDown
             className={cn(
@@ -959,7 +957,6 @@ export const BlocksPanel = ({
   presentationData?: unknown;
   onInsertBlock: (block: TemplateBlock) => void;
 }) => {
-  const t = useT();
   const [blockPrompt, setBlockPrompt] = useState("");
   const [{ blocks, error, loading }, dispatchBlockState] = useReducer(
     blocksPanelReducer,
@@ -1005,14 +1002,14 @@ export const BlocksPanel = ({
         if (cancelled) return;
         dispatchBlockState({
           type: "failed",
-          message: t("presentation.tools.loadBlocksFailed"),
+          message: "Không thể tải các thành phần mẫu.",
         });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, presentationData, presentationId, t]);
+  }, [cacheKey, presentationData, presentationId]);
 
   return (
     <div className="h-full overflow-y-auto px-[clamp(14px,1.4vw,20px)] pb-[clamp(24px,2.2vw,32px)] pt-[clamp(24px,2.2vw,32px)] hide-scrollbar">
@@ -1034,21 +1031,21 @@ export const BlocksPanel = ({
         }
       `}</style>
       <h3 className="mb-3 text-[clamp(13px,0.95vw,15px)] font-semibold leading-5 text-[#101323]">
-        {t("presentation.tools.blocks")}
+        {"Khối"}
       </h3>
 
       <div className="mb-7 flex h-[clamp(46px,3.6vw,52px)] items-center rounded-[10px] border border-[#EDEEF0] bg-white pl-[clamp(10px,0.9vw,12px)] pr-[clamp(6px,0.6vw,8px)] shadow-[0_10px_26px_rgba(17,24,39,0.08)]">
         <input
           value={blockPrompt}
           onChange={(event) => setBlockPrompt(event.target.value)}
-          placeholder={t("presentation.tools.searchBlocks")}
+          placeholder={"Tìm khối"}
           className="min-w-0 flex-1 bg-transparent text-[clamp(10px,0.75vw,12px)] text-[#101323] outline-none placeholder:text-[#9CA3AF]"
         />
         <button
           type="button"
           disabled={disabled}
           className="flex h-[clamp(32px,2.5vw,36px)] w-[clamp(32px,2.5vw,36px)] shrink-0 items-center justify-center rounded-full bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label={t("presentation.tools.createBlock")}
+          aria-label={"Tạo khối"}
         >
           <Search
             className="h-[clamp(12px,0.9vw,14px)] w-[clamp(12px,0.9vw,14px)] text-white"
@@ -1057,12 +1054,12 @@ export const BlocksPanel = ({
         </button>
       </div>
 
-      <SectionLabel>{t("presentation.tools.content")}</SectionLabel>
+      <SectionLabel>{"Nội dung"}</SectionLabel>
 
       <div className="space-y-3">
         {loading && (
           <p className="rounded-[8px] border border-[#E5E7EB] bg-[#F9FAFB] p-4 text-[11px] leading-4 text-[#667085]">
-            {t("presentation.tools.loadingBlocks")}
+            {"Đang tải các thành phần mẫu…"}
           </p>
         )}
         {!loading && error && (
@@ -1072,7 +1069,7 @@ export const BlocksPanel = ({
         )}
         {!loading && !error && visibleBlocks.length === 0 && (
           <p className="rounded-[8px] border border-dashed border-[#D0D5DD] bg-[#F9FAFB] p-4 text-[11px] leading-4 text-[#667085]">
-            {t("presentation.tools.noBlocks")}
+            {"Không tìm thấy thành phần mẫu."}
           </p>
         )}
         {!loading &&
@@ -1148,21 +1145,20 @@ function ActionsSidebar({
   blocksUnavailable?: boolean;
   onActionSelect: (action: ActionId) => void;
 }) {
-  const t = useT();
   const localizedActionLabel = (id: ActionId) => {
     switch (id) {
-      case "texts": return t("presentation.tools.texts");
-      case "charts": return t("presentation.tools.charts");
-      case "tables": return t("presentation.tools.tables");
-      case "images": return t("presentation.tools.images");
-      case "elements": return t("presentation.tools.elements");
-      case "blocks": return t("presentation.tools.blocks");
-      default: return t("presentation.tools.ai");
+      case "texts": return "Văn bản";
+      case "charts": return "Biểu đồ";
+      case "tables": return "Bảng";
+      case "images": return "Hình ảnh";
+      case "elements": return "Thành phần";
+      case "blocks": return "Khối";
+      default: return "AI";
     }
   };
   return (
     <aside
-      aria-label={t("presentation.tools.aria")}
+      aria-label={"Công cụ chỉnh sửa"}
       className="ml-auto flex h-full w-[78px] shrink-0 flex-col items-center gap-5 bg-white px-[10px] py-2"
     >
       <div
@@ -1174,7 +1170,7 @@ function ActionsSidebar({
         <PrimaryActionButton
           active={activeAction === "ai"}
           iconSrc={actionIconSrc.ai}
-          label={t("presentation.tools.ai")}
+          label={"AI"}
           onClick={() => onActionSelect("ai")}
         />
         <>
@@ -1182,9 +1178,9 @@ function ActionsSidebar({
             <PrimaryActionButton
               active={activeAction === "blocks"}
               disabled={blocksUnavailable}
-              disabledReason={t("presentation.tools.blocksNeedTemplate")}
+              disabledReason={"Khối yêu cầu bài thuyết trình có mẫu"}
               iconSrc={actionIconSrc.blocks}
-              label={t("presentation.tools.blocks")}
+              label={"Khối"}
               onClick={() => onActionSelect("blocks")}
             />
         </>
@@ -1242,7 +1238,6 @@ function ActionsPanel({
   presentationData?: unknown;
   presentationId: string;
 }) {
-  const t = useT();
   return (
     <div className="min-w-0 flex-1 bg-white">
       <div className={cn("h-full", activeAction === "ai" ? "block" : "hidden")}>
@@ -1264,18 +1259,18 @@ function ActionsPanel({
       {activeAction === "texts" && (
         <InsertPanel
           disabled={editingDisabled}
-          title={t("presentation.tools.texts")}
-          groups={[{ label: t("presentation.tools.add"), items: textItems }]}
+          title={"Văn bản"}
+          groups={[{ label: "Thêm", items: textItems }]}
           onItemSelect={onTextItemSelect}
         />
       )}
       {activeAction === "charts" && (
         <InsertPanel
           disabled={editingDisabled}
-          title={t("presentation.tools.charts")}
+          title={"Biểu đồ"}
           groups={[
-            { label: t("presentation.tools.chartType"), items: chartTypeItems },
-            { label: t("presentation.tools.infographics"), items: infographicItems },
+            { label: "Loại biểu đồ", items: chartTypeItems },
+            { label: "Đồ họa thông tin", items: infographicItems },
           ]}
           onItemSelect={onChartItemSelect}
         />
@@ -1283,23 +1278,23 @@ function ActionsPanel({
       {activeAction === "tables" && (
         <InsertPanel
           disabled={editingDisabled}
-          title={t("presentation.tools.tables")}
-          groups={[{ label: t("presentation.tools.tableType"), items: tableTypeItems }]}
+          title={"Bảng"}
+          groups={[{ label: "Loại bảng", items: tableTypeItems }]}
           onItemSelect={onTableItemSelect}
         />
       )}
       {activeAction === "images" && (
         <InsertPanel
           disabled={editingDisabled}
-          title={t("presentation.tools.images")}
-          groups={[{ label: t("presentation.tools.add"), items: imageItems }]}
+          title={"Hình ảnh"}
+          groups={[{ label: "Thêm", items: imageItems }]}
           onItemSelect={onImageItemSelect}
         />
       )}
       {activeAction === "elements" && (
         <InsertPanel
           disabled={editingDisabled}
-          title={t("presentation.tools.elements")}
+          title={"Thành phần"}
           groups={elementItemGroups}
           onItemSelect={onElementItemSelect}
         />
@@ -1331,7 +1326,6 @@ function templateV2TargetKey(
 }
 
 const PresentationActions = (props: PresentationActionsProps) => {
-  const t = useT();
   const {
     editingDisabled = false,
     presentationData,
@@ -1421,8 +1415,8 @@ const PresentationActions = (props: PresentationActionsProps) => {
     if (typeof window === "undefined") return false;
     if (typeof props.currentSlide !== "number") {
       notify.warning(
-        t("presentation.tools.selectSlideTitle"),
-        t("presentation.tools.selectSlideDescription")
+        "Chọn một slide",
+        "Hãy chọn một slide trước khi thêm nội dung."
       );
       return false;
     }
@@ -1445,8 +1439,8 @@ const PresentationActions = (props: PresentationActionsProps) => {
 
     if (!detail.handled) {
       notify.warning(
-        t("presentation.tools.insertUnavailableTitle"),
-        t("presentation.tools.insertUnavailableDescription"),
+        "Không thể chèn",
+        "Chỉ có thể thêm nội dung vào slide được nhập qua trình chỉnh sửa slide.",
       );
       return false;
     }
@@ -1509,8 +1503,8 @@ const PresentationActions = (props: PresentationActionsProps) => {
     const element = adaptTemplateV2ComponentToElement(block.raw, block.index);
     if (!element) {
       notify.warning(
-        t("presentation.tools.componentUnavailableTitle"),
-        t("presentation.tools.componentUnavailableDescription"),
+        "Thành phần chưa dùng được",
+        "Chưa thể chèn thành phần mẫu này.",
       );
       return;
     }

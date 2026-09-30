@@ -67,7 +67,6 @@ import {
   preventInvalidNumberInput,
   sanitizeNumericInput,
 } from "@/components/slide-editor/toolbar/numericInput";
-import { useT } from "@/i18n/provider";
 import { normalizeSearchText } from "@/utils/normalizeSearchText";
 
 const EMPTY_TEMPLATE_FONTS: TemplateFontOption[] = [];
@@ -161,7 +160,6 @@ export function TextToolbar({
   onChange: (index: number, element: TextSlideElement) => void;
   onListMarkerChange?: (marker: Marker) => void;
 }) {
-  const t = useT();
   const activeSelectionRange = normalizedTextSelectionRange(
     selectionRange,
     textRunsContent(element.runs).length,
@@ -443,8 +441,8 @@ export function TextToolbar({
           <Divider />
           <div style={textToolbarStyles.fontSizeControl}>
             <input
-              aria-label={t("slideEditor.text.fontSize")}
-              title={t("slideEditor.text.fontSize")}
+              aria-label={"Cỡ chữ"}
+              title={"Cỡ chữ"}
               type="text"
               inputMode={numericInputMode(fontSizeInputOptions)}
               value={fontSizeDraft}
@@ -487,8 +485,8 @@ export function TextToolbar({
             <span style={textToolbarStyles.fontSizeStepper}>
               <button
                 type="button"
-                aria-label={t("slideEditor.text.increaseFontSize")}
-                title={t("slideEditor.text.increaseFontSize")}
+                aria-label={"Tăng cỡ chữ"}
+                title={"Tăng cỡ chữ"}
                 onClick={() => stepFontSize(1)}
                 style={textToolbarStyles.fontSizeStepButton}
               >
@@ -496,8 +494,8 @@ export function TextToolbar({
               </button>
               <button
                 type="button"
-                aria-label={t("slideEditor.text.decreaseFontSize")}
-                title={t("slideEditor.text.decreaseFontSize")}
+                aria-label={"Giảm cỡ chữ"}
+                title={"Giảm cỡ chữ"}
                 onClick={() => stepFontSize(-1)}
                 style={textToolbarStyles.fontSizeStepButton}
               >
@@ -507,8 +505,8 @@ export function TextToolbar({
           </div>
           <Divider />
           <label
-            aria-label={t("slideEditor.text.textColor")}
-            title={t("slideEditor.text.textColor")}
+            aria-label={"Màu chữ"}
+            title={"Màu chữ"}
             style={textToolbarStyles.colorControl}
             onMouseEnter={() => setHoveredControl("color")}
             onMouseLeave={() => setHoveredControl(null)}
@@ -521,7 +519,7 @@ export function TextToolbar({
               }}
             />
             <DeferredColorInput
-              aria-label={t("slideEditor.text.textColor")}
+              aria-label={"Màu chữ"}
               value={font.color}
               onCommit={(color) => updateFont({ color })}
               style={textToolbarStyles.hiddenInput}
@@ -530,7 +528,7 @@ export function TextToolbar({
           <Divider />
           <div style={textToolbarStyles.modeGroup}>
             <ToolbarButton
-              title={t("slideEditor.text.bold")}
+              title={"In đậm"}
               controlId="bold"
               hoveredControl={hoveredControl}
               pressed={font.bold ?? false}
@@ -540,7 +538,7 @@ export function TextToolbar({
               <Bold size={18} strokeWidth={2.25} aria-hidden="true" />
             </ToolbarButton>
             <ToolbarButton
-              title={t("slideEditor.text.italic")}
+              title={"In nghiêng"}
               controlId="italic"
               hoveredControl={hoveredControl}
               pressed={font.italic ?? false}
@@ -550,7 +548,7 @@ export function TextToolbar({
               <Italic size={18} strokeWidth={2.25} aria-hidden="true" />
             </ToolbarButton>
             <ToolbarButton
-              title={t("slideEditor.text.underline")}
+              title={"Gạch chân"}
               controlId="underline"
               hoveredControl={hoveredControl}
               pressed={font.underline ?? false}
@@ -564,8 +562,8 @@ export function TextToolbar({
             <ToolbarButton
               title={
                 selectionIsLatex
-                  ? t("slideEditor.text.latexToText")
-                  : t("slideEditor.text.textToLatex")
+                  ? "Chuyển LaTeX thành văn bản"
+                  : "Chuyển văn bản đã chọn thành LaTeX"
               }
               controlId="latex"
               disabled={!latexToggleRange}
@@ -588,8 +586,8 @@ export function TextToolbar({
             <ToolbarButton
               title={
                 disableAlignment
-                  ? t("slideEditor.text.listAlignmentUnavailable")
-                  : t("slideEditor.text.horizontalAlignment")
+                  ? "Không thể căn chỉnh văn bản dạng danh sách"
+                  : "Căn chỉnh ngang"
               }
               controlId="horizontal-alignment"
               disabled={disableAlignment}
@@ -620,7 +618,7 @@ export function TextToolbar({
             <>
               <div style={textToolbarStyles.settingsControlWrap}>
                 <ToolbarButton
-                  title={t("slideEditor.text.listMarker")}
+                  title={"Dấu đầu dòng"}
                   controlId="list-marker"
                   hoveredControl={hoveredControl}
                   pressed={openPanel === "marker"}
@@ -652,7 +650,7 @@ export function TextToolbar({
           ) : null}
           <div style={textToolbarStyles.settingsControlWrap}>
             <ToolbarButton
-              title={t("slideEditor.common.settings")}
+              title={"Cài đặt"}
               controlId="settings"
               hoveredControl={hoveredControl}
               setHoveredControl={setHoveredControl}
@@ -767,7 +765,6 @@ function FontFamilyPicker({
   googleFonts: GoogleFontOption[];
   onSelect: (family: string) => void;
 }) {
-  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(selectedFamily);
   const [searching, setSearching] = useState(false);
@@ -880,10 +877,10 @@ function FontFamilyPicker({
     [activeFamilies, hasSearchQuery, normalizedQuery, searchFamilies],
   );
   const activeTitle = hasSearchQuery
-    ? t("slideEditor.text.allFonts")
+    ? "Tất cả phông chữ"
     : activeSource === "template" && templateFamilies.length > 0
-      ? t("slideEditor.text.templateFonts")
-      : t("slideEditor.text.googleFonts");
+      ? "Phông chữ của mẫu"
+      : "Google Fonts";
   const swapFontSource = () => {
     setSearching(false);
     setQuery(selectedFamily);
@@ -915,10 +912,10 @@ function FontFamilyPicker({
     >
       <button
         type="button"
-        aria-label={t("slideEditor.text.fontFamily")}
+        aria-label={"Họ phông chữ"}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title={t("slideEditor.text.fontFamily")}
+        title={"Họ phông chữ"}
         style={textToolbarStyles.fontTrigger}
         onClick={() => setOpen((current) => !current)}
         onKeyDown={(event) => {
@@ -936,7 +933,7 @@ function FontFamilyPicker({
         <FloatingToolbarPanel
           ref={menuPanelRef}
           role="listbox"
-          aria-label={t("slideEditor.text.fontFamily")}
+          aria-label={"Họ phông chữ"}
           style={textToolbarStyles.fontMenu}
           onWheel={(event) => event.stopPropagation()}
           onScroll={(event) => event.stopPropagation()}
@@ -946,7 +943,7 @@ function FontFamilyPicker({
             <input
               ref={searchInputRef}
               data-font-search-input="true"
-              aria-label={t("slideEditor.text.searchFonts")}
+              aria-label={"Tìm phông chữ"}
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -962,8 +959,8 @@ function FontFamilyPicker({
             />
             <button
               type="button"
-              aria-label={t("slideEditor.text.clearSearch")}
-              title={t("slideEditor.text.clearSearch")}
+              aria-label={"Xóa tìm kiếm"}
+              title={"Xóa tìm kiếm"}
               style={textToolbarStyles.fontSearchClear}
               onClick={() => {
                 setQuery("");
@@ -1001,7 +998,6 @@ function FontMenuSection({
   onSelect: (family: string) => void;
   onSwap: () => void;
 }) {
-  const t = useT();
   const optionsRef = useRef<HTMLDivElement | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRows = Math.min(families.length, FONT_MENU_MAX_VISIBLE_ROWS);
@@ -1030,8 +1026,8 @@ function FontMenuSection({
         <span>{title}</span>
         <button
           type="button"
-          aria-label={t("slideEditor.text.swapFontSource")}
-          title={t("slideEditor.text.swapFontSource")}
+          aria-label={"Đổi nguồn phông chữ"}
+          title={"Đổi nguồn phông chữ"}
           style={textToolbarStyles.fontSourceSwapButton}
           onMouseDown={(event) => event.preventDefault()}
           onClick={onSwap}
@@ -1048,7 +1044,7 @@ function FontMenuSection({
         onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
       >
         {families.length === 0 ? (
-          <div style={textToolbarStyles.fontMenuEmpty}>{t("slideEditor.text.noFonts")}</div>
+          <div style={textToolbarStyles.fontMenuEmpty}>{"Không có phông chữ"}</div>
         ) : (
           <div
             style={{
@@ -1135,7 +1131,6 @@ function TextSettingsPanel({
   onLetterSpacingChange: (value: number) => void;
   onLineHeightChange: (value: number) => void;
 }) {
-  const t = useT();
   return (
     <FloatingToolbarPanel
       data-inline-edit-ignore="true"
@@ -1143,7 +1138,7 @@ function TextSettingsPanel({
       onMouseDown={(event) => event.stopPropagation()}
     >
       <SettingsSliderRow
-        label={t("slideEditor.common.opacity")}
+        label={"Độ mờ"}
         icon={<OpacityIcon />}
         value={opacity}
         valueLabel={formatOpacity(opacity)}
@@ -1153,7 +1148,7 @@ function TextSettingsPanel({
         onChange={onOpacityChange}
       />
       <SettingsSliderRow
-        label={t("slideEditor.text.letterSpacing")}
+        label={"Khoảng cách chữ"}
         icon={<LetterSpacingIcon />}
         value={letterSpacing}
         valueLabel={formatSettingsLetterSpacing(letterSpacing)}
@@ -1163,7 +1158,7 @@ function TextSettingsPanel({
         onChange={onLetterSpacingChange}
       />
       <SettingsSliderRow
-        label={t("slideEditor.text.lineHeight")}
+        label={"Chiều cao dòng"}
         icon={<LineHeightIcon />}
         value={lineHeight}
         valueLabel={formatLineHeight(lineHeight)}
@@ -1183,30 +1178,29 @@ function ListMarkerPanel({
   marker: Marker;
   onChange: (marker: Marker) => void;
 }) {
-  const t = useT();
   return (
     <FloatingToolbarPanel
-      aria-label={t("slideEditor.text.listMarker")}
+      aria-label={"Dấu đầu dòng"}
       style={textToolbarStyles.markerPanel}
       onMouseDown={(event) => event.stopPropagation()}
     >
       <div style={textToolbarStyles.settingsBulletActions}>
         <SettingsPanelButton
-          label={t("slideEditor.text.bulletList")}
+          label={"Danh sách dấu đầu dòng"}
           pressed={marker === "bullet"}
           onClick={() => onChange("bullet")}
         >
           <List size={19} strokeWidth={2.2} aria-hidden="true" />
         </SettingsPanelButton>
         <SettingsPanelButton
-          label={t("slideEditor.text.numberedList")}
+          label={"Danh sách đánh số"}
           pressed={marker === "number"}
           onClick={() => onChange("number")}
         >
           <ListOrdered size={19} strokeWidth={2.2} aria-hidden="true" />
         </SettingsPanelButton>
         <SettingsPanelButton
-          label={t("slideEditor.text.noList")}
+          label={"Không dùng danh sách"}
           pressed={marker === "none"}
           onClick={() => onChange("none")}
         >
