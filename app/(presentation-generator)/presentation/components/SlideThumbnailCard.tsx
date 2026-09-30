@@ -68,20 +68,20 @@ const SlideThumbnailCardComponent = forwardRef<
         {...props}
       >
         <p
-          className={`pointer-events-none shrink-0 whitespace-nowrap text-[12px] leading-normal ${
+          className={`pointer-events-none shrink-0 whitespace-nowrap text-[12px] font-medium leading-normal ${
             selected
-              ? "font-semibold text-[#1D6FE8]"
-              : "font-normal text-[#333333]"
+              ? "text-[#1D6FE8]"
+              : "text-[#333333]"
           }`}
         >
           {index + 1}
         </p>
 
         <div
-          className={`relative h-[62px] w-[110px] shrink-0 overflow-hidden rounded-[4px] bg-white transition-[border-color,box-shadow] duration-200 ${
+          className={`relative h-[62px] w-[110px] shrink-0 overflow-hidden rounded-[8px] bg-white transition-[border-color,box-shadow] duration-200 ${
             selected
-              ? "border-2 border-[#1D6FE8] shadow-[0_0_0_3px_rgba(29,111,232,0.16)]"
-              : "border border-[#EDEEEF]"
+              ? "border-2 border-[#1D6FE8] shadow-[0_0_0_3px_rgba(29,111,232,0.14),0_4px_12px_rgba(29,111,232,0.08)]"
+              : "border border-[#E5E7EB] hover:border-[#BFDBFE] hover:shadow-sm"
           }`}
         >
           {!isNearViewport ? (

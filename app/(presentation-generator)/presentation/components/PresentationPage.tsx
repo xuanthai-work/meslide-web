@@ -828,7 +828,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
       />
       <div
         style={{
-          background: "#EDEEEF",
+          background: "#F7F8FA",
         }}
         id="presentation-slides-wrapper"
         className="relative flex h-full flex-col overflow-hidden"
@@ -853,7 +853,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           >
             {showNavigationHint ? (
               <div
-                className="pointer-events-none fixed top-[72px] z-[95] hidden items-center gap-3 rounded-full border border-[#E1E3E9] bg-white/95 py-2 pl-3 pr-2 font-syne text-[13px] text-[#344054] shadow-[0_8px_24px_rgba(16,24,40,0.14)] backdrop-blur md:flex"
+                className="pointer-events-none fixed top-[76px] z-[95] hidden items-center gap-3 rounded-full border border-[#E2E4E9] bg-white/95 px-4 py-2 font-syne text-[13px] text-[#344054] shadow-[0_10px_25px_rgba(16,24,40,0.10)] backdrop-blur md:flex"
                 role="status"
                 style={{ left: "50%", transform: "translateX(-50%)" }}
               >
