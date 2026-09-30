@@ -171,6 +171,7 @@ test("dashboard sidebar uses GSlideSidebar and accent active states", async () =
     "app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx",
   );
   assert.match(sidebar, /GSlideSidebar/);
+  assert.match(sidebar, /APP_VERSION/);
   assert.doesNotMatch(sidebar, /#7C51F8/);
   assert.doesNotMatch(sidebar, /#5146E5/);
   assert.doesNotMatch(sidebar, /href="\/settings"/);

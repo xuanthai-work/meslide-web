@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { GSlideSidebar, gslideNavActiveClass, gslideNavIdleClass } from "@/components/gslide";
 import { useT } from "@/i18n/provider";
+import { APP_VERSION } from "@/lib/version";
 
 const DashboardSidebar = () => {
     const pathname = usePathname();
@@ -24,16 +25,24 @@ const DashboardSidebar = () => {
     return (
         <GSlideSidebar
             footer={
-                <div className="border-t border-[var(--gslide-border)] pt-5">
-                    <button
-                        type="button"
-                        onClick={onLogout}
-                        className="flex w-full flex-col items-center gap-2 transition-colors"
-                        aria-label={t("nav.logout")}
+                <div className="flex flex-col items-center">
+                    <span
+                        className="mb-2 text-[10px] font-medium tracking-tight text-[var(--gslide-muted)] select-none opacity-75"
+                        title={`Phiên bản: ${APP_VERSION}`}
                     >
-                        <LogOut className={`h-4 w-4 ${gslideNavIdleClass}`} />
-                        <span className={`text-[11px] ${gslideNavIdleClass}`}>{t("nav.logout")}</span>
-                    </button>
+                        {APP_VERSION}
+                    </span>
+                    <div className="w-full border-t border-[var(--gslide-border)] pt-4">
+                        <button
+                            type="button"
+                            onClick={onLogout}
+                            className="flex w-full flex-col items-center gap-2 transition-colors"
+                            aria-label={t("nav.logout")}
+                        >
+                            <LogOut className={`h-4 w-4 ${gslideNavIdleClass}`} />
+                            <span className={`text-[11px] ${gslideNavIdleClass}`}>{t("nav.logout")}</span>
+                        </button>
+                    </div>
                 </div>
             }
         >
