@@ -200,11 +200,11 @@ function presentationActionsUiReducer(
 }
 
 const insertActions: ActionItem[] = [
-  { id: "texts", label: "Texts", icon: Type },
-  { id: "charts", label: "Charts", icon: BarChart3 },
-  { id: "tables", label: "Tables", icon: Rows3 },
-  { id: "images", label: "Images", icon: Image },
-  { id: "elements", label: "Elements", icon: Shapes },
+  { id: "texts", label: "Văn bản", icon: Type },
+  { id: "charts", label: "Biểu đồ", icon: BarChart3 },
+  { id: "tables", label: "Bảng", icon: Rows3 },
+  { id: "images", label: "Hình ảnh", icon: Image },
+  { id: "elements", label: "Thành phần", icon: Shapes },
 ];
 
 const actionIconSrc: Record<ActionId, string> = {
@@ -218,51 +218,51 @@ const actionIconSrc: Record<ActionId, string> = {
 };
 
 export const textItems = [
-  { id: "equation", label: "Equation", icon: Sigma },
-  { id: "equation-quadratic", label: "Quadratic", icon: Sigma },
-  { id: "equation-summation", label: "Summation", icon: Sigma },
-  { id: "equation-integral", label: "Integral", icon: Sigma },
-  { id: "equation-matrix", label: "Matrix", icon: Sigma },
-  { id: "title-block", label: "Title Block", icon: AlignCenter },
-  { id: "subtitle", label: "Subtitle", icon: AlignCenter },
-  { id: "bullet-list", label: "Bullet List", icon: List },
-  { id: "numbered-list", label: "Order List", icon: ListOrdered },
-  { id: "list-item", label: "List Item", icon: ListMinus },
-  { id: "quote", label: "Quote", icon: Quote },
-  { id: "body-text", label: "Body Text", icon: Columns2 },
+  { id: "equation", label: "Phương trình", icon: Sigma },
+  { id: "equation-quadratic", label: "Bậc hai", icon: Sigma },
+  { id: "equation-summation", label: "Ký hiệu tổng", icon: Sigma },
+  { id: "equation-integral", label: "Tích phân", icon: Sigma },
+  { id: "equation-matrix", label: "Ma trận", icon: Sigma },
+  { id: "title-block", label: "Tiêu đề", icon: AlignCenter },
+  { id: "subtitle", label: "Tiêu đề phụ", icon: AlignCenter },
+  { id: "bullet-list", label: "Dấu đầu dòng", icon: List },
+  { id: "numbered-list", label: "Đánh số", icon: ListOrdered },
+  { id: "list-item", label: "Mục danh sách", icon: ListMinus },
+  { id: "quote", label: "Trích dẫn", icon: Quote },
+  { id: "body-text", label: "Đoạn văn", icon: Columns2 },
 ] satisfies PaletteItem[];
 
 export const chartTypeItems = [
-  { id: "bar", label: "Bar Chart", icon: BarChart3 },
-  { id: "horizontal_bar", label: "Horizontal Bar", icon: BarChart3 },
-  { id: "stacked_bar", label: "Stacked Bar", icon: BarChart3 },
+  { id: "bar", label: "Biểu đồ cột", icon: BarChart3 },
+  { id: "horizontal_bar", label: "Biểu đồ thanh ngang", icon: BarChart3 },
+  { id: "stacked_bar", label: "Biểu đồ cột chồng", icon: BarChart3 },
   {
     id: "horizontal_stacked_bar",
-    label: "Horizontal Stack Bar",
+    label: "Biểu đồ thanh ngang chồng",
     icon: BarChart3,
   },
-  { id: "line", label: "Line Chart", icon: LineChart },
-  { id: "pie", label: "Pie Chart", icon: PieChart },
-  { id: "area", label: "Area Chart", icon: AreaChart },
-  { id: "donut", label: "Donut Chart", icon: PieChart },
-  { id: "scatter", label: "Scatter Chart", icon: Circle },
-  { id: "radar", label: "Radar Chart", icon: PieChart },
-  { id: "polar_area", label: "Polar Area", icon: PieChart },
+  { id: "line", label: "Biểu đồ đường", icon: LineChart },
+  { id: "pie", label: "Biểu đồ tròn", icon: PieChart },
+  { id: "area", label: "Biểu đồ miền", icon: AreaChart },
+  { id: "donut", label: "Biểu đồ vành khuyên", icon: PieChart },
+  { id: "scatter", label: "Biểu đồ phân tán", icon: Circle },
+  { id: "radar", label: "Biểu đồ radar", icon: PieChart },
+  { id: "polar_area", label: "Biểu đồ miền cực", icon: PieChart },
 ] satisfies PaletteItem[];
 
 export const infographicItems = [
-  { id: "progress_bar", label: "Progress Bar", icon: ChartNoAxesGantt },
-  { id: "gauge", label: "Gauge Chart", icon: Gauge },
+  { id: "progress_bar", label: "Thanh tiến trình", icon: ChartNoAxesGantt },
+  { id: "gauge", label: "Biểu đồ đồng hồ", icon: Gauge },
 ] satisfies PaletteItem[];
 
 export const tableTypeItems = [
-  { id: "simple-table", label: "Simple Table", icon: Table2 },
+  { id: "simple-table", label: "Bảng đơn giản", icon: Table2 },
 ] satisfies PaletteItem[];
 
 export const imageItems = [
-  { id: "image", label: "Image", icon: Image },
-  { id: "image-text", label: "Image + Text", icon: Columns2 },
-  { id: "image-grid", label: "Image Grid", icon: Grid3X3 },
+  { id: "image", label: "Hình ảnh", icon: Image },
+  { id: "image-text", label: "Hình ảnh + Chữ", icon: Columns2 },
+  { id: "image-grid", label: "Lưới hình ảnh", icon: Grid3X3 },
 ] satisfies PaletteItem[];
 
 const elementIconById: Record<ElementInsertKind, LucideIcon> = {
@@ -852,7 +852,7 @@ function BlockVariantButton({
       onClick={() => {
         if (!disabled) onInsertBlock(block);
       }}
-      aria-label={`Insert ${block.title}`}
+        aria-label={`Chèn ${block.title}`}
     >
       <div className="relative">
         <BlockThumbnail block={block} />
