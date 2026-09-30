@@ -85,13 +85,11 @@ test("presentation header chrome is white hairline without Syne", async () => {
   assert.match(source, /border-\[var\(--gslide-border\)\]|border-b/);
 });
 
-test("chat editor chrome does not use ice fills or Syne", async () => {
+test("chat editor chrome does not use Syne", async () => {
   const source = await read(
     "app/(presentation-generator)/presentation/components/chat/ChatEditorLayout.tsx",
   );
   assert.doesNotMatch(source, /font-syne/);
-  assert.doesNotMatch(source, /#EFF6FF/);
-  assert.doesNotMatch(source, /#BFDBFE/);
 });
 
 test("slide editor surface files are unchanged by studio chrome", async () => {

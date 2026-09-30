@@ -114,6 +114,8 @@ export type ChatProps = {
   }) => void;
   onChatSendingStateChange?: (isSending: boolean) => void;
   onFollowModeChange?: (isEnabled: boolean) => void;
+  isPanelMaximized?: boolean;
+  onTogglePanelMaximize?: () => void;
 };
 
 export type AssistantPromptMetrics = {

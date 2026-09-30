@@ -728,17 +728,68 @@ export function textVisualLocalBox(
 
   const textNodeRuns =
     renderRuns.length > 0 ? renderRuns : [{ text: displayContent, font }];
+  const measuredLines = layoutRenderTextRuns(
+    textNodeRuns,
+    box.width,
+    TEXT_RENDER_WRAP,
+  );
+  const measuredHeight = measureRenderTextRunsHeight(
+    textNodeRuns,
+    box.width,
+    TEXT_RENDER_WRAP,
+    textLineHeight,
+  );
+  const lineWidth = measuredLines.length
+    ? Math.max(
+        ...measuredLines.map((line) =>
+          line.reduce((sum, segment) => sum + segment.width, 0),
+        ),
+      )
+    : 0;
+
+  // Auto-fit height: co chiều cao khung về đúng số dòng thực tế và bù toạ độ
+  // theo verticalAlign để bảo toàn vị trí trực quan.
+  const contentHeight = Math.max(1, measuredHeight);
+  const shouldFitHeight =
+    displayContent.trim().length > 0 && contentHeight < box.height;
+
+  let nextY = box.y;
+  let nextHeight = box.height;
+  if (shouldFitHeight) {
+    nextHeight = contentHeight;
+    if (verticalAlign === "middle" || verticalAlign === "center") {
+      nextY = box.y + (box.height - contentHeight) / 2;
+    } else if (verticalAlign === "bottom") {
+      nextY = box.y + (box.height - contentHeight);
+    }
+  } else {
+    nextHeight = Math.max(box.height, contentHeight);
+  }
+
+  // Auto-fit width: tiêu đề 1 dòng co khung theo bề rộng chữ thực tế và bù
+  // toạ độ theo align để giữ nguyên tâm/cạnh trực quan.
+  const isSingleLine =
+    !displayContent.includes("\n") &&
+    textNodeRuns.length <= 1 &&
+    measuredLines.length <= 1;
+  const fitWidth = Math.ceil(lineWidth) + 12;
+  let nextX = box.x;
+  let nextWidth = box.width;
+  if (isSingleLine && lineWidth > 0 && fitWidth > 0 && fitWidth < box.width) {
+    nextWidth = fitWidth;
+    if (align === "center") {
+      nextX = box.x + (box.width - fitWidth) / 2;
+    } else if (align === "right") {
+      nextX = box.x + (box.width - fitWidth);
+    }
+  }
+
   return {
     ...box,
-    height: Math.max(
-      box.height,
-      measureRenderTextRunsHeight(
-        textNodeRuns,
-        box.width,
-        TEXT_RENDER_WRAP,
-        textLineHeight,
-      ),
-    ),
+    x: nextX,
+    y: nextY,
+    width: nextWidth,
+    height: nextHeight,
   };
 }
 

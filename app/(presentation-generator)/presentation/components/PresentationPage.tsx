@@ -134,6 +134,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   >(() => new Set());
   const [isMobileAssistantOpen, setIsMobileAssistantOpen] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [isRightPanelMaximized, setIsRightPanelMaximized] = useState(false);
   const [showNavigationHint, setShowNavigationHint] = useState(false);
   const [error, setError] = useState(false);
   const mobileAssistantTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -959,7 +960,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             className={cn(
               "h-screen w-[calc(100vw-16px)] max-w-[375px] shrink-0 flex-col bg-white shadow-[-12px_0_32px_rgba(16,24,40,0.18)] transition-[width] duration-200 min-[1200px]:relative min-[1200px]:z-auto min-[1200px]:h-full min-[1200px]:max-w-none min-[1200px]:self-start min-[1200px]:border-l min-[1200px]:border-[#EDEEEF] min-[1200px]:shadow-none",
               isRightPanelOpen
-                ? "min-[1200px]:w-[320px] 2xl:w-[383px]"
+                ? isRightPanelMaximized
+                  ? "min-[1200px]:w-[470px] 2xl:w-[533px]"
+                  : "min-[1200px]:w-[320px] 2xl:w-[383px]"
                 : "min-[1200px]:w-[78px]",
               isMobileAssistantOpen
                 ? "fixed inset-y-0 right-0 z-[70] flex"
@@ -1009,6 +1012,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 editingDisabled={editingDisabled}
                 panelOpen={isMobileAssistantOpen || isRightPanelOpen}
                 onPanelOpenChange={setIsRightPanelOpen}
+                isPanelMaximized={isRightPanelMaximized}
+                onTogglePanelMaximize={() =>
+                  setIsRightPanelMaximized((prev) => !prev)
+                }
               />
             </div>
           </div>

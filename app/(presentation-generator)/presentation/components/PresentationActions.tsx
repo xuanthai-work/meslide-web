@@ -1159,10 +1159,10 @@ function ActionsSidebar({
   return (
     <aside
       aria-label={"Công cụ chỉnh sửa"}
-      className="ml-auto flex h-full w-[78px] shrink-0 flex-col items-center gap-5 bg-white px-[10px] py-2"
+      className="ml-auto flex h-full w-[78px] shrink-0 flex-col items-center gap-2.5 bg-white px-[10px] py-2"
     >
       <div
-        className="flex w-full shrink-0 flex-col items-center gap-5 rounded-[10px] py-7"
+        className="flex w-full shrink-0 flex-col items-center gap-2.5 rounded-[10px] py-3.5"
         style={{
           background: "rgba(244, 243, 255, 0.60)",
         }}
@@ -1188,7 +1188,7 @@ function ActionsSidebar({
 
       <>
           <div className="h-0 w-[30px] shrink-0 border-t border-[#EDEEEF]" />
-          <nav className="flex w-full flex-col items-center gap-5">
+          <nav className="flex w-full flex-col items-center gap-2.5">
             {insertActions.map((item) => (
               <React.Fragment key={item.id}>
                 <NavButton
@@ -1385,12 +1385,20 @@ const PresentationActions = (props: PresentationActionsProps) => {
     const handleSurfaceSelected = (event: Event) => {
       const detail = (event as CustomEvent<TemplateV2SurfaceSelectedDetail>).detail;
       const nextSelection = detail?.selection ?? null;
-      if (nextSelection) {
-        setHiddenTargetReferenceKey(null);
-      }
+      const nextSlideIndex =
+        typeof detail?.slideIndex === "number" ? detail.slideIndex : null;
+      const nextKey = templateV2TargetKey(nextSlideIndex, nextSelection);
+
+      setHiddenTargetReferenceKey((prevHiddenKey) => {
+        // Nếu chọn sang đối tượng khác hoặc bỏ chọn, mới xóa trạng thái ẩn
+        if (!nextKey || nextKey !== prevHiddenKey) {
+          return null;
+        }
+        return prevHiddenKey;
+      });
+
       setTemplateV2SelectionContext({
-        slideIndex:
-          typeof detail?.slideIndex === "number" ? detail.slideIndex : null,
+        slideIndex: nextSlideIndex,
         target: nextSelection,
       });
     };

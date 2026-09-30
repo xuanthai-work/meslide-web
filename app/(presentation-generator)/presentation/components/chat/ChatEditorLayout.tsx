@@ -7,6 +7,8 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Loader2,
+  Maximize2,
+  Minimize2,
   Plus,
   Square,
   X,
@@ -32,7 +34,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  editorQuickPrompts,
   quickPromptGroups,
 } from "./chat-prompts";
 import type {
@@ -65,6 +66,8 @@ export type ChatEditorLayoutProps = {
   isDraggingAttachment: boolean;
   isFollowAgentEnabled: boolean;
   isQuickPromptsOpen: boolean;
+  isPanelMaximized?: boolean;
+  onTogglePanelMaximize?: () => void;
   chatSlideReference: string;
   chatTargetReference: string;
   previewFonts: unknown;
@@ -116,6 +119,8 @@ export function ChatEditorLayout({
   isDraggingAttachment,
   isFollowAgentEnabled,
   isQuickPromptsOpen,
+  isPanelMaximized = false,
+  onTogglePanelMaximize,
   chatSlideReference,
   chatTargetReference,
   previewFonts,
@@ -153,28 +158,42 @@ export function ChatEditorLayout({
     localizeActivityLabelText(value);
 
   return (
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-[var(--gslide-bg)]">
-        <Image
-          src="/bg_chat.svg"
-          alt=""
-          width={294}
-          height={458}
-          loading="eager"
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 h-[457.951px] w-[293.611px] max-w-none object-cover opacity-40"
-        />
+      <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
+        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-between border-b border-[#F1F1F3] bg-white px-3 py-2">
+          {onTogglePanelMaximize ? (
+            <button
+              type="button"
+              onClick={onTogglePanelMaximize}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#E5E5E8] bg-white text-[#55555F] transition-colors hover:bg-[#F7F7F8] hover:text-[#101323]"
+              aria-label={
+                isPanelMaximized ? "Thu nhỏ khung chat" : "Phóng to khung chat"
+              }
+              title={
+                isPanelMaximized
+                  ? "Thu nhỏ khung chat (về mặc định)"
+                  : "Phóng to khung chat (+150px)"
+              }
+            >
+              {isPanelMaximized ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </button>
+          ) : (
+            <div />
+          )}
 
-        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-end border-b border-[#F1F1F3] bg-white/90 px-3 py-2 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => void resetChat()}
             disabled={isSending || isHistoryLoading}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E5E5E8] bg-white px-3 font-manrope text-xs font-medium text-[#55555F] shadow-sm transition-colors hover:border-[#D7D7DC] hover:bg-[#F7F7F8] hover:text-[#252529] disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label={"Xóa cuộc trò chuyện"}
-            title={"Xóa cuộc trò chuyện"}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E5E5E8] bg-white px-3 text-xs font-medium text-[#55555F] transition-colors hover:bg-[#F7F7F8] hover:text-[#101323] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={"Đoạn chat mới"}
+            title={"Bắt đầu đoạn chat mới"}
           >
             <Plus className="h-3.5 w-3.5" />
-            {"Xóa cuộc trò chuyện"}
+            {"Đoạn chat mới"}
           </button>
         </div>
 
@@ -202,7 +221,7 @@ export function ChatEditorLayout({
                             />
                           </div>
                         )}
-                        <div className="flex min-h-[30px] w-fit max-w-full items-center gap-2.5 rounded-[8px] bg-[#F3F4F7] px-3 py-1.5 font-manrope text-[13px] font-medium leading-[normal] text-[#333333] [overflow-wrap:anywhere] [word-break:break-word]">
+                        <div className="flex min-h-[30px] w-fit max-w-full items-center gap-2.5 rounded-[16px] rounded-br-[4px] border border-[#DCE8FE] bg-[#EFF4FF] px-3.5 py-2 font-manrope text-[13px] font-medium leading-[20px] text-[#1558C0] shadow-sm [overflow-wrap:anywhere] [word-break:break-word]">
                           <p className="min-w-0 whitespace-pre-wrap">
                             {stripBackendContextFromUserMessage(message.content)}
                           </p>
@@ -244,12 +263,16 @@ export function ChatEditorLayout({
                     key={message.id}
                     className="flex flex-col gap-[10px] px-3 py-4 font-manrope [overflow-wrap:anywhere] [word-break:break-word]"
                   >
-                    <div className="flex min-h-[17px] items-center">
-                      <p
-                        className="min-w-0 max-w-full truncate text-xs font-bold leading-[normal] text-[#333333]"
-                        title={"Trợ lý"}
-                      >
-                        {"Trợ lý"}
+                    <div className="flex min-h-[18px] items-center gap-1.5">
+                      <Image
+                        src="/ai-star.svg"
+                        alt=""
+                        width={13}
+                        height={14}
+                        className="h-[14px] w-[13px] shrink-0"
+                      />
+                      <p className="text-xs font-semibold leading-normal text-[#101828]">
+                        {"Trợ lý AI"}
                       </p>
                     </div>
 
@@ -266,7 +289,7 @@ export function ChatEditorLayout({
                               );
                             return (
                               <React.Fragment key={activity.id}>
-                                <div className="flex min-w-0 items-start gap-1 text-[13px] font-medium leading-[18px] text-[#808080]">
+                                <div className="flex min-w-0 items-start gap-1 text-[12px] font-medium leading-[18px] text-[#667085]">
                                   <span className="flex h-[14px] w-[14px] shrink-0 items-start justify-center pt-0.5">
                                     {useSparkle ? (
                                       <Image
@@ -290,13 +313,13 @@ export function ChatEditorLayout({
                                 {(index < visibleActivity.length - 1 ||
                                   Boolean(message.content) ||
                                   Boolean(message.editPreview)) && (
-                                    <span className="ml-[6.5px] h-[13px] w-px bg-[#E6E6E6]" />
+                                    <span className="ml-[6.5px] h-[13px] w-px bg-[#E5E7EB]" />
                                   )}
                               </React.Fragment>
                             );
                           })}
                           {showFallbackActivity && (
-                            <div className="flex items-start gap-1 text-[13px] font-medium leading-[18px] text-[#808080]">
+                            <div className="flex items-start gap-1 text-[12px] font-medium leading-[18px] text-[#667085]">
                               <span className="flex h-[14px] w-[14px] items-start justify-center pt-0.5">
                                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#E6E6E6]" />
                               </span>
@@ -389,10 +412,8 @@ export function ChatEditorLayout({
             </div>
           ) : (
             <div className="flex h-full items-center justify-center px-6 pb-4">
-              <h3 className="-translate-y-2 text-center text-[22px] font-normal leading-[1.12] tracking-[-0.66px] text-[#4A4A4A]">
-                {"Tôi có thể giúp gì"}
-                <br />
-                for your deck today?
+              <h3 className="max-w-[280px] -translate-y-2 px-4 text-center text-[clamp(18px,1.25vw,21px)] font-medium leading-snug text-[#333333]">
+                {"Hôm nay tôi có thể giúp gì cho bài thuyết trình của bạn?"}
               </h3>
             </div>
           )}
@@ -405,12 +426,11 @@ export function ChatEditorLayout({
             onDragLeave={handleDragLeave}
             onDropCapture={handleDrop}
             className={cn(
-              "rounded-[8px] border bg-white px-[10px] py-3 transition-colors",
+              "rounded-[14px] border bg-white px-3 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all focus-within:border-[#1D6FE8] focus-within:ring-2 focus-within:ring-[#1D6FE8]/15",
               isDraggingAttachment
                 ? "border-[var(--gslide-accent)] bg-[var(--gslide-accent-soft)]"
-                : "border-[#DBDBDB]/60",
+                : "border-[#E5E7EB]",
             )}
-            style={{ boxShadow: "0 4px 7px rgba(0, 0, 0, 0.04)" }}
           >
             <input
               ref={fileInputRef}
@@ -426,43 +446,49 @@ export function ChatEditorLayout({
 
             {(chatSlideReference || chatTargetReference) && (
               <div
-                className="mb-2 flex max-w-full items-center gap-1.5 overflow-hidden"
+                className="mb-2 flex max-w-full flex-wrap items-center gap-1.5 overflow-hidden"
                 aria-label={"Đối tượng đang chọn trong trình chỉnh sửa"}
               >
                 {chatSlideReference && (
                   <span
-                    className="inline-flex h-7 max-w-[86px] shrink-0 items-center gap-1 rounded-full border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[var(--gslide-accent)]"
+                    className="inline-flex h-6 max-w-[120px] shrink-0 items-center gap-1 rounded-md border border-[#E0E2E7] bg-[#F8F9FA] px-2 text-[11px] font-medium text-[#344054] shadow-xs"
                     title={chatSlideReference}
                   >
                     <span className="truncate">{chatSlideReference}</span>
                     {onClearChatSlideReference && (
                       <button
                         type="button"
-                        onClick={onClearChatSlideReference}
-                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--gslide-muted)] transition-colors hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/40"
-                        aria-label={`Remove ${chatSlideReference} from context`}
-                        title={`Remove ${chatSlideReference} from context`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onClearChatSlideReference();
+                        }}
+                        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm text-[#98A2B3] transition-colors hover:bg-[#EAECF0] hover:text-[#344054]"
+                        aria-label={`Bỏ ${chatSlideReference}`}
+                        title={`Bỏ ${chatSlideReference}`}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-2.5 w-2.5" />
                       </button>
                     )}
                   </span>
                 )}
                 {chatTargetReference && (
                   <span
-                    className="inline-flex h-7 min-w-0 max-w-[138px] items-center gap-1 rounded-full border border-[var(--gslide-border)] bg-[var(--gslide-accent-soft)] pl-2.5 pr-1 font-manrope text-[11px] font-semibold text-[var(--gslide-accent)]"
+                    className="inline-flex h-6 min-w-0 max-w-[180px] items-center gap-1 rounded-md border border-[#E0E2E7] bg-[#F8F9FA] px-2 text-[11px] font-medium text-[#344054] shadow-xs"
                     title={chatTargetReference}
                   >
                     <span className="truncate">{chatTargetReference}</span>
                     {clearChatTargetReference && (
                       <button
                         type="button"
-                        onClick={clearChatTargetReference}
-                        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--gslide-muted)] transition-colors hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/40"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearChatTargetReference();
+                        }}
+                        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm text-[#98A2B3] transition-colors hover:bg-[#EAECF0] hover:text-[#344054]"
                         aria-label={"Bỏ đối tượng đã chọn khỏi ngữ cảnh"}
                         title={"Bỏ đối tượng đã chọn khỏi ngữ cảnh"}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-2.5 w-2.5" />
                       </button>
                     )}
                   </span>
@@ -547,7 +573,7 @@ export function ChatEditorLayout({
               ref={inputRef}
               name="chat-input"
               id="chat-input"
-              className="h-[79px] min-h-[79px] w-full resize-none overflow-x-hidden bg-transparent text-sm font-normal leading-[normal] text-[var(--gslide-ink)] placeholder:text-[var(--gslide-muted)] focus:outline-none focus:ring-0 [overflow-wrap:anywhere] [word-break:break-word]"
+              className="h-[72px] min-h-[72px] w-full resize-none overflow-x-hidden bg-transparent text-[13px] font-normal leading-relaxed text-[#101323] placeholder:text-[#99A1AF] focus:outline-none focus:ring-0 [overflow-wrap:anywhere] [word-break:break-word]"
               rows={3}
               wrap="soft"
               value={input}
@@ -564,7 +590,7 @@ export function ChatEditorLayout({
 
             <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-1.5">
-                <div className="flex h-[28px] items-center gap-[10px] rounded-full border border-[var(--gslide-border)] bg-white px-[11px]">
+                <div className="flex h-[28px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] px-2.5">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -574,8 +600,9 @@ export function ChatEditorLayout({
                   >
                     <Plus className="h-[14px] w-[14px] text-black" />
                   </button>
-                  <span className="h-[17px] w-px bg-[#EDECEC]" />
+                  <span className="h-[14px] w-px self-center bg-[#EDECEC]" />
                   <ToolTip
+                    className="flex items-center justify-center"
                     content={
                       isFollowAgentEnabled
                         ? "Tắt chế độ theo dõi AI"
@@ -601,6 +628,7 @@ export function ChatEditorLayout({
                         viewBox="0 0 14 14"
                         fill="none"
                         aria-hidden="true"
+                        className="shrink-0"
                       >
                         <circle
                           cx="7"
@@ -628,7 +656,7 @@ export function ChatEditorLayout({
                     <button
                       type="button"
                       disabled={chatInputDisabled}
-                    className="inline-flex h-[28px] items-center gap-1.5 rounded-full border border-[var(--gslide-border)] bg-white px-[11px] text-xs font-medium tracking-[0.16px] text-[var(--gslide-ink)] transition-colors hover:bg-[var(--gslide-accent-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-[28px] items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-2.5 text-xs font-medium text-[#344054] transition-colors hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1D6FE8] disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label={"Mở lời nhắc nhanh"}
                     >
                       <Image
@@ -676,9 +704,9 @@ export function ChatEditorLayout({
                     chatInputDisabled ||
                     isUploadingPastedImage
                   }
-                  className={`flex h-8 w-10 shrink-0 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed ${input.trim()
-                    ? "bg-[var(--gslide-accent)] text-white hover:bg-[var(--gslide-accent-hover)]"
-                    : "bg-[#EDEEEF] text-[#9B9BA1]"
+                  className={`flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full transition-all disabled:cursor-not-allowed ${input.trim()
+                    ? "bg-[#1D6FE8] text-white shadow-sm hover:bg-[#1558C0]"
+                    : "bg-[#F2F4F7] text-[#98A2B3]"
                     }`}
                   aria-label={"Gửi lời nhắc"}
                 >
@@ -687,19 +715,6 @@ export function ChatEditorLayout({
               )}
             </div>
           </form>
-
-          <div className="flex h-[28px] w-full gap-2 overflow-hidden">
-            {editorQuickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => applyPrompt(prompt)}
-                className="h-[28px] shrink-0 rounded-full border border-[var(--gslide-border)] bg-white px-3 text-xs font-medium leading-5 tracking-[0.16px] text-[var(--gslide-muted)] transition-colors hover:bg-[var(--gslide-accent-soft)]"
-              >
-                {localizeQuickPrompt(prompt)}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
   );
