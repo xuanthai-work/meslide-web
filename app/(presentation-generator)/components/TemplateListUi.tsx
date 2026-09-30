@@ -10,8 +10,6 @@ import {
   TemplatePreviewStage,
   LayoutsBadge,
 } from "./TemplatePreviewComponents";
-import { useI18n, useT } from "@/i18n/provider";
-import { translate } from "@/i18n/translate";
 import { templateCardCopy } from "./builtin-template-copy";
 
 export function TemplateThumbnailPreview({
@@ -21,7 +19,6 @@ export function TemplateThumbnailPreview({
   thumbnail?: string | null;
   templateName: string;
 }) {
-  const t = useT();
   const resolvedThumbnail = thumbnail ? resolveBackendAssetUrl(thumbnail) : "";
 
   if (!resolvedThumbnail) {
@@ -39,7 +36,7 @@ export function TemplateThumbnailPreview({
       className="relative z-10 flex aspect-video w-full items-center justify-center"
     >
       <div
-        aria-label={t("templates.card.thumbnailAria", { name: templateName })}
+        aria-label={`Hình thu nhỏ của ${templateName}`}
         className="h-full w-full rounded-[12px] border border-[#EDEEEF] bg-white bg-contain bg-center bg-no-repeat shadow-sm"
         role="img"
         style={{ backgroundImage: `url(${JSON.stringify(resolvedThumbnail)})` }}
@@ -55,8 +52,7 @@ export const TemplateListCard = memo(function TemplateListCard({
   template: TemplateListItem;
   onClick: () => void;
 }) {
-  const { locale, t } = useI18n();
-  const cardCopy = templateCardCopy(template, locale);
+  const cardCopy = templateCardCopy(template);
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (event.currentTarget.getAttribute("aria-disabled") === "true") {
@@ -88,7 +84,7 @@ export const TemplateListCard = memo(function TemplateListCard({
     <Card
       role="button"
       tabIndex={0}
-      aria-label={t("templates.card.openAria", { name: cardCopy.name })}
+      aria-label={`Mở mẫu ${cardCopy.name}`}
       className={cn(
         "group relative overflow-hidden rounded-[22px] border bg-white shadow-none outline-none transition-all duration-200",
         "cursor-pointer hover:-translate-y-1 hover:border-[#1D6FE8] hover:ring-2 hover:ring-[#1D6FE8]/20 hover:shadow-[0_18px_40px_rgba(34,31,54,0.12)] focus-visible:-translate-y-1 focus-visible:border-[#1D6FE8] focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/30 focus-visible:shadow-[0_18px_40px_rgba(34,31,54,0.12)]",
@@ -133,7 +129,7 @@ export const TemplateListCard = memo(function TemplateListCard({
   );
 });
 
-export function TemplateListLoadingState({ message = translate("templates.loading.default") }: { message?: string }) {
+export function TemplateListLoadingState({ message = "Đang tải mẫu…" }: { message?: string }) {
   return (
     <div className="flex items-center justify-center py-12 font-syne">
       <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -142,7 +138,7 @@ export function TemplateListLoadingState({ message = translate("templates.loadin
   );
 }
 
-export function TemplateListEmptyState({ message = translate("templates.empty.noTemplates") }: { message?: string }) {
+export function TemplateListEmptyState({ message = "Không có mẫu nào." }: { message?: string }) {
   return (
     <div className="flex items-center justify-center py-12 font-syne text-gray-600">
       {message}

@@ -6,7 +6,6 @@ import {
   type ChartSeries,
   type ChartType,
 } from "@/components/slide-editor/types";
-import { translate } from "@/i18n/translate";
 
 export type ResolvedChartDataset = {
   name: string;
@@ -103,14 +102,14 @@ export function resolvedChartCategories(element: ChartElement): string[] {
     );
     return Array.from(
       { length: categoryLength },
-      (_, index) => element.categories?.[index] ?? translate("slideEditor.chart.item", { number: index + 1 }),
+      (_, index) => element.categories?.[index] ?? `Mục ${(index + 1)}`,
     );
   }
 
   if (seriesLength > 0) {
     return Array.from(
       { length: Math.min(24, seriesLength) },
-      (_, index) => translate("slideEditor.chart.item", { number: index + 1 }),
+      (_, index) => `Mục ${(index + 1)}`,
     );
   }
 
@@ -233,7 +232,7 @@ export function resolvedChartColorTargets(
       label:
         categories[index] ??
         element.data[index]?.label ??
-        translate("slideEditor.chart.item", { number: index + 1 }),
+        `Mục ${(index + 1)}`,
       mode,
     }));
   }
@@ -252,7 +251,7 @@ export function chartDataFromSeriesWithColors(
   const labels =
     categories.length > 0
       ? categories
-      : first.values.map((_, index) => translate("slideEditor.chart.item", { number: index + 1 }));
+      : first.values.map((_, index) => `Mục ${(index + 1)}`);
   const fallbackColor = colors[0] ?? DEFAULT_CHART_COLORS[0];
 
   return labels.slice(0, 8).map((label, index) => ({

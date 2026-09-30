@@ -28,7 +28,6 @@ import { ChevronRight, PanelRightOpen, X } from "lucide-react";
 import ToolTip from "@/components/ToolTip";
 import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/components/Header";
 import { parseLimitedSlideCount } from "@/utils/presentationLimits";
-import { useT } from "@/i18n/provider";
 
 // Types
 interface LoadingState {
@@ -48,7 +47,6 @@ interface FileItem {
 }
 
 const DocumentsPreviewPage: React.FC = () => {
-  const t = useT();
   // Hooks
   const dispatch = useDispatch();
   const router = useRouter();
@@ -128,16 +126,16 @@ const DocumentsPreviewPage: React.FC = () => {
         });
       } catch (error) {
         console.error("Error reading files:", error);
-        notify.error(t("documentsPreview.toast.readFailed.title"), t("documentsPreview.toast.readFailed.description"));
+        notify.error("Không thể đọc tài liệu", "Không thể đọc nội dung tài liệu.");
       }
       setDownloadingDocuments([]);
     }
-  }, [documentKeys, fileItems, readFile, t, textContents]);
+  }, [documentKeys, fileItems, readFile, textContents]);
 
   const handleCreatePresentation = async () => {
     try {
       setShowLoading({
-        message: t("documentsPreview.loading.generatingOutline"),
+        message: "Đang tạo dàn ý bài thuyết trình…",
         show: true,
         duration: 40,
         progress: true,
@@ -168,9 +166,9 @@ const DocumentsPreviewPage: React.FC = () => {
       router.replace(`/presentation?${params.toString()}`);
     } catch (error: any) {
       console.error("Error in radar presentation creation:", error);
-      notify.error(t("documentsPreview.toast.creationFailed.title"), error.message || t("documentsPreview.toast.creationFailed.fallbackDescription"));
+      notify.error("Tạo thất bại", error.message || "Đã xảy ra lỗi khi tạo bài thuyết trình.");
       setShowLoading({
-        message: t("documentsPreview.loading.creationError"),
+        message: "Lỗi khi tạo bài thuyết trình radar.",
         show: true,
         duration: 10,
         progress: false,
@@ -205,7 +203,7 @@ const DocumentsPreviewPage: React.FC = () => {
       <div className="h-full mr-4">
         <div className="overflow-y-auto custom_scrollbar h-full">
           <div className="h-full w-full max-w-full flex flex-col mb-5">
-            <h1 className="text-2xl font-medium mb-5">{t("documentsPreview.content.heading")}</h1>
+            <h1 className="text-2xl font-medium mb-5">{"Nội dung:"}</h1>
             {downloadingDocuments.includes(selectedDocument) ? (
               <Skeleton className="w-full h-full" />
             ) : (
@@ -233,7 +231,7 @@ const DocumentsPreviewPage: React.FC = () => {
 
         {documentKeys.length > 0 && (
           <div className="mt-8">
-            <p className="text-xs mt-2 text-[#2E2E2E] opacity-70">{t("documentsPreview.sidebar.label.documents")}</p>
+            <p className="text-xs mt-2 text-[#2E2E2E] opacity-70">{"TÀI LIỆU"}</p>
             <div className="flex flex-col gap-2 mt-6">
               {documentKeys.map((key: string) => (
                 <div
@@ -245,10 +243,10 @@ const DocumentsPreviewPage: React.FC = () => {
                   <img
                     className="h-6 w-6 border border-gray-200"
                     src={getIconFromFile(key)}
-                    alt={t("documentsPreview.sidebar.aria.documentIcon")}
+                    alt={"Biểu tượng tài liệu"}
                   />
                   <span className="text-sm h-6 text-[#2E2E2E] overflow-hidden">
-                    {key.split("/").pop() ?? t("documentsPreview.sidebar.fallbackFilename")}
+                    {key.split("/").pop() ?? "file.txt"}
                   </span>
                 </div>
               ))}
@@ -271,7 +269,7 @@ const DocumentsPreviewPage: React.FC = () => {
       <div className="flex mt-6 gap-4 font-instrument_sans">
         {!isOpen && (
           <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50">
-            <ToolTip content={t("documentsPreview.tooltip.openPanel")}>
+            <ToolTip content={"Mở bảng"}>
               <Button
                 onClick={() => setIsOpen(true)}
                 className="bg-[var(--gslide-accent)] text-white p-3 shadow-lg"
@@ -293,7 +291,7 @@ const DocumentsPreviewPage: React.FC = () => {
             onClick={handleCreatePresentation}
             className="flex items-center gap-2 px-8 py-6 rounded-sm text-md bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)]"
           >
-            <span className="text-white font-semibold">{t("documentsPreview.button.next")}</span>
+            <span className="text-white font-semibold">{"Tiếp theo"}</span>
             <ChevronRight />
           </Button>
         </div>

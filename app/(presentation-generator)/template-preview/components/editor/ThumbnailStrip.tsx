@@ -18,7 +18,6 @@ import { useNearViewport } from "@/app/hooks/useNearViewport";
 import { cn } from "@/lib/utils";
 import { TemplateV2HtmlSlidePreview } from "../../../components/TemplateV2HtmlSlidePreview";
 import { hashKey, readLayoutId } from "./templatePreviewUtils";
-import { useT } from "@/i18n/provider";
 
 const SlideThumbnail = memo(function SlideThumbnail({
   active,
@@ -116,7 +115,6 @@ export function ThumbnailStrip({
   templateId,
   onSelect,
 }: ThumbnailStripProps) {
-  const t = useT();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef({
     active: false,
@@ -220,12 +218,12 @@ export function ThumbnailStrip({
   return (
     <div className="relative overflow-hidden bg-[#FBFBFA] px-[52px] pb-[20px] pt-0">
       <button
-        aria-label={t("templateStudio.editor.previousSlide")}
+        aria-label={"Slide trước"}
         className="absolute left-[24px] top-[24%] z-20 flex h-7 w-7 items-center justify-center rounded-full border border-[#EDEEEF] bg-white text-[#101323] shadow-sm transition-colors hover:bg-[#F7F6F9] disabled:pointer-events-none disabled:opacity-35"
         disabled={activeLayoutIndex === 0}
         onClick={() => selectByOffset(-1)}
         type="button"
-        title={t("templateStudio.editor.previousSlide")}
+        title={"Slide trước"}
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -233,7 +231,7 @@ export function ThumbnailStrip({
       <div
         ref={scrollerRef}
         data-template-preview-thumbnail-scroll="true"
-        aria-label={t("templateStudio.editor.thumbnailsAria")}
+        aria-label={"Hình thu nhỏ slide. Dùng phím mũi tên trái và phải để chuyển slide."}
         className="hide-scrollbar flex h-[84px] cursor-grab items-center gap-[12px] overflow-x-auto overflow-y-hidden pl-2 pr-[72px] active:cursor-grabbing [-webkit-overflow-scrolling:touch]"
         onPointerDown={(event) => {
           if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -292,12 +290,12 @@ export function ThumbnailStrip({
       </div>
 
       <button
-        aria-label={t("templateStudio.editor.nextSlide")}
+        aria-label={"Slide sau"}
         className="absolute right-[24px] top-[24%] z-20 flex h-7 w-7 items-center justify-center rounded-full border border-[#EDEEEF] bg-white text-[#101323] shadow-sm transition-colors hover:bg-[#F7F6F9] disabled:pointer-events-none disabled:opacity-35"
         disabled={activeLayoutIndex >= layouts.length - 1}
         onClick={() => selectByOffset(1)}
         type="button"
-        title={t("templateStudio.editor.nextSlide")}
+        title={"Slide sau"}
       >
         <ChevronRight className="h-4 w-4" />
       </button>

@@ -1,6 +1,6 @@
-# Keep these steps aligned with package.json `check` (test, i18n, lint,
-# typecheck, deadcode) plus production build and Cypress. Local `npm run check`
-# must stay green before changing this workflow.
+# Keep these steps aligned with package.json `check` (test, lint, typecheck,
+# deadcode) plus production build and Cypress. Local `npm run check` must stay
+# green before changing this workflow.
 name: Test web
 
 on:
@@ -37,9 +37,6 @@ jobs:
 
       - name: Run Node.js tests
         run: npm test
-
-      - name: Check for hard-coded localized UI copy
-        run: npm run check:i18n-copy
 
       - name: Run TypeScript typecheck
         run: npm run typecheck

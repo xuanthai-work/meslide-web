@@ -6,7 +6,6 @@ import {
   shortcutKeyLabel,
   type EditorShortcut,
 } from "@/components/slide-editor/shortcuts/editorShortcuts";
-import { useT } from "@/i18n/provider";
 
 export function useAppleShortcutPlatform() {
   return useSyncExternalStore(
@@ -38,12 +37,11 @@ export function ShortcutKeys({
   compact?: boolean;
   shortcut: EditorShortcut;
 }) {
-  const t = useT();
   const chords = compact ? shortcut.chords.slice(0, 1) : shortcut.chords;
 
   return (
     <span
-      aria-label={t("slideEditor.common.shortcutAria")}
+      aria-label={"Phím tắt"}
       className={cn("inline-flex shrink-0 items-center gap-1.5", className)}
     >
       {chords.map((chord, chordIndex) => (
@@ -53,7 +51,7 @@ export function ShortcutKeys({
         >
           {chordIndex > 0 ? (
             <span className="px-0.5 text-[10px] font-medium text-[#98A0B3]">
-              {t("slideEditor.common.or")}
+              {"hoặc"}
             </span>
           ) : null}
           {chord.map((key) => (

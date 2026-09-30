@@ -46,8 +46,6 @@ import {
 import { ChartColorPaletteCard } from "@/components/slide-editor/charts/ChartColorPalette";
 import { TemplateV2ChartJsElement } from "@/components/slide-editor/charts/TemplateV2ChartJsElement";
 import { GSlideInput } from "@/components/gslide";
-import { useT } from "@/i18n/provider";
-import { translate } from "@/i18n/translate";
 
 const CHART_TYPES: Array<{ label: string; value: ChartType }> = [
   { label: "Bar Chart", value: "bar" },
@@ -86,7 +84,6 @@ export function ChartEditorContent({
   onChange: (chart: ChartElement) => void;
   onClose?: () => void;
 }) {
-  const t = useT();
   const [tab, setTab] = useState<"data" | "customize">("data");
   const [dataModalOpen, setDataModalOpen] = useState(false);
 
@@ -99,12 +96,12 @@ export function ChartEditorContent({
       >
         <div className="mb-6 flex items-center justify-between gap-4">
           <h3 className="text-[15px] font-semibold leading-5 text-[#101323]">
-            {t("slideEditor.chart.editCharts")}
+            {"Sửa biểu đồ"}
           </h3>
           {onClose ? (
             <button
               type="button"
-              aria-label={t("slideEditor.chart.closeEditor")}
+              aria-label={"Đóng trình sửa biểu đồ"}
               className="grid h-8 w-8 place-items-center rounded-full text-[#191919] transition hover:bg-[#F5F5F7]"
               onClick={onClose}
             >
@@ -114,7 +111,7 @@ export function ChartEditorContent({
         </div>
 
         <label className="mb-2 block text-[12px] font-medium text-[var(--gslide-muted)]">
-          {t("slideEditor.chart.type")}
+          {"Loại biểu đồ"}
         </label>
         <ChartTypeSelect
           value={chart.chart_type}
@@ -133,7 +130,7 @@ export function ChartEditorContent({
                 }`}
               onClick={() => setTab("data")}
             >
-              {t("slideEditor.chart.data")}
+              {"Dữ liệu"}
             </button>
             <button
               type="button"
@@ -143,7 +140,7 @@ export function ChartEditorContent({
                 }`}
               onClick={() => setTab("customize")}
             >
-              {t("slideEditor.chart.customize")}
+              {"Tùy chỉnh"}
             </button>
           </div>
 
@@ -179,13 +176,12 @@ function ChartTypeSelect({
   value: ChartType;
   onChange: (value: ChartType) => void;
 }) {
-  const t = useT();
-  const labels: Partial<Record<ChartType, string>> = { bar: t("slideEditor.chart.bar"), horizontal_bar: t("slideEditor.chart.horizontalBar"), stacked_bar: t("slideEditor.chart.stackedBar"), horizontal_stacked_bar: t("slideEditor.chart.horizontalStackedBar"), line: t("slideEditor.chart.line"), area: t("slideEditor.chart.area"), pie: t("slideEditor.chart.pie"), donut: t("slideEditor.chart.donut"), scatter: t("slideEditor.chart.scatter"), radar: t("slideEditor.chart.radar"), polar_area: t("slideEditor.chart.polarArea") };
+  const labels: Partial<Record<ChartType, string>> = { bar: "Biểu đồ cột", horizontal_bar: "Biểu đồ thanh ngang", stacked_bar: "Biểu đồ cột chồng", horizontal_stacked_bar: "Biểu đồ thanh ngang chồng", line: "Biểu đồ đường", area: "Biểu đồ miền", pie: "Biểu đồ tròn", donut: "Biểu đồ vành khuyên", scatter: "Biểu đồ phân tán", radar: "Biểu đồ radar", polar_area: "Biểu đồ miền cực" };
   return (
     <div className="relative">
       <BarChart3 className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#191919]" />
       <select
-        aria-label={t("slideEditor.chart.type")}
+        aria-label={"Loại biểu đồ"}
         className={`${compact ? "h-9 rounded-lg pl-10 pr-9 text-[12px]" : "h-12 rounded-xl pl-11 pr-10 text-[13px]"} w-full appearance-none border border-[#E6E6EA] bg-white font-medium text-[#191919] outline-none transition focus:border-[var(--gslide-accent)]`}
         value={value}
         onChange={(event) => onChange(event.target.value as ChartType)}
@@ -208,7 +204,6 @@ function DataLabelsControl({
   value: DataLabelPosition | null;
   onChange: (value: DataLabelPosition | null) => void;
 }) {
-  const t = useT();
   const enabled = value != null;
   const [lastPosition, setLastPosition] = useState<DataLabelPosition>(
     value ?? "top",
@@ -233,16 +228,16 @@ function DataLabelsControl({
   return (
     <div className="space-y-2">
       <div className="flex min-h-6 items-center justify-between gap-3 text-[12px] font-medium text-[#191919]">
-        <span>{t("slideEditor.chart.dataLabels")}</span>
+        <span>{"Nhãn dữ liệu"}</span>
         <CompactSwitch
           checked={enabled}
-          label={t("slideEditor.chart.dataLabels")}
+          label={"Nhãn dữ liệu"}
           onChange={setEnabled}
         />
       </div>
       <div
         role="tablist"
-        aria-label={t("slideEditor.chart.labelPosition")}
+        aria-label={"Vị trí nhãn dữ liệu"}
         className={`grid grid-cols-4 rounded-lg bg-[#F3F4F7] p-1 transition ${enabled ? "" : "opacity-55"}`}
       >
         {DATA_LABEL_TABS.map((item) => {
@@ -261,7 +256,7 @@ function DataLabelsControl({
                 } disabled:cursor-not-allowed disabled:hover:text-[var(--gslide-muted)]`}
               onClick={() => selectPosition(item.value)}
             >
-              {item.value === "base" ? t("slideEditor.chart.base") : item.value === "mid" ? t("slideEditor.chart.middle") : item.value === "top" ? t("slideEditor.chart.top") : t("slideEditor.chart.outside")}
+              {item.value === "base" ? "Gốc" : item.value === "mid" ? "Giữa" : item.value === "top" ? "Trên" : "Bên ngoài"}
             </button>
           );
         })}
@@ -277,7 +272,6 @@ function ChartDataPanel({
   chart: ChartElement;
   onOpenDataModal: () => void;
 }) {
-  const t = useT();
   const categories = safeCategoriesForChart(chart);
   const series = normalizedSeries(chart, categories.length);
 
@@ -290,7 +284,7 @@ function ChartDataPanel({
         onClick={onOpenDataModal}
       >
         <Pencil size={15} strokeWidth={2} />
-        {t("slideEditor.chart.editData")}
+        {"Sửa dữ liệu"}
       </button>
     </div>
   );
@@ -363,7 +357,6 @@ function ChartCustomizePanel({
   defaultTextOpen?: boolean;
   onChange: (chart: ChartElement) => void;
 }) {
-  const t = useT();
   const hasCartesianAxes =
     chart.chart_type !== "pie" &&
     chart.chart_type !== "donut" &&
@@ -379,16 +372,16 @@ function ChartCustomizePanel({
         compact={compact}
         defaultOpen={defaultTextOpen}
         icon={<Type size={17} />}
-        label={t("slideEditor.chart.text")}
+        label={"Văn bản"}
       >
         <TextField
-          label={t("slideEditor.chart.title")}
-          placeholder={t("slideEditor.chart.titlePlaceholder")}
+          label={"Tiêu đề"}
+          placeholder={"Tiêu đề biểu đồ"}
           value={chart.title ?? ""}
           onChange={(title) => onChange({ ...chart, title: title || null })}
         />
         <ColorRow
-          label={t("slideEditor.chart.titleColor")}
+          label={"Màu tiêu đề"}
           value={chart.title_color ?? "344054"}
           onChange={(titleColor) =>
             onChange({ ...chart, title_color: titleColor })
@@ -407,16 +400,16 @@ function ChartCustomizePanel({
           <AccordionSection
             compact={compact}
             icon={<BarChart3 size={17} />}
-            label={t("slideEditor.chart.xAxis")}
+            label={"Trục X"}
           >
             <ToggleRow
               checked={chart.x_axis ?? true}
-              label={t("slideEditor.chart.showAxis")}
+              label={"Hiển thị trục"}
               onChange={(xAxis) => onChange({ ...chart, x_axis: xAxis })}
             />
             <TextField
-              label={t("slideEditor.chart.title")}
-              placeholder={t("slideEditor.chart.xAxisTitle")}
+              label={"Tiêu đề"}
+              placeholder={"Tiêu đề trục X"}
               value={chart.x_axis_title ?? ""}
               onChange={(xAxisTitle) =>
                 onChange({ ...chart, x_axis_title: xAxisTitle || null })
@@ -424,7 +417,7 @@ function ChartCustomizePanel({
             />
             <ToggleRow
               checked={chart.x_axis_grid ?? true}
-              label={t("slideEditor.chart.showGrid")}
+              label={"Hiển thị lưới"}
               onChange={(xAxisGrid) =>
                 onChange({ ...chart, x_axis_grid: xAxisGrid })
               }
@@ -433,16 +426,16 @@ function ChartCustomizePanel({
           <AccordionSection
             compact={compact}
             icon={<BarChart3 size={17} />}
-            label={t("slideEditor.chart.yAxis")}
+            label={"Trục Y"}
           >
             <ToggleRow
               checked={chart.y_axis ?? true}
-              label={t("slideEditor.chart.showAxis")}
+              label={"Hiển thị trục"}
               onChange={(yAxis) => onChange({ ...chart, y_axis: yAxis })}
             />
             <TextField
-              label={t("slideEditor.chart.title")}
-              placeholder={t("slideEditor.chart.yAxisTitle")}
+              label={"Tiêu đề"}
+              placeholder={"Tiêu đề trục Y"}
               value={chart.y_axis_title ?? ""}
               onChange={(yAxisTitle) =>
                 onChange({ ...chart, y_axis_title: yAxisTitle || null })
@@ -450,7 +443,7 @@ function ChartCustomizePanel({
             />
             <ToggleRow
               checked={chart.y_axis_grid ?? true}
-              label={t("slideEditor.chart.showGrid")}
+              label={"Hiển thị lưới"}
               onChange={(yAxisGrid) =>
                 onChange({ ...chart, y_axis_grid: yAxisGrid })
               }
@@ -464,16 +457,16 @@ function ChartCustomizePanel({
           <AccordionSection
             compact={compact}
             icon={<BarChart3 size={17} />}
-            label={t("slideEditor.chart.xAxis")}
+            label={"Trục X"}
           >
             <ToggleRow
               checked={chart.x_axis ?? true}
-              label={t("slideEditor.chart.categoryLabels")}
+              label={"Nhãn danh mục"}
               onChange={(xAxis) => onChange({ ...chart, x_axis: xAxis })}
             />
             <ToggleRow
               checked={chart.x_axis_grid ?? true}
-              label={t("slideEditor.chart.spokes")}
+              label={"Tia"}
               onChange={(xAxisGrid) =>
                 onChange({ ...chart, x_axis_grid: xAxisGrid })
               }
@@ -482,16 +475,16 @@ function ChartCustomizePanel({
           <AccordionSection
             compact={compact}
             icon={<BarChart3 size={17} />}
-            label={t("slideEditor.chart.yAxis")}
+            label={"Trục Y"}
           >
             <ToggleRow
               checked={chart.y_axis ?? true}
-              label={t("slideEditor.chart.valueLabels")}
+              label={"Nhãn giá trị"}
               onChange={(yAxis) => onChange({ ...chart, y_axis: yAxis })}
             />
             <ToggleRow
               checked={chart.y_axis_grid ?? true}
-              label={t("slideEditor.chart.rings")}
+              label={"Vòng"}
               onChange={(yAxisGrid) =>
                 onChange({ ...chart, y_axis_grid: yAxisGrid })
               }
@@ -503,16 +496,16 @@ function ChartCustomizePanel({
       <AccordionSection
         compact={compact}
         icon={<Settings size={17} />}
-        label={t("slideEditor.common.settings")}
+        label={"Cài đặt"}
       >
         <ToggleRow
           checked={showLegend}
-          label={t("slideEditor.chart.showLegend")}
+          label={"Hiển thị chú giải"}
           onChange={(legend) => onChange({ ...chart, legend })}
         />
         {showLegend ? (
           <ColorRow
-            label={t("slideEditor.chart.legendColor")}
+            label={"Màu chú giải"}
             value={chart.legend_color ?? "475467"}
             onChange={(legendColor) =>
               onChange({ ...chart, legend_color: legendColor })
@@ -523,14 +516,14 @@ function ChartCustomizePanel({
         {hasAxes ? (
           <>
             <ColorRow
-              label={t("slideEditor.chart.axisColor")}
+              label={"Màu trục"}
               value={chart.axis_color ?? "9AA7BD"}
               onChange={(axisColor) =>
                 onChange({ ...chart, axis_color: axisColor })
               }
             />
             <ColorRow
-              label={t("slideEditor.chart.gridColor")}
+              label={"Màu lưới"}
               value={chart.grid_color ?? chart.axis_color ?? "D0D5DD"}
               onChange={(gridColor) =>
                 onChange({ ...chart, grid_color: gridColor })
@@ -549,7 +542,7 @@ function defaultChartLegendVisible(chart: ChartElement) {
     chart.chart_type === "pie" ||
     chart.chart_type === "donut" ||
     series.length > 1 ||
-    Boolean(series[0]?.name && series[0].name !== "Series 1" && series[0].name !== translate("slideEditor.chart.series", { number: 1 }))
+    Boolean(series[0]?.name && series[0].name !== "Series 1" && series[0].name !== `Chuỗi ${(1)}`)
   );
 }
 
@@ -560,7 +553,6 @@ function ChartSeriesColorControls({
   chart: ChartElement;
   onChange: (chart: ChartElement) => void;
 }) {
-  const t = useT();
   const [paletteAnchor, setPaletteAnchor] = useState<{
     index: number;
     rect: DOMRect;
@@ -578,7 +570,7 @@ function ChartSeriesColorControls({
           <button
             type="button"
             key={`${target.mode}-${target.index}`}
-            aria-label={t("slideEditor.chart.changeColor", { number: target.index + 1 })}
+            aria-label={`Đổi màu biểu đồ ${(target.index + 1)}`}
             className={`grid h-8 w-8 place-items-center rounded-full border bg-white p-1 transition ${paletteAnchor?.index === target.index
               ? "border-[var(--gslide-accent)] ring-2 ring-[var(--gslide-accent-soft)]"
               : "border-[#E6E6EA] hover:border-[var(--gslide-input-border)]"
@@ -590,7 +582,7 @@ function ChartSeriesColorControls({
                 swatchRefs.current.delete(target.index);
               }
             }}
-            title={t("slideEditor.chart.colorNumber", { number: target.index + 1 })}
+            title={`Màu biểu đồ ${(target.index + 1)}`}
             onClick={() =>
               setPaletteAnchor((current) => {
                 if (current?.index === target.index) return null;
@@ -611,9 +603,9 @@ function ChartSeriesColorControls({
         {targets.length < 12 ? (
           <button
             type="button"
-            aria-label={t("slideEditor.chart.addColor")}
+            aria-label={"Thêm màu biểu đồ"}
             className="grid h-8 w-8 place-items-center rounded-full border border-dashed border-[var(--gslide-input-border)] bg-white text-[var(--gslide-accent)] transition hover:bg-[var(--gslide-accent-soft)]"
-            title={t("slideEditor.chart.addColor")}
+            title={"Thêm màu biểu đồ"}
             onClick={() => onChange(appendChartColorTarget(chart))}
           >
             <Plus size={15} strokeWidth={2.2} />
@@ -879,7 +871,6 @@ function ChartDataModal({
   onChange: (chart: ChartElement) => void;
   onClose: () => void;
 }) {
-  const t = useT();
   const [draftChart, setDraftChart] = useState<ChartElement>(() => chart);
   const categories = safeCategoriesForChart(draftChart);
   const series = normalizedSeries(draftChart, categories.length);
@@ -1081,7 +1072,7 @@ function ChartDataModal({
         </div>
         <button
           type="button"
-          aria-label={t("slideEditor.chart.closeDataEditor")}
+          aria-label={"Đóng trình sửa dữ liệu"}
           className="absolute -right-14 top-0 grid h-11 w-11 place-items-center rounded-full bg-white text-[#191919] shadow-sm transition hover:bg-[#F7F7FA]"
           onClick={onClose}
         >
@@ -1113,14 +1104,13 @@ function EditableDataTable({
   series: ChartSeries[];
   colors: string[];
 }) {
-  const t = useT();
-  const safeCategories = categories.length > 0 ? categories : [translate("slideEditor.chart.item", { number: 1 })];
+  const safeCategories = categories.length > 0 ? categories : [`Mục ${(1)}`];
   const safeSeries =
     series.length > 0
       ? series
       : [
         {
-          name: translate("slideEditor.chart.series", { number: 1 }),
+          name: `Chuỗi ${(1)}`,
           values: normalizeValues([], safeCategories.length),
         },
       ];
@@ -1208,7 +1198,7 @@ function EditableDataTable({
   const addRow = () => {
     const nextCategories = [
       ...safeCategories,
-      translate("slideEditor.chart.item", { number: safeCategories.length + 1 }),
+      `Mục ${(safeCategories.length + 1)}`,
     ];
     onUpdate(
       nextCategories,
@@ -1240,7 +1230,7 @@ function EditableDataTable({
     const nextSeries = [
       ...safeSeries,
       {
-        name: translate("slideEditor.chart.series", { number: safeSeries.length + 1 }),
+        name: `Chuỗi ${(safeSeries.length + 1)}`,
         values: normalizeValues([], safeCategories.length),
       },
     ];
@@ -1317,7 +1307,7 @@ function EditableDataTable({
           />
           <button
             type="button"
-            aria-label={t("slideEditor.chart.deleteSeries")}
+            aria-label={"Xóa chuỗi đã chọn"}
             className="grid h-7 w-7 shrink-0 place-items-center border-l border-[#ECECF1] text-[#191919] disabled:cursor-not-allowed disabled:opacity-30"
             disabled={safeSeries.length <= 1}
             onClick={() => deleteSeries(selectedSeriesIndex)}
@@ -1327,7 +1317,7 @@ function EditableDataTable({
           <button
             type="button"
             aria-expanded={columnMenuOpen}
-            aria-label={t("slideEditor.chart.moreColumnActions")}
+            aria-label={"Thêm thao tác với cột"}
             className="grid h-7 w-5 shrink-0 place-items-center text-[#191919]"
             onClick={() => setColumnMenuOpen((current) => !current)}
           >
@@ -1343,7 +1333,7 @@ function EditableDataTable({
         >
           <ColumnMenuItem
             icon={<Trash2 size={16} />}
-            label={t("slideEditor.table.deleteRow")}
+            label={"Xóa hàng"}
             disabled={safeCategories.length <= 1}
             onClick={() => {
               deleteRow(selectedRowIndex);
@@ -1352,13 +1342,13 @@ function EditableDataTable({
           />
           <ColumnMenuItem
             icon={<Trash2 size={16} />}
-            label={t("slideEditor.table.deleteColumn")}
+            label={"Xóa cột"}
             disabled={safeSeries.length <= 1}
             onClick={() => deleteSeries(selectedSeriesIndex)}
           />
           <ColumnMenuItem
             icon={<Plus size={16} />}
-            label={t("slideEditor.table.addRow")}
+            label={"Thêm hàng"}
             onClick={() => {
               addRow();
               setColumnMenuOpen(false);
@@ -1366,7 +1356,7 @@ function EditableDataTable({
           />
           <ColumnMenuItem
             icon={<Plus size={16} />}
-            label={t("slideEditor.table.addColumn")}
+            label={"Thêm cột"}
             disabled={!allowMultipleSeries}
             onClick={() => {
               addSeries();
@@ -1376,13 +1366,13 @@ function EditableDataTable({
           <div className="my-2 h-px bg-[#ECECF1]" />
           <ColumnMenuItem
             icon={<ChevronRight size={16} />}
-            label={t("slideEditor.table.moveColumnRight")}
+            label={"Di chuyển cột sang phải"}
             disabled={selectedSeriesIndex >= safeSeries.length - 1}
             onClick={() => moveSeries(selectedSeriesIndex, 1)}
           />
           <ColumnMenuItem
             icon={<ChevronLeft size={16} />}
-            label={t("slideEditor.table.moveColumnLeft")}
+            label={"Di chuyển cột sang trái"}
             disabled={selectedSeriesIndex <= 0}
             onClick={() => moveSeries(selectedSeriesIndex, -1)}
           />
@@ -1524,10 +1514,7 @@ function EditableDataTable({
                 <div className="sticky right-0 grid place-items-center border-b border-[#E8E8EC] bg-[#F3F4F6] px-1">
                   <button
                     type="button"
-                    aria-label={t("slideEditor.chart.deleteRowLabel", {
-                      category,
-                      number: rowIndex + 1,
-                    })}
+                    aria-label={`Xóa ${category || `hàng ${(rowIndex + 1)}`}`}
                     className="grid h-7 w-7 place-items-center rounded-md text-[#8E8E98] transition hover:bg-white hover:text-[#191919] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#8E8E98]"
                     disabled={safeCategories.length <= 1}
                     onClick={() => deleteRow(rowIndex)}
@@ -1595,7 +1582,7 @@ function ColumnMenuItem({
 
 function safeCategoriesForChart(element: ChartElement) {
   const categories = resolvedChartCategories(element);
-  return (categories.length > 0 ? categories : [translate("slideEditor.chart.item", { number: 1 })]).map(limitChartText);
+  return (categories.length > 0 ? categories : [`Mục ${(1)}`]).map(limitChartText);
 }
 
 function normalizedSeries(element: ChartElement, categoryLength: number) {
@@ -1611,7 +1598,7 @@ function normalizedSeries(element: ChartElement, categoryLength: number) {
   }
   return [
     {
-      name: limitChartText(element.title ?? translate("slideEditor.chart.series", { number: 1 })),
+      name: limitChartText(element.title ?? `Chuỗi ${(1)}`),
       values: normalizeValues([], length),
     },
   ];
@@ -1629,14 +1616,14 @@ function clearChartData(chart: ChartElement): ChartElement {
     chart.categories && chart.categories.length > 0
       ? chart.categories
       : chartData.length > 0
-        ? chartData.map((datum, index) => datum.label || translate("slideEditor.chart.item", { number: index + 1 }))
+        ? chartData.map((datum, index) => datum.label || `Mục ${(index + 1)}`)
         : resolvedChartCategories(chart);
   const sourceSeries =
     chart.series && chart.series.length > 0
       ? chart.series
       : [
         {
-          name: chart.title ?? translate("slideEditor.chart.series", { number: 1 }),
+          name: chart.title ?? `Chuỗi ${(1)}`,
           values: chartData.map((datum) => datum.value),
         },
       ];
@@ -1651,7 +1638,7 @@ function clearChartData(chart: ChartElement): ChartElement {
   );
   const categories = Array.from(
     { length: valueLength },
-    (_, index) => limitChartText(sourceCategories[index] ?? translate("slideEditor.chart.item", { number: index + 1 })),
+    (_, index) => limitChartText(sourceCategories[index] ?? `Mục ${(index + 1)}`),
   );
   const series = sourceSeries.map((item) => ({
     ...item,

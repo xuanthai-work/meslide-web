@@ -24,7 +24,6 @@ import {
 } from "../../_shared/blank-slide";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
 import TemplateService from "../../services/api/template";
-import { useT } from "@/i18n/provider";
 
 interface LayoutItemProps {
   layout: any;
@@ -69,7 +68,6 @@ function createTemplateV2PreviewSlide(layout: TemplateV2Layout, layoutId: string
 }
 
 const LayoutItem = memo(({ layout, onSelect }: LayoutItemProps) => {
-  const t = useT();
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(0.2);
   const {
@@ -106,8 +104,7 @@ const LayoutItem = memo(({ layout, onSelect }: LayoutItemProps) => {
     <div
       role="button"
       tabIndex={0}
-      aria-label={t("presentation.newSlide.addLayoutAria", { name: isEmptySlide ? t("presentation.newSlide.empty") : layoutName || t("presentation.newSlide.layoutFallback") })}
-      title={isEmptySlide ? t("presentation.newSlide.empty") : layoutName || t("presentation.newSlide.layoutFallback")}
+      aria-label={`Thêm bố cục ${isEmptySlide ? "Slide trống" : layoutName || "Bố cục slide"}`}
       onClick={selectLayout}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
@@ -133,7 +130,7 @@ const LayoutItem = memo(({ layout, onSelect }: LayoutItemProps) => {
                 <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E2E2EA] bg-[#FAFAFB]">
                   <Plus className="h-4 w-4" />
                 </span>
-                <span className="text-sm font-medium">{t("presentation.newSlide.empty")}</span>
+                <span className="text-sm font-medium">{"Slide trống"}</span>
               </div>
             </div>
           ) : v2Layout ? (
@@ -171,7 +168,6 @@ const NewSlideV1 = ({
   presentationId,
   onSlideAdded,
 }: NewSlideV1Props) => {
-  const t = useT();
   const dispatch = useDispatch();
   const presentationLayout = useSelector(
     (state: RootState) => state.presentationGeneration.presentationData?.layout
@@ -197,8 +193,8 @@ const NewSlideV1 = ({
     (sampleData: any, id: string) => {
       if (slideCount >= MAX_NUMBER_OF_SLIDES) {
         notify.warning(
-          t("presentation.slideLimit"),
-          t("presentation.slideLimitDescription", { max: MAX_NUMBER_OF_SLIDES })
+          "Đã đạt giới hạn slide",
+          `Bạn có thể tạo tối đa ${MAX_NUMBER_OF_SLIDES} slide.`
         );
         return;
       }
@@ -227,7 +223,7 @@ const NewSlideV1 = ({
         setShowNewSlideSelection(false);
       } catch (error: any) {
         console.error(error);
-        notify.error(t("presentation.newSlide.addFailed"), t("presentation.newSlide.addFailedDescription"));
+        notify.error("Không thể thêm slide", "Đã xảy ra lỗi khi thêm slide mới.");
       }
     },
     [
@@ -238,7 +234,6 @@ const NewSlideV1 = ({
       setShowNewSlideSelection,
       onSlideAdded,
       slideCount,
-      t,
     ]
   );
 
@@ -275,14 +270,14 @@ const NewSlideV1 = ({
         if (isMounted) {
           setLayouts(layoutItems);
           if (layoutItems.length === 0) {
-            setLoadError(t("presentation.newSlide.noLayouts"));
+            setLoadError("Mẫu này không chứa bố cục có thể sử dụng.");
           }
         }
       } catch (error) {
         console.error("Error loading slide layouts:", error);
         if (isMounted) {
           setLayouts([]);
-          setLoadError(t("presentation.newSlide.loadFailed"));
+          setLoadError("Không thể tải bố cục cho mẫu này.");
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -294,14 +289,13 @@ const NewSlideV1 = ({
     return () => {
       isMounted = false;
     };
-  }, [presentationLayout, templateID, t]);
+  }, [presentationLayout, templateID]);
 
   const showEmptySlideLayout = true;
   const selectableLayouts = showEmptySlideLayout
     ? [EMPTY_SLIDE_LAYOUT, ...layouts]
     : layouts;
-  const layoutCountText = t("presentation.newSlide.layoutCount", { count: selectableLayouts.length });
-
+  const layoutCountText = `${selectableLayouts.length} bố cục`;
 
   return (
     <div
@@ -312,7 +306,7 @@ const NewSlideV1 = ({
     >
       <button
         type="button"
-        aria-label={t("presentation.newSlide.closeAria")}
+        aria-label={"Đóng trình chọn bố cục"}
         onClick={() => setShowNewSlideSelection(false)}
         className="absolute right-0 top-[-52px] z-50 flex h-10 w-10 items-center justify-center rounded-full border border-[#EDEEEF] bg-white text-[#191919] shadow-[0_6.6px_13.2px_rgba(0,0,0,0.10)] transition hover:bg-[#F7F6F9]"
       >
@@ -325,10 +319,10 @@ const NewSlideV1 = ({
             id="choose-slide-layout-title"
             className="text-base font-medium leading-tight text-[#191919]"
           >
-            {t("presentation.newSlide.choose")}
+            {"Chọn bố cục slide"}
           </h2>
           <p className="mt-1 text-xs font-normal leading-none text-[#7A7A85]">
-            {loading ? t("presentation.newSlide.loading") : layoutCountText}
+            {loading ? "Đang tải bố cục" : layoutCountText}
           </p>
         </div>
         {loading && (
@@ -358,7 +352,7 @@ const NewSlideV1 = ({
           </div>
         ) : (
           <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-[#D9D9E1] bg-[#FAFAFB] text-sm text-[#7A7A85]">
-            {t("presentation.newSlide.noAvailable")}
+            {"Không có bố cục nào."}
           </div>
         )}
       </div>

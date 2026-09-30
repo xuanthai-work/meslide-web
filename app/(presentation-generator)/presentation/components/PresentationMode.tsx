@@ -12,7 +12,6 @@ import { Slide } from "../../types/slide";
 import SlideScale from "../../components/PresentationRender";
 import type { Theme } from "../../services/api/types";
 import { applyPresentationThemeToElement } from "../utils/applyPresentationThemeDom";
-import { useT } from "@/i18n/provider";
 
 interface PresentationModeProps {
   slides: Slide[];
@@ -214,7 +213,6 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
   onExit,
   onSlideChange,
 }) => {
-  const t = useT();
   const rootRef = useRef<HTMLDivElement>(null);
   const hideChromeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(false);
@@ -398,7 +396,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
       id="presentation-mode-wrapper"
       ref={rootRef}
       role="application"
-      aria-label={t("presentation.mode.aria")}
+      aria-label={"Bài thuyết trình"}
       data-fullscreen={isFullscreen ? "true" : "false"}
       className="fixed inset-0 z-[100] h-[100dvh] w-[100dvw] overflow-hidden bg-black font-syne text-white outline-none select-none"
       tabIndex={0}
@@ -501,7 +499,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
             <div className="flex flex-1 items-center justify-between px-5 sm:px-9">
               <div className="flex items-center gap-[26px]">
                 <PresentationIconButton
-                  title={t("presentation.mode.previous")}
+                  title={"Slide trước"}
                   disabled={activeSlideIndex === 0}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -517,11 +515,11 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
                   aria-atomic="true"
                 >
                   <span>{activeSlideIndex + 1}</span>
-                  <span>{t("presentation.mode.of")}</span>
+                  <span>{"trên"}</span>
                   <span>{slideCount}</span>
                 </div>
                 <PresentationIconButton
-                  title={t("presentation.mode.next")}
+                  title={"Slide tiếp theo"}
                   disabled={activeSlideIndex === slideCount - 1}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -533,7 +531,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
               </div>
               <div className="flex items-center gap-[26px]">
                 <PresentationIconButton
-                  title={t("presentation.mode.layoutPreview")}
+                  title={"Xem trước bố cục"}
                   active={showSlideGrid}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -544,7 +542,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
                   <LayoutGrid className="size-[18px]" strokeWidth={2} />
                 </PresentationIconButton>
                 <PresentationIconButton
-                  title={t("presentation.mode.speakerNote")}
+                  title={"Ghi chú thuyết trình"}
                   active={notesPanelOpen}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -554,7 +552,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
                   <SpeakerNoteIcon className="size-[18px]" />
                 </PresentationIconButton>
                 <PresentationIconButton
-                  title={t("presentation.mode.exit")}
+                  title={"Thoát trình chiếu"}
                   onClick={(event) => {
                     event.stopPropagation();
                     onExit();

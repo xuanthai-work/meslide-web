@@ -30,12 +30,11 @@ test("dashboard deck cards expose a quick present button that enters present mod
   assert.match(card, /\{!isUnsupported && hasSlides && \(/);
 });
 
-test("quick present copy is localized in both catalogs", async () => {
-  const vi = await read("i18n/locales/vi.ts");
-  const en = await read("i18n/locales/en.ts");
+test("quick present copy is inlined in Vietnamese", async () => {
+  const card = await read(
+    "app/(presentation-generator)/(dashboard)/dashboard/components/PresentationCard.tsx",
+  );
 
-  assert.match(vi, /present: "Trình chiếu nhanh"/);
-  assert.match(en, /present: "Quick present"/);
-  assert.match(vi, /presentAria: "Trình chiếu nhanh bộ slide này"/);
-  assert.match(en, /presentAria: "Quick present this deck"/);
+  assert.match(card, /content=\{"Trình chiếu nhanh"\}/);
+  assert.match(card, /aria-label=\{"Trình chiếu nhanh bộ slide này"\}/);
 });

@@ -2,8 +2,7 @@ import { readChatStreamChunk } from "./chat-stream";
 import { buildAbsoluteApiRequestUrl, getApiUrl } from "@/utils/api";
 import { ApiResponseHandler } from "./api-error-handler";
 import { getHeader } from "./header";
-import { translateBackendError } from "@/i18n/backend-messages";
-import { translateRaw } from "@/i18n/translate";
+import { translateBackendError } from "@/lib/backend-messages";
 
 export interface ChatAttachment {
   type: "document";
@@ -210,20 +209,17 @@ async function streamChatMessage(
       const errorPayload = parsedData as ChatStreamDataError;
       const detail = errorPayload.detail;
       const message =
-        translateBackendError(
-          (key, params) => translateRaw(key, params),
-          {
-            detail,
-            error_code: errorPayload.error_code,
-            error_params:
-              errorPayload.error_params && typeof errorPayload.error_params === "object"
-                ? errorPayload.error_params as Record<string, unknown>
-                : undefined,
-          },
-        ) ||
+        translateBackendError({
+          detail,
+          error_code: errorPayload.error_code,
+          error_params:
+            errorPayload.error_params && typeof errorPayload.error_params === "object"
+              ? errorPayload.error_params as Record<string, unknown>
+              : undefined,
+        }) ||
         (typeof detail === "string" && detail.trim().length > 0
           ? detail
-          : "Chat stream failed");
+          : "Luồng trò chuyện thất bại");
       throw new Error(message);
     }
 

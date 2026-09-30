@@ -8,7 +8,6 @@ import { Provider } from "react-redux";
 
 import GenerationStatusBar from "../../app/(presentation-generator)/components/GenerationStatusBar";
 import { usePresentationStreaming } from "../../app/(presentation-generator)/presentation/hooks/usePresentationStreaming";
-import { I18nProvider } from "../../i18n/provider";
 import type { GenerationLifecycleState } from "../../lib/generation-lifecycle";
 import { notify, Toaster } from "../../components/ui/sonner";
 import {
@@ -64,7 +63,7 @@ const mountStreamHarness = (children: React.ReactNode) => {
   cy.mount(
     <AppRouterContext.Provider value={createRouter()}>
       <Provider store={store}>
-        <I18nProvider locale="vi-VN">{children}</I18nProvider>
+        {children}
       </Provider>
     </AppRouterContext.Provider>,
   );
@@ -125,12 +124,10 @@ const mountPresentationPageWithStream = () => {
       <PathnameContext.Provider value="/presentation">
         <AppRouterContext.Provider value={createRouter()}>
           <Provider store={store}>
-            <I18nProvider locale="vi-VN">
               <Suspense fallback={null}>
                 <PresentationPage presentation_id="presentation-123" />
               </Suspense>
               <Toaster position="top-center" />
-            </I18nProvider>
           </Provider>
         </AppRouterContext.Provider>
       </PathnameContext.Provider>
@@ -164,7 +161,7 @@ function Harness({
   const [message, setMessage] = useState("Đang soạn dàn ý bài thuyết trình");
 
   return (
-    <I18nProvider locale="vi-VN">
+    <>
       <button
         data-testid="show-search-status"
         onClick={() => setMessage("Đang tìm kiếm bằng SearXNG: thị trường AI")}
@@ -186,7 +183,7 @@ function Harness({
         onKeepWaiting={onKeepWaiting}
       />
       <Toaster position="top-center" />
-    </I18nProvider>
+    </>
   );
 }
 
@@ -320,7 +317,7 @@ describe("generation status controller toast", () => {
       );
 
       return (
-        <I18nProvider locale="vi-VN">
+        <>
           <button
             type="button"
             data-testid="to-generating"
@@ -350,7 +347,7 @@ describe("generation status controller toast", () => {
             onKeepWaiting={() => {}}
           />
           <Toaster position="top-center" />
-        </I18nProvider>
+        </>
       );
     }
 

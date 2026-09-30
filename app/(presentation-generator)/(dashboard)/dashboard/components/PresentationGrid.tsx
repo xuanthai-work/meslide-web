@@ -1,7 +1,6 @@
 import { PresentationCard } from "./PresentationCard";
 import { PresentationResponse } from "@/app/(presentation-generator)/services/api/dashboard";
 import { EmptyState } from "./EmptyState";
-import { translate } from "@/i18n/translate";
 
 interface PresentationGridProps {
   presentations: PresentationResponse[];
@@ -61,7 +60,7 @@ export const PresentationGrid = ({
             onClick={() => window.location.reload()}
             className="text-primary hover:text-primary/80 underline"
           >
-            {translate("common.actions.retry")}
+            {"Thử lại"}
           </button>
         </div>
       </div>
@@ -85,7 +84,7 @@ export const PresentationGrid = ({
         <PresentationCard
           key={presentation.id}
           id={presentation.id}
-          title={presentation.title ?? translate("common.untitledPresentation")}
+          title={presentation.title ?? "Bài thuyết trình không tiêu đề"}
           presentation={presentation}
           viewMode={viewMode}
           onDeleted={onPresentationDeleted}

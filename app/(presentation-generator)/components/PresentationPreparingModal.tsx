@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import { X, AlertCircle } from "lucide-react";
-import { useT } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export interface PresentationPreparingModalProps {
@@ -46,7 +45,6 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
   error = null,
   onRetry,
 }) => {
-  const t = useT();
 
   // Handle ESC key to cancel/close
   useEffect(() => {
@@ -66,20 +64,20 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
     {
       id: 1,
       label: hasAttachedDocs
-        ? t("upload.preparingModal.stepAnalyzeWithDocs")
-        : t("upload.preparingModal.stepAnalyze"),
+        ? "Xử lý tài liệu và phân tích yêu cầu"
+        : "Phân tích chủ đề và yêu cầu",
     },
     {
       id: 2,
-      label: t("upload.preparingModal.stepSearch"),
+      label: "Tìm kiếm và tổng hợp thông tin",
     },
     {
       id: 3,
-      label: t("upload.preparingModal.stepOutline"),
+      label: "Soạn thảo dàn ý bài thuyết trình",
     },
     {
       id: 4,
-      label: t("upload.preparingModal.stepPrepare"),
+      label: "Chuẩn bị bố cục và dữ liệu slide",
     },
   ];
 
@@ -119,7 +117,7 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
             type="button"
             onClick={onCancel}
             className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100"
-            aria-label={t("upload.preparingModal.cancel")}
+            aria-label={"Hủy"}
           >
             <X className="w-5 h-5" />
           </button>
@@ -129,11 +127,11 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
           id="preparing-modal-title"
           className="text-2xl sm:text-[26px] font-bold text-gray-900 tracking-tight leading-snug"
         >
-          {t("upload.preparingModal.title")}
+          {"Đang chuẩn bị bài thuyết trình..."}
         </h2>
 
         <p className="text-[14px] sm:text-[15px] text-gray-500 mt-2.5 mb-8 leading-relaxed font-normal">
-          {t("upload.preparingModal.subtitle")}
+          {"Quá trình này có thể mất 1-2 phút, bạn có thể thư giãn trong khi chúng tôi chuẩn bị nội dung."}
         </p>
 
         <div className="space-y-4 sm:space-y-5">
@@ -194,10 +192,10 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-red-800">
-                  {t("upload.preparingModal.failedTitle")}
+                  {"Chuẩn bị bài thuyết trình thất bại"}
                 </p>
                 <p className="text-xs text-red-600 mt-0.5 leading-snug">
-                  {error || t("upload.preparingModal.failedDescription")}
+                  {error || "Không thể hoàn tất tạo dàn ý. Vui lòng thử lại."}
                 </p>
               </div>
             </div>
@@ -208,7 +206,7 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
                   onClick={onCancel}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-200/70 transition-colors"
                 >
-                  {t("upload.preparingModal.cancel")}
+                  {"Hủy"}
                 </button>
               )}
               {onRetry && (
@@ -217,7 +215,7 @@ export const PresentationPreparingModal: React.FC<PresentationPreparingModalProp
                   onClick={onRetry}
                   className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
                 >
-                  {t("upload.preparingModal.retry")}
+                  {"Thử lại"}
                 </button>
               )}
             </div>

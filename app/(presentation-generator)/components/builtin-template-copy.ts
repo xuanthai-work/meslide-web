@@ -1,5 +1,3 @@
-import type { Locale } from "@/i18n/config";
-
 type TemplateCardText = {
   name: string;
   description?: string | null;
@@ -74,9 +72,8 @@ const vietnameseBuiltinCopy: Record<string, { name: string; description: string 
 
 export function templateCardCopy(
   template: TemplateCardText & { id: string; is_default?: boolean },
-  locale: Locale,
 ): TemplateCardText {
-  if (locale !== "vi-VN" || !template.is_default) {
+  if (!template.is_default) {
     return { name: template.name, description: template.description };
   }
   return Object.hasOwn(vietnameseBuiltinCopy, template.id)

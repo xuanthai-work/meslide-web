@@ -28,6 +28,6 @@ test("dashboard cards provide a fallback title", async () => {
 
   assert.match(
     source,
-    /presentation\.title \?\? translate\("common\.untitledPresentation"\)/
+    /presentation\.title \?\? "Bài thuyết trình không tiêu đề"/
   );
 });

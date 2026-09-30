@@ -27,7 +27,6 @@ import {
   type TextSelectionRange,
 } from "@/components/slide-editor/text/text-runs";
 import { normalizeMathLatex } from "@/lib/math";
-import { translate } from "@/i18n/translate";
 
 export const COMMIT_TEMPLATE_V2_INLINE_TEXT_EVENT =
   "gslide:commit-template-v2-inline-text";
@@ -197,8 +196,8 @@ const LatexRun = TiptapNode.create({
 
       textarea.rows = 1;
       textarea.wrap = "soft";
-      textarea.setAttribute("aria-label", translate("slideEditor.text.editLatex"));
-      textarea.setAttribute("title", translate("slideEditor.text.latexExpression"));
+      textarea.setAttribute("aria-label", "Sửa biểu thức LaTeX");
+      textarea.setAttribute("title", "Biểu thức LaTeX");
       textarea.spellcheck = false;
       textarea.draggable = false;
       textarea.style.cssText = `box-sizing:border-box;display:block;min-width:8ch;max-width:100%;min-height:1.8em;padding:2px 6px;border:1px solid #7c3aed;border-radius:4px;background:#fff;color:#111827;caret-color:currentColor;font:500 0.8em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;outline:none;overflow:hidden;overflow-wrap:anywhere;resize:none;white-space:pre-wrap;vertical-align:middle;`;

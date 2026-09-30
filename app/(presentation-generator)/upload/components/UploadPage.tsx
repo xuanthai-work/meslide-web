@@ -35,7 +35,6 @@ import {
   detectSlideCountFromText,
   parseLimitedSlideCount,
 } from "@/utils/presentationLimits";
-import { useT } from "@/i18n/provider";
 import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 import { GSlideButton, GSlideStudioTitle } from "@/components/gslide";
 import { UploadTemplatePicker } from "./UploadTemplatePicker";
@@ -75,7 +74,6 @@ const isStaleDocumentError = (error: unknown): boolean => {
 };
 
 const UploadPage = () => {
-  const t = useT();
   const { documentAwareRewrite } = useFeatureFlags();
   const dispatch = useDispatch();
 
@@ -265,13 +263,13 @@ const UploadPage = () => {
   // tell what is actually happening before the AI call itself runs.
   const rewriteActionLabel = isRewriting
     ? rewritePhase === "uploading_documents"
-      ? t("upload.prompt.rewrite.phaseUploading")
+      ? "Đang tải tài liệu lên..."
       : rewritePhase === "reading_documents"
-        ? t("upload.prompt.rewrite.phaseReading")
-        : t("upload.prompt.rewrite.loading")
+        ? "Đang đọc tài liệu..."
+        : "Đang viết lại..."
     : rewriteError
-      ? t("upload.prompt.rewrite.retryAction")
-      : t("upload.outline.action");
+      ? "Thử lại"
+      : "Viết lại";
 
   // Abort the in-flight rewrite or preparing when the component unmounts.
   useEffect(() => {
@@ -416,8 +414,8 @@ const UploadPage = () => {
       if (requestId !== rewriteRequestIdRef.current) return;
       handleConfigChange("prompt", result);
       notify.success(
-        t("upload.outline.successTitle"),
-        t("upload.outline.successDescription")
+        "Đã tạo dàn ý từ AI",
+        "Bạn có thể chỉnh sửa nội dung bên dưới trước khi tạo slide."
       );
     } catch (error: unknown) {
       if (requestId !== rewriteRequestIdRef.current) return;
@@ -426,11 +424,9 @@ const UploadPage = () => {
       // failures (upload/decompose) get their own message.
       console.error("Error generating outline", error);
       setRewriteError(
-        t(
-          phase === "rewriting"
-            ? "upload.prompt.rewrite.errorFallback"
-            : "upload.prompt.rewrite.preparationErrorFallback"
-        )
+        phase === "rewriting"
+          ? "Đã xảy ra lỗi khi tạo dàn ý. Hãy thử lại; nội dung bạn đã nhập vẫn được giữ nguyên."
+          : "Đã xảy ra lỗi khi chuẩn bị tài liệu. Hãy kiểm tra các tệp và thử lại; nội dung bạn đã nhập vẫn được giữ nguyên."
       );
     } finally {
       // Only the latest request may flip the loading flag off, so a slow
@@ -448,19 +444,19 @@ const UploadPage = () => {
    */
   const validateConfiguration = (): boolean => {
     if (!config.language) {
-      notify.warning(t("upload.validation.languageRequiredTitle"), t("upload.validation.selectLanguage"));
+      notify.warning("Cần chọn ngôn ngữ", "Vui lòng chọn ngôn ngữ.");
       return false;
     }
 
     if (files.length > 0 && config.language === LanguageType.Auto) {
-      notify.warning(t("upload.validation.languageRequiredTitle"), t("upload.validation.selectLanguageForDocuments"));
+      notify.warning("Cần chọn ngôn ngữ", "Vui lòng chọn ngôn ngữ trước khi xử lý tài liệu đã tải lên.");
       return false;
     }
 
     if (!hasContentInput && !hasAttachedDocuments) {
       notify.warning(
-        t("upload.validation.inputRequiredTitle"),
-        t("upload.validation.inputRequiredDescription")
+        "Cần có nội dung đầu vào",
+        "Hãy nhập lời nhắc hoặc tải tài liệu lên."
       );
       return false;
     }
@@ -569,7 +565,7 @@ const UploadPage = () => {
       invalidatePreparedDocuments();
       setIsCreatingPresentation(false);
       setPreparingError(
-        error?.message || t("upload.error.generationFallback"),
+        error?.message || "Đã xảy ra lỗi khi bắt đầu tạo bài thuyết trình.",
       );
     } finally {
       createInFlightRef.current = false;
@@ -584,7 +580,6 @@ const UploadPage = () => {
     isRewriting,
     loadingState.isLoading,
     sourcePrompt,
-    t,
     templateReady,
   ]);
 
@@ -616,8 +611,8 @@ const UploadPage = () => {
       />
       <div className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[780px] xl:max-w-[900px]">
         <GSlideStudioTitle
-          title={t("upload.hero.title")}
-          description={t("upload.hero.subtitle")}
+          title={"G-SLIDE"}
+          description={"Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI"}
           compact
           className="pt-10 sm:pt-12 2xl:pt-14"
         />
@@ -684,12 +679,12 @@ const UploadPage = () => {
                 type="button"
                 disabled={isCreateDisabled || loadingState.isLoading}
                 aria-busy={loadingState.isLoading}
-                aria-label={t("upload.create.ariaLabel")}
+                aria-label={"Tạo bài thuyết trình"}
                 onClick={handleGeneratePresentation}
                 data-testid="generate-presentation-button"
                 className="whitespace-nowrap px-5 py-3"
               >
-                {t("upload.create.label")}
+                {"Tạo bài thuyết trình"}
               </GSlideButton>
             </div>
         </div>

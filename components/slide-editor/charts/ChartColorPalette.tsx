@@ -5,7 +5,6 @@ import {
   normalizeChartColor,
 } from "@/components/slide-editor/charts/chart-data";
 import { DeferredColorInput } from "@/components/slide-editor/toolbar/DeferredColorInput";
-import { useT } from "@/i18n/provider";
 
 type ChartColorPaletteCardProps = {
   className?: string;
@@ -30,7 +29,6 @@ export function ChartColorPaletteCard({
   selectedIndex,
   style,
 }: ChartColorPaletteCardProps) {
-  const t = useT();
   const themeColors =
     colors.length > 0
       ? colors.map((color) => normalizeChartColor(color))
@@ -77,12 +75,12 @@ export function ChartColorPaletteCard({
     >
       <div style={styles.header}>
         <div style={styles.headerText}>
-          <div style={styles.title}>{t("slideEditor.chart.colors")}</div>
+          <div style={styles.title}>{"Màu biểu đồ"}</div>
         </div>
         {onClose ? (
           <button
             type="button"
-            aria-label={t("slideEditor.chart.closeColors")}
+            aria-label={"Đóng bảng màu"}
             style={styles.closeButton}
             onClick={onClose}
           >
@@ -91,12 +89,12 @@ export function ChartColorPaletteCard({
         ) : null}
       </div>
 
-      <div style={styles.heading}>{t("slideEditor.chart.theme")}</div>
+      <div style={styles.heading}>{"Chủ đề"}</div>
       <div style={styles.themeGrid}>
         {themeColors.map((color, index) => (
           <ColorSwatch
             key={`${color}-${index}`}
-            ariaLabel={t("slideEditor.chart.selectThemeColor", { number: index + 1 })}
+            ariaLabel={`Chọn màu chủ đề ${(index + 1)}`}
             color={color}
             selected={index === activeIndex}
             onClick={() => onSelectIndex(index)}
@@ -105,8 +103,8 @@ export function ChartColorPaletteCard({
         {onAddColor ? (
           <button
             type="button"
-            aria-label={t("slideEditor.chart.addColor")}
-            title={t("slideEditor.chart.addColor")}
+            aria-label={"Thêm màu biểu đồ"}
+            title={"Thêm màu biểu đồ"}
             style={styles.addSwatch}
             onClick={onAddColor}
           >
@@ -117,11 +115,11 @@ export function ChartColorPaletteCard({
 
       <div style={styles.divider} />
 
-      <div style={styles.heading}>{t("slideEditor.chart.systemColors")}</div>
+      <div style={styles.heading}>{"Màu hệ thống"}</div>
       <div style={styles.systemGrid}>
         <label
-          aria-label={t("slideEditor.chart.customColor")}
-          title={t("slideEditor.chart.customColor")}
+          aria-label={"Màu tùy chỉnh"}
+          title={"Màu tùy chỉnh"}
           style={{
             ...styles.swatch,
             ...styles.customSwatch,
@@ -137,7 +135,7 @@ export function ChartColorPaletteCard({
         {CHART_SYSTEM_COLORS.map((color) => (
           <ColorSwatch
             key={color}
-            ariaLabel={t("slideEditor.chart.setColor", { color })}
+            ariaLabel={`Đặt màu biểu đồ #${color}`}
             color={color}
             selected={color === currentColor}
             onClick={() => commitColor(color)}

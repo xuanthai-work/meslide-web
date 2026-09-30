@@ -3,8 +3,6 @@ import dynamic from "next/dynamic";
 import { connection } from "next/server";
 import localFont from "next/font/local";
 import { Manrope, Unbounded } from "next/font/google";
-import { translate } from "@/i18n/translate";
-import { defaultLocale, ogLocale } from "@/i18n/config";
 import { getServerFeatureFlags } from "@/lib/server-feature-flags";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -41,11 +39,12 @@ export async function generateMetadata(): Promise<Metadata> {
   await connection();
   const siteUrl = process.env.SITE_URL || "http://localhost:3000";
 
-  const metaTitle = translate("metadata.title");
-  const metaDescription = translate("metadata.description");
-  const metaKeywords = translate("metadata.keywords").split(", ");
-  const metaSiteName = translate("metadata.siteName");
-  const metaLogoAlt = translate("metadata.logoAlt");
+  const metaTitle = "GSlide - Tạo bài thuyết trình thông minh với AI";
+  const metaDescription =
+    "Tạo bài thuyết trình nhanh chóng, chuyên nghiệp và đẹp mắt với trợ lý AI";
+  const metaKeywords = "trình tạo bài thuyết trình bằng AI, kể chuyện dữ liệu, công cụ trực quan hóa dữ liệu, thuyết trình dữ liệu bằng AI, trình tạo bài thuyết trình, từ dữ liệu đến bài thuyết trình, bài thuyết trình tương tác, slide chuyên nghiệp".split(", ");
+  const metaSiteName = "GSlide";
+  const metaLogoAlt = "Logo GSlide";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -66,7 +65,7 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       ],
       type: "website",
-      locale: ogLocale(defaultLocale),
+      locale: "vi_VN",
     },
     alternates: {
       canonical: "/",

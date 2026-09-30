@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { translate } from "@/i18n/translate";
 
 export const metadata: Metadata = {
-  title: translate("errors.notFound.title"),
+  title: "Không tìm thấy trang | GSlide",
 };
 
 /**
@@ -18,7 +17,7 @@ export default function NotFound() {
         <div className="mx-auto mb-6 flex h-48 w-full max-w-[300px] items-center justify-center overflow-hidden sm:h-56 sm:max-w-sm">
           <img
             src="/404.svg"
-            alt={translate("errors.notFound.alt")}
+            alt={"Không tìm thấy trang"}
             width={500}
             height={500}
             className="h-full w-full object-contain object-center"
@@ -27,21 +26,21 @@ export default function NotFound() {
           />
         </div>
         <h1 className="mb-4 font-syne text-2xl font-bold text-gray-800 sm:text-3xl">
-          {translate("errors.notFound.heading")}
+          {"Ôi! Không tìm thấy trang"}
         </h1>
         <p className="mb-4 text-base text-gray-600 sm:text-lg">
-          {translate("errors.notFound.body")}
+          {"Có vẻ bạn đã vào một trang không tồn tại. Đừng lo, mọi bài thuyết trình tuyệt vời đều bắt đầu từ một slide trắng!"}
         </p>
 
         <div className="mb-8 flex flex-col justify-center gap-3 sm:flex-row sm:space-x-4">
           <Link href="/dashboard" className="inline-flex sm:flex-1 sm:justify-center">
             <Button className="w-full rounded-md bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700 sm:w-auto">
-              {translate("errors.notFound.goHome")}
+              {"Về trang chủ"}
             </Button>
           </Link>
           <Link href="/" className="inline-flex sm:flex-1 sm:justify-center">
             <Button className="w-full rounded-md bg-gray-600 px-6 py-2 text-white hover:bg-gray-700 sm:w-auto">
-              {translate("errors.notFound.backToStart")}
+              {"Về trang đầu"}
             </Button>
           </Link>
         </div>

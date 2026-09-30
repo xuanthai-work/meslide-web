@@ -144,26 +144,22 @@ test("global loading copy is GSlide not Presenton", async () => {
   assert.doesNotMatch(appLoading, /presenton-splash-loader/);
 
   const config = await readNext("app/ConfigurationInitializer.tsx");
-  assert.match(config, /loading\.configLoading/);
+  assert.match(config, /GSlideSplashLoader message=/);
   assert.doesNotMatch(config, /Loading Presenton/);
   assert.doesNotMatch(config, /auth\/presenton/);
   assert.doesNotMatch(config, /hasPresentonCloud/);
   assert.doesNotMatch(config, /revalidatePresentonConnection/);
 
-  // Loading copy now lives in the catalog; the brand must still be GSlide.
-  const vi = await readNext("i18n/locales/vi.ts");
-  assert.match(vi, /GSlide/);
-  assert.doesNotMatch(vi, /Presenton/);
+  // Loading copy is inlined; the brand must still be GSlide, never Presenton.
+  assert.match(config, /GSlide/);
+  assert.doesNotMatch(config, /Presenton/);
 });
 
 test("landing and metadata say GSlide", async () => {
   const layout = await readNext("app/layout.tsx");
-  assert.match(layout, /translate\("metadata\./);
+  assert.match(layout, /GSlide - Tạo bài thuyết trình thông minh với AI/);
   assert.doesNotMatch(layout, /title: "Presenton/);
-
-  const vi = await readNext("i18n/locales/vi.ts");
-  assert.match(vi, /GSlide/);
-  assert.doesNotMatch(vi, /Presenton/);
+  assert.doesNotMatch(layout, /Presenton/);
 });
 
 test("dashboard sidebar uses GSlideSidebar and accent active states", async () => {
@@ -226,7 +222,7 @@ test("editor chrome uses GSlide wordmark not Presenton PNG", async () => {
   );
   assert.doesNotMatch(presentation, /logo-with-bg\.png/);
   assert.match(presentation, /GSlideWordmark/);
-  assert.match(presentation, /presentation\.header\.dashboardAria/);
+  assert.match(presentation, /aria-label=\{"Về trang chủ"\}/);
   assert.doesNotMatch(presentation, /className="w-10 h-10"/);
 
   const template = await readNext(
@@ -359,12 +355,8 @@ test("Konva surface nodes are not restyled as product chrome", async () => {
 
 test("app metadata titles use GSlide", async () => {
   const notFound = await readNext("app/not-found.tsx");
-  assert.match(notFound, /translate\("errors\.notFound/);
+  assert.match(notFound, /Không tìm thấy trang \| GSlide/);
   assert.doesNotMatch(notFound, /Presenton/);
-
-  // The not-found title is localized via the catalog and must keep the brand.
-  const vi = await readNext("i18n/locales/vi.ts");
-  assert.match(vi, /Không tìm thấy trang \| GSlide/);
 });
 
 test("session cookie is GSlide and API keys retain Presenton fallback", async () => {

@@ -12,7 +12,6 @@ import {
     TemplateCreationMetadata,
 } from "../types";
 import { getApiUrl } from "@/utils/api";
-import { useT } from "@/i18n/provider";
 
 const TEMPLATE_V2_LAYOUT_BATCH_SIZE = 1;
 const MAX_PROCESSING_PROGRESS_PERCENT = 95;
@@ -116,7 +115,6 @@ function errorMessageFromUnknown(error: unknown, fallback: string): string {
 }
 
 export const useTemplateCreation = () => {
-    const t = useT();
     const [state, setState] = useState<TemplateCreationState>(initialState);
     const [uploadedFonts, setUploadedFonts] = useState<UploadedFont[]>([]);
     const [slides, setSlides] = useState<ProcessedSlide[]>([]);
@@ -164,17 +162,16 @@ export const useTemplateCreation = () => {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Font check failed";
             updateState({ error: errorMessage, isLoading: false });
-            notify.error(t("templateStudio.fonts.checkFailedTitle"), errorMessage);
+            notify.error("Kiểm tra phông chữ thất bại", errorMessage);
             return null;
         }
-    }, [t, updateState]);
-
+    }, [updateState]);
 
     const uploadFont = useCallback((fontName: string, file: File): string | null => {
         // Check if font is already added
         const existingFont = uploadedFonts.find((f) => f.fontName === fontName);
         if (existingFont) {
-            notify.warning(t("templateStudio.fonts.alreadyAddedTitle"), t("templateStudio.fonts.alreadyAddedDescription", { name: fontName }));
+            notify.warning("Phông chữ đã được thêm", `Phông chữ “${fontName}” đã có trong danh sách tải lên.`);
             return fontName;
         }
 
@@ -183,14 +180,14 @@ export const useTemplateCreation = () => {
         const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
 
         if (!validExtensions.includes(fileExtension)) {
-            notify.error(t("templateStudio.fonts.invalidTitle"), t("templateStudio.fonts.invalidDescription"));
+            notify.error("Tệp phông chữ không hợp lệ", "Vui lòng tải lên tệp .ttf, .otf, .woff, .woff2 hoặc .eot.");
             return null;
         }
 
         // Validate file size (10MB limit)
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            notify.error(t("templateStudio.fonts.tooLargeTitle"), t("templateStudio.fonts.tooLargeDescription"));
+            notify.error("Tệp quá lớn", "Kích thước tệp phông chữ phải nhỏ hơn 10 MB.");
             return null;
         }
 
@@ -203,15 +200,15 @@ export const useTemplateCreation = () => {
         };
 
         setUploadedFonts(prev => [...prev, newFont]);
-        notify.success(t("templateStudio.fonts.addedTitle"), t("templateStudio.fonts.addedDescription", { name: fontName }));
+        notify.success("Đã thêm phông chữ", `Đã thêm phông chữ “${fontName}”.`);
         return fontName;
-    }, [t, uploadedFonts]);
+    }, [uploadedFonts]);
 
     // Remove a font
     const removeFont = useCallback((fontName: string) => {
         setUploadedFonts(prev => prev.filter(font => font.fontName !== fontName));
-        notify.info(t("templateStudio.fonts.removedTitle"), t("templateStudio.fonts.removedDescription"));
-    }, [t]);
+        notify.info("Đã xóa phông chữ", "Phông chữ đã được xóa khỏi danh sách tải lên.");
+    }, []);
 
     // Get all unsupported fonts that need upload
     const getUnsupportedFonts = useCallback((): string[] => {
@@ -282,15 +279,15 @@ export const useTemplateCreation = () => {
                 isLoading: false
             });
 
-            notify.success(t("templateStudio.toast.documentPreparedTitle"), t("templateStudio.toast.documentPreparedDescription"));
+            notify.success("Đã chuẩn bị tài liệu", "Quá trình tạo mẫu đang bắt đầu.");
             return data;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Document preparation failed";
             updateState({ error: errorMessage, isLoading: false });
-            notify.error(t("templateStudio.toast.documentFailedTitle"), errorMessage);
+            notify.error("Chuẩn bị tài liệu thất bại", errorMessage);
             return null;
         }
-    }, [t, uploadedFonts, updateState]);
+    }, [uploadedFonts, updateState]);
 
     const saveTemplateV2Layouts = useCallback(async (
         templateId: string,
@@ -569,18 +566,18 @@ export const useTemplateCreation = () => {
 
             if (failedCount > 0) {
                 notify.warning(
-                    t("templateStudio.toast.partialTitle"),
-                    t("templateStudio.toast.partialDescription", { processed: processedCount, total: generatedSlides.length })
+                    "Không thể tạo một số slide",
+                    `Đã tạo ${processedCount}/${generatedSlides.length} slide.`
                 );
             } else if (blocksError) {
                 notify.warning(
-                    t("templateStudio.toast.generatedTitle"),
-                    t("templateStudio.toast.blocksFailedDescription", { error: blocksError })
+                    "Đã tạo mẫu",
+                    `Các slide đã được lưu nhưng chưa tạo được khối mẫu. ${blocksError}`
                 );
             } else {
                 notify.success(
-                    t("templateStudio.toast.generatedTitle"),
-                    t("templateStudio.toast.generatedDescription")
+                    "Đã tạo mẫu",
+                    "Mẫu đã được tạo và lưu thành công."
                 );
             }
 
@@ -596,13 +593,12 @@ export const useTemplateCreation = () => {
                     error: errorMessage,
                 }))
             );
-            notify.error(t("templateStudio.toast.generationFailedTitle"), errorMessage);
+            notify.error("Tạo mẫu thất bại", errorMessage);
             return null;
         }
     }, [
         createAndSaveTemplateV2Layouts,
         generateTemplateV2Blocks,
-        t,
         updateState,
     ]);
 
@@ -613,7 +609,7 @@ export const useTemplateCreation = () => {
     ): Promise<string | null> => {
         const previewData = previewDataOverride ?? state.previewData;
         if (!previewData) {
-            notify.error(t("templateStudio.preview.noDataTitle"), t("templateStudio.preview.noDataDescription"));
+            notify.error("Chưa có dữ liệu xem trước", "Hãy chuẩn bị tài liệu trước khi tiếp tục.");
             return null;
         }
 
@@ -628,13 +624,12 @@ export const useTemplateCreation = () => {
     }, [
         generateTemplateV2,
         state.previewData,
-        t,
     ]);
 
     // Reconstruct a single slide (no auto-advance)
     const retrySlide = useCallback((slideIndex: number) => {
         if (!state.templateId) {
-            notify.error(t("templateStudio.preview.unavailableTitle"), t("templateStudio.preview.initializeFirst"));
+            notify.error("Mẫu chưa sẵn sàng", "Hãy khởi tạo mẫu trước khi thử lại.");
             return;
         }
 
@@ -674,7 +669,7 @@ export const useTemplateCreation = () => {
                                     : slide
                             )
                         );
-                        notify.error(t("templateStudio.toast.slideFailedTitle", { number: slideIndex + 1 }), failure.error);
+                        notify.error(`Slide ${(slideIndex + 1)} thất bại`, failure.error);
                         return;
                     }
                     throw new Error(failure.error);
@@ -691,8 +686,8 @@ export const useTemplateCreation = () => {
                     )
                 );
                 notify.success(
-                    t("templateStudio.toast.slideRegenerated"),
-                    t("templateStudio.toast.slideRegeneratedDescription", { number: slideIndex + 1 })
+                    "Đã tạo lại slide",
+                    `Đã tạo lại slide ${(slideIndex + 1)} thành công.`
                 );
             } catch (error) {
                 const errorMessage = error instanceof Error
@@ -710,13 +705,12 @@ export const useTemplateCreation = () => {
                             : slide
                     )
                 );
-                notify.error(t("templateStudio.toast.slideFailedTitle", { number: slideIndex + 1 }), errorMessage);
+                notify.error(`Slide ${(slideIndex + 1)} thất bại`, errorMessage);
             }
         })();
     }, [
         createAndSaveTemplateV2Layouts,
         state.templateId,
-        t,
         updateState,
     ]);
 

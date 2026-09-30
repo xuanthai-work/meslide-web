@@ -6,7 +6,6 @@ import type { TemplateV2Layout } from "@/components/slide-editor/importing/templ
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n/provider";
 import { normalizeSearchText } from "@/utils/normalizeSearchText";
 import {
   readLayoutDescription,
@@ -46,7 +45,6 @@ export function LayoutsPanel({
   onLayoutDescriptionChange,
   onSelectLayout,
 }: LayoutsPanelProps) {
-  const t = useT();
   const [searchQuery, setSearchQuery] = useState("");
 
   const layoutItems = useMemo<LayoutPanelItem[]>(
@@ -82,16 +80,16 @@ export function LayoutsPanel({
     <aside className="hidden w-[299px] shrink-0 bg-[#FEFEFF] lg:flex lg:flex-col">
       <div className="flex min-h-0 flex-1 flex-col px-3 pb-6 pt-8">
         <h2 className="text-[16px] font-medium leading-5 text-[#101828]">
-          {t("templateStudio.editor.deckLayouts")}
+          {"Bố cục bộ slide"}
         </h2>
 
         <label className="relative mt-5 block">
           <Search className="pointer-events-none absolute left-[10px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#4C4C4C]" />
           <Input
-            aria-label={t("templateStudio.editor.searchSlides")}
+            aria-label={"Tìm slide"}
             className="h-[30px] rounded-[8px] border-[rgba(219,219,219,0.6)] bg-white pl-[30px] pr-3 text-[12px] font-normal text-[#191919] shadow-none placeholder:text-[#4C4C4C] focus-visible:ring-0"
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t("templateStudio.editor.searchSlides")}
+            placeholder={"Tìm slide"}
             value={searchQuery}
           />
         </label>
@@ -99,7 +97,7 @@ export function LayoutsPanel({
         <div className="mt-7 min-h-0 flex-1 overflow-y-auto pr-0.5">
           {filteredLayouts.length === 0 ? (
             <div className="rounded-[8px] border border-dashed border-[#DCDCE1] px-4 py-8 text-center text-[13px] text-[#808080]">
-              {t("templateStudio.editor.noLayoutsFound")}
+              {"Không tìm thấy bố cục."}
             </div>
           ) : (
             <div className="flex flex-col gap-0 rounded-[12px]">
@@ -156,7 +154,6 @@ function LayoutRow({
   onIdChange: (value: string) => void;
   onSelect: () => void;
 }) {
-  const t = useT();
   return (
     <div
       className={cn(
@@ -178,19 +175,19 @@ function LayoutRow({
 
         <div className="flex shrink-0 items-center gap-[10px]">
           <button
-            aria-label={t("templateStudio.editor.copyLayoutId", { number: index + 1 })}
+            aria-label={`Sao chép ID bố cục ${(index + 1)}`}
             className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] text-[#191919] transition-colors hover:bg-[#F7F6F9] hover:text-[#1D6FE8]"
             onClick={(event) => {
               event.stopPropagation();
               onCopy();
             }}
-            title={t("templateStudio.editor.copyId")}
+            title={"Sao chép ID"}
             type="button"
           >
             <Copy className="h-[14px] w-[14px]" />
           </button>
           <button
-            aria-label={t("templateStudio.editor.selectLayout", { number: index + 1 })}
+            aria-label={`Chọn bố cục ${(index + 1)}`}
             className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] text-[#191919] transition-colors hover:bg-[#F7F6F9]"
             onClick={onSelect}
             type="button"
@@ -208,13 +205,13 @@ function LayoutRow({
       {isActive ? (
         <div className="mt-5 flex flex-col gap-[14px]">
           <label className="flex flex-col gap-2 text-[14px] font-normal text-[#333333]">
-            {t("templateStudio.editor.slideId")}
+            {"ID slide"}
             <div className="relative min-h-[52px] rounded-[8px] border border-[rgba(219,219,219,0.6)] bg-white px-[10px] pb-[20px] pt-[10px]">
               <input
                 className="w-full bg-transparent pr-[48px] text-[14px] font-normal leading-normal text-[#191919] outline-none placeholder:text-[#191919]"
                 maxLength={LAYOUT_ID_MAX_LENGTH}
                 onChange={(event) => onIdChange(event.target.value)}
-                placeholder={t("templateStudio.editor.addSlideId")}
+                placeholder={"Thêm ID slide"}
                 type="text"
                 value={idValue}
               />
@@ -225,13 +222,13 @@ function LayoutRow({
           </label>
 
           <label className="flex flex-col gap-2 text-[14px] font-normal text-[#333333]">
-            {t("templateStudio.editor.slideDescription")}
+            {"Mô tả slide"}
             <div className="relative">
               <Textarea
                 className="min-h-[70px] resize-none rounded-[8px] border-[rgba(219,219,219,0.6)] bg-white px-[10px] pb-[22px] pt-[10px] text-[14px] font-normal leading-[18px] text-[#191919] shadow-none placeholder:text-[#191919] focus-visible:ring-0"
                 maxLength={LAYOUT_DESCRIPTION_MAX_LENGTH}
                 onChange={(event) => onDescriptionChange(event.target.value)}
-                placeholder={t("templateStudio.editor.addSourceText")}
+                placeholder={"Thêm văn bản nguồn"}
                 value={description}
               />
               <span className="pointer-events-none absolute bottom-[8px] right-[10px] text-[10px] leading-none text-[#666666]">

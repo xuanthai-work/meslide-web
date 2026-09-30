@@ -1,8 +1,9 @@
 import type { ChatStreamTrace } from "../../../services/api/chat";
 import type { AssistantActivity } from "./chat-types";
-import { translateBackendStatus, type BackendStatusCode } from "@/i18n/backend-messages";
-
-type ActivityTranslate = Parameters<typeof translateBackendStatus>[0];
+import {
+  translateBackendStatus,
+  type BackendStatusCode,
+} from "@/lib/backend-messages";
 
 const TOOL_LABELS: Record<string, string> = {
   addOutline: "Outline adder",
@@ -79,30 +80,30 @@ const humanizeTraceMessage = (message: string, tool?: string) => {
 
   const lower = trimmed.toLowerCase();
   const exactMessages: Record<string, string> = {
-    "reading deck context": "Reviewing your presentation context.",
-    "reading the presentation outline": "Reading the presentation outline.",
-    "reading the outline draft": "Reading the outline draft.",
-    "adding an outline slide": "Adding an outline slide.",
-    "updating the outline slide": "Updating the outline slide.",
-    "deleting the outline slide": "Deleting the outline slide.",
-    "reordering outline slides": "Reordering outline slides.",
-    "searching relevant slides": "Searching slides for relevant content.",
-    "opening the requested slide": "Opening the selected slide.",
-    "checking available themes": "Checking available color themes.",
-    "checking available layouts": "Checking available layouts.",
-    "checking the layout schema": "Validating the slide schema.",
-    "generating slide assets": "Generating images and icons.",
-    "saving the slide": "Saving slide updates.",
-    "deleting the slide": "Deleting the slide.",
-    "applying presentation theme": "Applying the selected theme.",
-    "reading template structure": "Reading the template structure.",
-    "reading source documents": "Reading the source documents.",
-    "opening the requested template slide": "Opening the selected template slide.",
-    "searching template content": "Searching template content.",
-    "finding editable elements": "Finding editable elements.",
-    "updating template content": "Updating template content.",
-    "deleting the template component": "Deleting the selected component.",
-    "swapping component variant": "Swapping the component variant.",
+    "reading deck context": "Đang xem lại ngữ cảnh bài thuyết trình.",
+    "reading the presentation outline": "Đang đọc dàn ý bài thuyết trình.",
+    "reading the outline draft": "Đang đọc bản nháp dàn ý.",
+    "adding an outline slide": "Đang thêm slide vào dàn ý.",
+    "updating the outline slide": "Đang cập nhật slide trong dàn ý.",
+    "deleting the outline slide": "Đang xóa slide khỏi dàn ý.",
+    "reordering outline slides": "Đang sắp xếp lại các slide trong dàn ý.",
+    "searching relevant slides": "Đang tìm slide có nội dung liên quan.",
+    "opening the requested slide": "Đang mở slide đã chọn.",
+    "checking available themes": "Đang kiểm tra các chủ đề màu có sẵn.",
+    "checking available layouts": "Đang kiểm tra các bố cục có sẵn.",
+    "checking the layout schema": "Đang kiểm tra cấu trúc bố cục.",
+    "generating slide assets": "Đang tạo hình ảnh và biểu tượng.",
+    "saving the slide": "Đang lưu thay đổi slide.",
+    "deleting the slide": "Đang xóa slide.",
+    "applying presentation theme": "Đang áp dụng chủ đề đã chọn.",
+    "reading template structure": "Đang đọc cấu trúc mẫu.",
+    "reading source documents": "Đang đọc tài liệu nguồn.",
+    "opening the requested template slide": "Đang mở slide mẫu đã chọn.",
+    "searching template content": "Đang tìm nội dung trong mẫu.",
+    "finding editable elements": "Đang tìm các thành phần có thể chỉnh sửa.",
+    "updating template content": "Đang cập nhật nội dung mẫu.",
+    "deleting the template component": "Đang xóa thành phần đã chọn.",
+    "swapping component variant": "Đang đổi biến thể thành phần.",
   };
   if (exactMessages[lower]) return exactMessages[lower];
 
@@ -114,13 +115,13 @@ const humanizeTraceMessage = (message: string, tool?: string) => {
       .filter(Boolean)
       .map((entry) => getToolLabel(entry));
     return toolNames.length === 0
-      ? "Planning the next step."
-      : "Choosing the best way to help.";
+      ? "Đang lên kế hoạch cho bước tiếp theo."
+      : "Đang chọn cách hỗ trợ phù hợp nhất.";
   }
   if (lower.includes("found requested data")) {
     return tool === "getSlideAtIndex"
-      ? "Found the requested slide details."
-      : "Found the requested information.";
+      ? "Đã tìm thấy thông tin slide được yêu cầu."
+      : "Đã tìm thấy thông tin được yêu cầu.";
   }
   return trimmed;
 };
@@ -167,16 +168,15 @@ export const isAbortError = (error: unknown) =>
 const humanActivityForTool = (
   tool: string | undefined,
   state: "start" | "success",
-  t: ActivityTranslate,
 ) => {
   const isDone = state === "success";
   switch (tool) {
     case "searchSlide":
       return isDone
-        ? t("chat.activity.completed")
-        : t("chat.activity.searching");
+        ? "Đã hoàn tất bước này."
+        : "Đang tìm nội dung liên quan.";
     case "getSlideAtIndex":
-      return isDone ? t("chat.activity.completed") : t("chat.activity.checking");
+      return isDone ? "Đã hoàn tất bước này." : "Đang kiểm tra thông tin.";
     case "addNewSlide":
     case "addNewSlideLayout":
     case "updateElement":
@@ -186,30 +186,29 @@ const humanActivityForTool = (
     case "createComponent":
     case "updateSlide":
     case "saveSlide":
-      return isDone ? t("chat.activity.completed") : t("chat.activity.applying");
+      return isDone ? "Đã hoàn tất bước này." : "Đang áp dụng thay đổi.";
     case "deleteComponent":
     case "deleteElement":
     case "deleteSlide":
       return isDone
-        ? t("chat.activity.completed")
-        : t("chat.activity.removing");
+        ? "Đã hoàn tất bước này."
+        : "Đang xóa mục đã chọn.";
     case "generateAssets":
       return isDone
-        ? t("chat.activity.completed")
-        : t("chat.activity.generating");
+        ? "Đã hoàn tất bước này."
+        : "Đang tạo tài nguyên hình ảnh.";
     case "setPresentationTheme":
-      return isDone ? t("chat.activity.completed") : t("chat.activity.applying");
+      return isDone ? "Đã hoàn tất bước này." : "Đang áp dụng thay đổi.";
     default:
-      return isDone ? t("chat.activity.completed") : t("chat.working");
+      return isDone ? "Đã hoàn tất bước này." : "Đang xử lý…";
   }
 };
 
 export const formatTraceActivity = (
   trace: ChatStreamTrace,
-  t: ActivityTranslate,
 ): Omit<AssistantActivity, "id"> | null => {
   if (trace.code) {
-    const localizedLabel = translateBackendStatus(t, {
+    const localizedLabel = translateBackendStatus({
       code: trace.code,
       params: trace.params,
       status: trace.message,
@@ -256,7 +255,7 @@ export const formatTraceActivity = (
   }
   if (trace.tool && trace.status === "start") {
     return {
-      label: humanActivityForTool(trace.tool, "start", t),
+      label: humanActivityForTool(trace.tool, "start"),
       kind: trace.kind,
       round: trace.round,
       tool: trace.tool,
@@ -265,7 +264,7 @@ export const formatTraceActivity = (
   }
   if (trace.tool && trace.status === "success") {
     return {
-      label: humanActivityForTool(trace.tool, "success", t),
+      label: humanActivityForTool(trace.tool, "success"),
       kind: trace.kind,
       round: trace.round,
       tool: trace.tool,
@@ -274,7 +273,7 @@ export const formatTraceActivity = (
   }
   if (trace.tool && trace.status === "error") {
     return {
-      label: t("chat.activity.failed"),
+      label: "Không thể hoàn tất bước này.",
       kind: trace.kind,
       round: trace.round,
       tool: trace.tool,
@@ -283,7 +282,7 @@ export const formatTraceActivity = (
   }
   if (trace.kind === "tool_plan" && Array.isArray(trace.tools) && trace.tools.length) {
     return {
-      label: t("chat.activity.planning"),
+      label: "Đang lên kế hoạch cho bước tiếp theo.",
       kind: trace.kind,
       round: trace.round,
       state: "info",

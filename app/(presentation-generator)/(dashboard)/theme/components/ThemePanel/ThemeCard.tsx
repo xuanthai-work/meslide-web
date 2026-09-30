@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { AlertTriangle, Check, Copy, Trash } from 'lucide-react'
 import { Theme } from '@/app/(presentation-generator)/services/api/types'
 import ToolTip from '@/components/ToolTip'
-import { useT } from '@/i18n/provider'
 
 interface ThemeCardProps {
   theme: Theme
@@ -13,13 +12,9 @@ interface ThemeCardProps {
 }
 
 export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete, showDeleteButton = true }) => {
-  const t = useT()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [copied, setCopied] = useState(false)
   if (!theme.data.colors['graph_0']) { return null }
-
-
-
 
   return (<div
     className={` group rounded-xl border w-[305px] cursor-pointer transition-all relative bg-white border-[#EDEEEF]   hover:shadow-md`}
@@ -55,9 +50,9 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
             <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
               <AlertTriangle className="h-6 w-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-semibold text-[#191919] mb-2">{t('themes.card.deleteTitle')}</h3>
+            <h3 className="text-lg font-semibold text-[#191919] mb-2">{"Xóa chủ đề?"}</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              {t('themes.card.deleteBody', { name: theme.name })}
+              {`Bạn sắp xóa "${theme.name}". Thao tác này không thể hoàn tác.`}
             </p>
           </div>
           <div className="flex border-t border-gray-100">
@@ -65,7 +60,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
               onClick={() => setShowDeleteDialog(false)}
               className="flex-1 px-4 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              {t('common.actions.cancel')}
+              {"Hủy"}
             </button>
             <button
               onClick={() => {
@@ -74,41 +69,38 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
               }}
               className="flex-1 px-4 py-3.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors border-l border-gray-100"
             >
-              {t('common.actions.delete')}
+              {"Xóa"}
             </button>
           </div>
         </div>
       </div>
     )}
 
-
     <div className='relative h-[250px] flex justify-center items-center '>
 
       <img src="/card_bg.svg" alt="" className="absolute top-0 z-[1] left-0 w-[99%] h-full object-cover" />
       <div className=" absolute top-0 left-0 flex items-center justify-between gap-2  z-[2] p-2">
-        <ToolTip content={t('themes.card.fontTooltip')} >
+        <ToolTip content={"Font"} >
 
           <p className="z-40 flex items-center gap-1 rounded-full bg-[#3A3A3AF5] px-2.5 py-1 text-xs font-semibold capitalize text-white">
 
             {theme.data.fonts.textFont.name}
           </p>
         </ToolTip>
-        {theme.company_name && <ToolTip content={t('themes.card.companyTooltip')}>
+        {theme.company_name && <ToolTip content={"CÔNG TY"}>
 
           <p className="z-40 flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-full bg-[#3A3A3AF5] px-2.5 py-1 text-xs font-semibold capitalize text-white">
 
             {theme.company_name}
           </p>
         </ToolTip>}
-        {theme.logo_url && <ToolTip content={t('themes.card.logoTooltip')}>
+        {theme.logo_url && <ToolTip content={"LOGO"}>
 
           <p className="z-40 flex items-center gap-1 rounded-full bg-[#3A3A3AF5] px-2.5 py-1 text-xs font-semibold capitalize text-white">
 
             <img src={theme.logo_url} alt={theme.name} className="w-full max-w-6 h-4 rounded-full object-cover" />
           </p>
         </ToolTip>}
-
-
 
       </div>
       <div className=" relative z-[3] px-6">
@@ -133,7 +125,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
                   className="mt-1 text-base font-medium leading-[1.1]  text-left truncate"
                   style={{ color: theme.data.colors['background_text'], fontFamily: `"${theme.data.fonts.textFont.name}", ui-serif, Georgia, serif` }}
                 >
-                  {t('themes.card.previewText')}
+                  {"Chọn tùy chọn của bạn."}
                 </div>
                 <div
                   className="mt-2 h-2.5 w-16 rounded-full"
@@ -146,7 +138,6 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
         </div>
       </div>
     </div>
-
 
     <div className='px-5 border-t rounded-b-xl border-[#EDEEEF] w-full py-2.5 h-[80px] bg-white flex items-center justify-between'>
       <div>
@@ -173,7 +164,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
           }
         }}
         className={copied ? "text-green-500" : "text-gray-500 hover:text-gray-700"}
-        title={copied ? t('themes.card.copied') : t('themes.card.copyId')}
+        title={copied ? "Đã sao chép!" : "Sao chép ID"}
       >
         {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
       </button>
@@ -182,6 +173,4 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
   </div>)
 
 }
-
-
 

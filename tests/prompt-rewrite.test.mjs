@@ -329,16 +329,17 @@ test("UploadPage orchestrates outline generation with abort and request-ID guard
   // a failed outline generation.
   assert.match(
     handler,
-    /phase === "rewriting"\s*\?\s*"upload\.prompt\.rewrite\.errorFallback"\s*:\s*"upload\.prompt\.rewrite\.preparationErrorFallback"/
+    /phase === "rewriting"[\s\S]*?Đã xảy ra lỗi khi tạo dàn ý/,
   );
+  assert.match(handler, /Đã xảy ra lỗi khi chuẩn bị tài liệu/);
   assert.match(handler, /console\.error\("Error generating outline", error\)/);
 
   // The result is written into box 2, never over the idea in box 1, and the
   // user is told where to find it.
   assert.match(handler, /handleConfigChange\("prompt", result\);/);
   assert.doesNotMatch(handler, /handleConfigChange\("instructions"/);
-  assert.match(handler, /t\("upload\.outline\.successTitle"\)/);
-  assert.match(handler, /t\("upload\.outline\.successDescription"\)/);
+  assert.match(handler, /"Đã tạo dàn ý từ AI"/);
+  assert.match(handler, /"Bạn có thể chỉnh sửa nội dung bên dưới trước khi tạo slide\."/);
 
   // The in-flight request is aborted on unmount.
   assert.match(
@@ -349,10 +350,15 @@ test("UploadPage orchestrates outline generation with abort and request-ID guard
   // Button wiring: duplicate submissions disabled while the same request is
   // active, aria-busy while loading, and the label follows the phase.
   assert.match(page, /onGenerate=\{handleGenerateOutline\}/);
-  for (const key of ["phaseUploading", "phaseReading", "loading", "retryAction"]) {
-    assert.match(page, new RegExp(`upload\\.prompt\\.rewrite\\.${key}`));
+  for (const label of [
+    "Đang tải tài liệu lên...",
+    "Đang đọc tài liệu...",
+    "Đang viết lại...",
+    "Thử lại",
+  ]) {
+    assert.ok(page.includes(label), `UploadPage is missing the label "${label}"`);
   }
-  assert.match(page, /upload\.outline\.action/);
+  assert.match(page, /"Viết lại"/);
 
   // The composer receives the orchestrated state, and its retry path runs
   // the same outline flow.
@@ -434,7 +440,7 @@ test("Create eligibility never requires an AI rewrite and does not block attachm
   // The explicit Create button is gated on the same `isCreateDisabled` flag.
   assert.match(page, /disabled=\{isCreateDisabled \|\| loadingState\.isLoading\}/);
   assert.match(page, /onClick=\{handleGeneratePresentation\}/);
-  assert.match(page, /upload\.create\.label/);
+  assert.match(page, /"Tạo bài thuyết trình"/);
 
   // Create eligibility never disables the attachment picker, so users can
   // still add the document that makes a content-free flow valid.
@@ -484,35 +490,14 @@ test("an outline that numbers its own slides reports that count to the user", as
   assert.match(page, /nSlides: parseLimitedSlideCount\(config\.slides\),/);
 });
 
-test("outline catalogs stay symmetric and the upload hero renders once", async () => {
-  const [vi, en, page] = await Promise.all([
-    read("i18n/locales/vi.ts"),
-    read("i18n/locales/en.ts"),
-    read(UPLOAD_PAGE_PATH),
-  ]);
-  const keys = [
-    "ideaLabel",
-    "ideaPlaceholder",
-    "optionalPill",
-    "contentLabel",
-    "contentPlaceholder",
-    "action",
-    "loading",
-    "successTitle",
-    "successDescription",
-    "orDivider",
-    "detectedCount",
-    "phaseUploading",
-    "phaseReading",
-    "retryAction",
-    "errorFallback",
-  ];
+test("upload hero renders once with inlined outline copy", async () => {
+  const page = await read(UPLOAD_PAGE_PATH);
 
-  for (const key of keys) {
-    const keyPattern = new RegExp(`\\b${key}:`);
-    assert.match(vi, keyPattern, `Vietnamese catalog misses ${key}`);
-    assert.match(en, keyPattern, `English catalog misses ${key}`);
-  }
+  assert.match(page, /G-SLIDE/);
+  assert.match(
+    page,
+    /Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI/,
+  );
 
   assert.equal(
     page.match(/<GSlideStudioTitle/g)?.length,
@@ -529,11 +514,9 @@ test("outline catalogs stay symmetric and the upload hero renders once", async (
  * duplicate submissions are prevented while work is active.
  */
 test("outline progress surfaces preparation phases accessibly", async () => {
-  const [page, composer, vi, en] = await Promise.all([
+  const [page, composer] = await Promise.all([
     read(UPLOAD_PAGE_PATH),
     read(OUTLINE_COMPOSER_PATH),
-    read("i18n/locales/vi.ts"),
-    read("i18n/locales/en.ts"),
   ]);
   const handlerStart = page.indexOf("const handleGenerateOutline");
   const handlerEnd = page.indexOf("const validateConfiguration");
@@ -557,23 +540,15 @@ test("outline progress surfaces preparation phases accessibly", async () => {
   assert.equal(handler.match(/applyPhase\("rewriting"\)/g)?.length, 2);
   assert.match(page, /setRewritePhase\(null\);/);
 
-  // The loading label follows the active phase.
-  assert.match(page, /upload\.prompt\.rewrite\.phaseUploading/);
-  assert.match(page, /upload\.prompt\.rewrite\.phaseReading/);
+  // The loading label follows the active phase (inlined Vietnamese copy).
+  assert.match(page, /rewritePhase === "uploading_documents"/);
+  assert.match(page, /Đang tải tài liệu lên\.\.\./);
+  assert.match(page, /Đang đọc tài liệu\.\.\./);
 
   // Phase changes are announced through a polite live region.
   assert.match(composer, /aria-live="polite"/);
-  assert.match(composer, /upload\.prompt\.rewrite\.aria\.uploading/);
-  assert.match(composer, /upload\.prompt\.rewrite\.aria\.reading/);
-
-  // Localized status/error strings exist in both catalogs.
-  for (const catalog of [vi, en]) {
-    for (const key of ["phaseUploading", "phaseReading", "preparationErrorFallback"]) {
-      assert.match(catalog, new RegExp(`\\b${key}:`), `catalog misses ${key}`);
-    }
-    assert.match(catalog, /uploading: "/);
-    assert.match(catalog, /reading: "/);
-  }
+  assert.match(composer, /Đang tải tài liệu của bạn lên\./);
+  assert.match(composer, /Đang đọc tài liệu để làm cơ sở cho dàn ý\./);
 
   // Duplicate submissions are prevented while an outline request, the
   // preparing modal, or a Create is active.
@@ -671,8 +646,8 @@ test("redesign: Create is an explicit visible text action bound to handleGenerat
   assert.ok(createMatch, "Create button is missing");
   const createButton = createMatch[0];
   assert.match(createButton, /onClick=\{handleGeneratePresentation\}/);
-  assert.match(createButton, /aria-label=\{t\("upload\.create\.ariaLabel"\)\}/);
-  assert.match(createButton, /\{t\("upload\.create\.label"\)\}/);
+  assert.match(createButton, /aria-label=\{"Tạo bài thuyết trình"\}/);
+  assert.match(createButton, /\{"Tạo bài thuyết trình"\}/);
   // The same `isCreateDisabled` flag drives the disabled state, so template
   // selection and in-flight work continue to gate Create.
   assert.match(createButton, /disabled=\{isCreateDisabled \|\| loadingState\.isLoading\}/);
@@ -697,8 +672,8 @@ test("redesign: SupportingDoc is attachment-only with a typed usage mode", async
   assert.doesNotMatch(supportingDoc, /submitDisabled/);
   assert.doesNotMatch(supportingDoc, /generate-presentation-button/);
   // The visible section label and the optional indicator are rendered.
-  assert.match(supportingDoc, /upload\.files\.sectionLabel/);
-  assert.match(supportingDoc, /upload\.files\.optionalIndicator/);
+  assert.match(supportingDoc, /"Tài liệu tham chiếu"/);
+  assert.match(supportingDoc, /"Không bắt buộc"/);
   // The label and the heading are tied together via aria-labelledby.
   assert.match(supportingDoc, /aria-labelledby="attachments-uploader-label"/);
   assert.match(supportingDoc, /id="attachments-uploader-label"/);
@@ -722,11 +697,20 @@ test("redesign: SupportingDoc is attachment-only with a typed usage mode", async
 
 test("redesign: SupportingDoc renders the right helper copy per usage mode", async () => {
   const supportingDoc = await read(SUPPORTING_DOC_PATH);
-  // The component must look up copy through the i18n catalog rather than
-  // concatenating sentence fragments inline.
-  assert.match(supportingDoc, /upload\.files\.emptyGuidance/);
-  assert.match(supportingDoc, /upload\.files\.helperDocAware/);
-  assert.match(supportingDoc, /upload\.files\.helperPresentationOnly/);
+  // Helper copy is inlined in Vietnamese rather than concatenated from
+  // sentence fragments.
+  assert.match(
+    supportingDoc,
+    /Đính kèm Word, PowerPoint, bảng tính, PDF\/TXT hoặc ảnh nếu bạn muốn AI dùng chúng\./,
+  );
+  assert.match(
+    supportingDoc,
+    /AI sẽ dùng 1 tài liệu để tối ưu prompt/,
+  );
+  assert.match(
+    supportingDoc,
+    /Tài liệu này sẽ được dùng khi tạo bài thuyết trình/,
+  );
   // The empty-state copy is the default when no files are attached and
   // the wrong mode never shows a grounding claim.
   const helperBlock = supportingDoc.slice(
@@ -747,8 +731,8 @@ test("redesign: OutlineComposer numbers both boxes and renders the detected coun
   assert.match(composer, /data-purpose="outline-card"/);
   // Box 1 is optional and says so, and a dashed rule separates the two
   // paths: let the AI draft it, or paste it straight into box 2.
-  assert.match(composer, /upload\.outline\.optionalPill/);
-  assert.match(composer, /upload\.outline\.orDivider/);
+  assert.match(composer, /"Tùy chọn"/);
+  assert.match(composer, /"Hoặc dán trực tiếp nội dung bên dưới"/);
   assert.match(composer, /border-dashed/);
 
   // Both boxes are labelled, and both are plain editable textareas.
@@ -766,7 +750,7 @@ test("redesign: OutlineComposer numbers both boxes and renders the detected coun
   // declares one, and it is not hard-coded copy.
   assert.match(composer, /data-testid="detected-slides-badge"/);
   assert.match(composer, /\{detectedSlidesCount \? \(/);
-  assert.match(composer, /t\("upload\.outline\.detectedCount", \{\s*count: detectedSlidesCount,/);
+  assert.match(composer, /Phát hiện \$\{detectedSlidesCount\} slide/);
   // A failure is reported inline with a retry that reuses the same flow.
   assert.match(composer, /data-testid="rewrite-error"/);
   assert.match(composer, /data-testid="rewrite-retry-button"/);
@@ -775,28 +759,21 @@ test("redesign: OutlineComposer numbers both boxes and renders the detected coun
   assert.match(composer, /data-testid="outline-composer"/);
 });
 
-test("redesign: new copy keys exist and remain symmetric across catalogs", async () => {
-  const [vi, en] = await Promise.all([
-    read("i18n/locales/vi.ts"),
-    read("i18n/locales/en.ts"),
+test("redesign: inline Vietnamese copy is present in the composer components", async () => {
+  const [supportingDoc, page] = await Promise.all([
+    read(SUPPORTING_DOC_PATH),
+    read(UPLOAD_PAGE_PATH),
   ]);
-  const newKeys = [
-    "sectionLabel",
-    "optionalIndicator",
-    "emptyGuidance",
-    "helperDocAware",
-    "helperPresentationOnly",
-  ];
-  for (const key of newKeys) {
-    const re = new RegExp(`\\b${key}:`);
-    assert.match(vi, re, `vi.ts misses ${key}`);
-    assert.match(en, re, `en.ts misses ${key}`);
-  }
-  // `upload.create.label` and `upload.create.ariaLabel` are new leaves.
-  // The catalog encodes them under `upload: { create: { label, ariaLabel } }`
-  // — assert that the leaf strings exist verbatim so a missing key fails
-  // here even if the parity walker is not run. The exact wording is
-  // intentional: "Tạo bài thuyết trình" / "Create presentation".
-  assert.match(vi, /"Tạo bài thuyết trình"/);
-  assert.match(en, /"Create presentation"/);
+  assert.match(supportingDoc, /"Tài liệu tham chiếu"/);
+  assert.match(supportingDoc, /"Không bắt buộc"/);
+  assert.match(
+    supportingDoc,
+    /Đính kèm Word, PowerPoint, bảng tính, PDF\/TXT hoặc ảnh nếu bạn muốn AI dùng chúng\./,
+  );
+  assert.match(supportingDoc, /AI sẽ dùng 1 tài liệu để tối ưu prompt/);
+  assert.match(
+    supportingDoc,
+    /Tài liệu này sẽ được dùng khi tạo bài thuyết trình/,
+  );
+  assert.match(page, /"Tạo bài thuyết trình"/);
 });

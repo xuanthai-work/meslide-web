@@ -105,12 +105,4 @@ test("ConfigurationInitializer contains no administrator-specific behavior", asy
   const config = await readNext("app/ConfigurationInitializer.tsx");
   assert.doesNotMatch(config, /administrator/i);
   assert.doesNotMatch(config, /\/settings/);
-
-  // Shared catalog copy must also remain free of the removed admin persona.
-  const en = await readNext("i18n/locales/en.ts");
-  const vi = await readNext("i18n/locales/vi.ts");
-  assert.match(en, /operator/);
-  assert.doesNotMatch(en, /administrator/i);
-  assert.match(vi, /người vận hành/);
-  assert.doesNotMatch(vi, /quản trị viên/i);
 });

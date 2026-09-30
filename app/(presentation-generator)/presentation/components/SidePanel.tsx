@@ -33,7 +33,6 @@ import {
   isTemplateFreePresentation,
 } from "../../_shared/blank-slide";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
-import { useT } from "@/i18n/provider";
 
 interface SidePanelProps {
   selectedSlide: number;
@@ -56,7 +55,6 @@ const SidePanel = ({
 
   loading,
 }: SidePanelProps) => {
-  const t = useT();
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -84,8 +82,8 @@ const SidePanel = ({
 
     if (presentationData.slides.length >= MAX_NUMBER_OF_SLIDES) {
       notify.warning(
-        t("presentation.slideLimit"),
-        t("presentation.slideLimitDescription", { max: MAX_NUMBER_OF_SLIDES })
+        "Đã đạt giới hạn slide",
+        `Bạn có thể tạo tối đa ${MAX_NUMBER_OF_SLIDES} slide.`
       );
       return;
     }
@@ -213,7 +211,7 @@ const SidePanel = ({
   return (
     <aside
       className="relative h-full w-[150px] bg-white px-4 py-5"
-      aria-label={t("presentation.slidesAria")}
+      aria-label={"Các slide của bài thuyết trình"}
     >
       <div
         className={`

@@ -9,7 +9,6 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n/provider";
 import { withHash } from "@/components/slide-editor/utils/color";
 import { elementBox } from "@/components/slide-editor/model/element-model";
 import type { ShapeSlideElement } from "@/components/slide-editor/state/state";
@@ -90,7 +89,6 @@ export function ShapeToolbar({
   componentActions?: ComponentActionsMenuActions | null;
   onChange: (index: number, element: ShapeSlideElement) => void;
 }) {
-  const t = useT();
   const [openPanel, setOpenPanel] = useState<ShapePanel>(null);
   const rawBox = elementBox(element);
   const box = anchorBox
@@ -230,9 +228,9 @@ export function ShapeToolbar({
       <div className="relative">
         <button
           type="button"
-          aria-label={t("slideEditor.layout.shapeFill")}
+          aria-label={"Màu nền hình"}
           aria-expanded={openPanel === "fill"}
-          title={t("slideEditor.layout.shapeFill")}
+          title={"Màu nền hình"}
           onClick={() => togglePanel("fill")}
           className={cn(
             "grid h-[22px] w-[22px] place-items-center rounded-[999px] border border-[#D7DAE3] hover:bg-[#F8F8FA]",
@@ -251,19 +249,19 @@ export function ShapeToolbar({
         {openPanel === "fill" ? (
           <Panel className="w-[220px] space-y-3 p-3">
             <ToggleRow
-              label={t("slideEditor.common.fill")}
+              label={"Màu nền"}
               enabled={fillEnabled}
               onToggle={() => setFillEnabled(!fillEnabled)}
             />
             {fillEnabled ? (
               <>
                 <ColorField
-                  label={t("slideEditor.layout.fillColor")}
+                  label={"Màu nền"}
                   color={fill.color}
                   onCommit={(color) => update({ fill: { ...fill, color } })}
                 />
                 <SliderField
-                  label={t("slideEditor.layout.fillOpacity")}
+                  label={"Độ mờ màu nền"}
                   value={fill.opacity ?? 1}
                   min={0}
                   max={1}
@@ -281,7 +279,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title={t("slideEditor.layout.shapeBorder")}
+          title={"Viền hình"}
           pressed={openPanel === "stroke" || strokeEnabled}
           onClick={() => togglePanel("stroke")}
         >
@@ -290,19 +288,19 @@ export function ShapeToolbar({
         {openPanel === "stroke" ? (
           <Panel className="w-[220px] space-y-3 p-3">
             <ToggleRow
-              label={t("slideEditor.common.stroke")}
+              label={"Đường viền"}
               enabled={strokeEnabled}
               onToggle={() => setStrokeEnabled(!strokeEnabled)}
             />
             {strokeEnabled ? (
               <>
                 <ColorField
-                  label={t("slideEditor.layout.borderColor")}
+                  label={"Màu viền"}
                   color={stroke.color}
                   onCommit={(color) => update({ stroke: { ...stroke, color } })}
                 />
                 <SliderField
-                  label={t("slideEditor.layout.borderWidth")}
+                  label={"Độ rộng viền"}
                   value={stroke.width ?? DEFAULT_SHAPE_STROKE.width}
                   min={0}
                   max={16}
@@ -311,7 +309,7 @@ export function ShapeToolbar({
                   onCommit={(width) => update({ stroke: { ...stroke, width } })}
                 />
                 <SliderField
-                  label={t("slideEditor.layout.borderOpacity")}
+                  label={"Độ mờ viền"}
                   value={stroke.opacity ?? 1}
                   min={0}
                   max={1}
@@ -330,7 +328,7 @@ export function ShapeToolbar({
       {canRoundCorners ? (
         <div className="relative">
           <ToolbarButton
-            title={t("slideEditor.layout.borderRadius")}
+            title={"Bo góc"}
             pressed={openPanel === "radius"}
             onClick={() => togglePanel("radius")}
           >
@@ -339,7 +337,7 @@ export function ShapeToolbar({
           {openPanel === "radius" ? (
             <Panel className="w-[252px] space-y-3 p-3">
               <SliderField
-                label={t("slideEditor.layout.borderRadius")}
+                label={"Bo góc"}
                 value={radius}
                 min={0}
                 max={maxRadius}
@@ -371,7 +369,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title={t("slideEditor.layout.vectorPath")}
+          title={"Đường vector"}
           pressed={openPanel === "vector"}
           onClick={() => togglePanel("vector")}
         >
@@ -410,14 +408,14 @@ export function ShapeToolbar({
                     onClick={() => updateVector({ closed: !vectorClosed })}
                     className="flex w-full items-center justify-between rounded-md border border-[#EDEEEF] px-3 py-2 text-left text-xs text-[#4B5563] hover:bg-[#F8F8FA]"
                   >
-                    <span className="font-medium text-[#191919]">{t("slideEditor.layout.closedPath")}</span>
+                    <span className="font-medium text-[#191919]">{"Đường khép kín"}</span>
                     <span className="flex items-center gap-1 text-[var(--gslide-accent)]">
                       {vectorClosed ? (
                         <ToggleRight size={17} aria-hidden="true" />
                       ) : (
                         <ToggleLeft size={17} aria-hidden="true" />
                       )}
-                      {vectorClosed ? t("slideEditor.common.on") : t("slideEditor.common.off")}
+                      {vectorClosed ? "Bật" : "Tắt"}
                     </span>
                   </button>
 
@@ -438,7 +436,7 @@ export function ShapeToolbar({
                               "bg-white text-[var(--gslide-accent)] shadow-sm",
                           )}
                         >
-                          {mode === "none" ? t("slideEditor.layout.straight") : mode}
+                          {mode === "none" ? "Thẳng" : mode}
                         </button>
                       ))}
                     </div>
@@ -447,7 +445,7 @@ export function ShapeToolbar({
                   {vectorCurveMode === "smooth" ? (
                     <div className="space-y-3">
                       <SliderField
-                        label={t("slideEditor.layout.tension")}
+                        label={"Độ căng"}
                         value={vectorTension}
                         min={0}
                         max={1}
@@ -456,7 +454,7 @@ export function ShapeToolbar({
                         onCommit={(tension) => updateCurve({ tension })}
                       />
                       <SliderField
-                        label={t("slideEditor.layout.smoothness")}
+                        label={"Độ mượt"}
                         value={vectorSegments}
                         min={1}
                         max={96}
@@ -479,7 +477,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title={t("slideEditor.layout.shapeShadow")}
+          title={"Đổ bóng hình"}
           pressed={openPanel === "shadow" || shadowEnabled}
           onClick={() => togglePanel("shadow")}
         >
@@ -498,7 +496,7 @@ export function ShapeToolbar({
 
       <div className="relative">
         <ToolbarButton
-          title={t("slideEditor.layout.shapeOpacity")}
+          title={"Độ mờ hình"}
           pressed={openPanel === "opacity"}
           onClick={() => togglePanel("opacity")}
         >
@@ -507,7 +505,7 @@ export function ShapeToolbar({
         {openPanel === "opacity" ? (
           <Panel className="left-auto right-0 w-[220px] translate-x-0 p-3">
             <SliderField
-              label={t("slideEditor.layout.shapeOpacity")}
+              label={"Độ mờ hình"}
               value={element.opacity ?? 1}
               min={0}
               max={1}
@@ -591,7 +589,6 @@ export function ToggleRow({
   label: string;
   onToggle: () => void;
 }) {
-  const t = useT();
   return (
     <button
       type="button"
@@ -606,7 +603,7 @@ export function ToggleRow({
         ) : (
           <ToggleLeft size={17} aria-hidden="true" />
         )}
-        {enabled ? t("slideEditor.common.on") : t("slideEditor.common.off")}
+        {enabled ? "Bật" : "Tắt"}
       </span>
     </button>
   );
@@ -625,17 +622,16 @@ export function ShadowPanel({
   shadow: ShadowValue;
   onChange: (changes: Partial<ShadowValue>) => void;
 }) {
-  const t = useT();
   return (
     <Panel className="left-auto right-0 w-[282px] translate-x-0 space-y-4 p-4">
       {onToggle ? (
-        <ToggleRow label={t("slideEditor.common.shadow")} enabled={enabled} onToggle={onToggle} />
+        <ToggleRow label={"Đổ bóng"} enabled={enabled} onToggle={onToggle} />
       ) : null}
 
       {enabled ? (
         <>
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-[#4B5563]">{t("slideEditor.common.position")}</div>
+            <div className="text-[12px] font-medium text-[#4B5563]">{"Vị trí"}</div>
             <div className="grid grid-cols-2 gap-2">
               <NumberField
                 label="X"
@@ -659,9 +655,9 @@ export function ShadowPanel({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-[#4B5563]">{t("slideEditor.common.blur")}</div>
+            <div className="text-[12px] font-medium text-[#4B5563]">{"Độ nhòe"}</div>
             <NumberField
-              label={t("slideEditor.common.amount")}
+              label={"Mức độ"}
               value={shadow.blur ?? fallback.blur}
               min={0}
               max={100}
@@ -671,16 +667,16 @@ export function ShadowPanel({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-[#4B5563]">{t("slideEditor.common.color")}</div>
+            <div className="text-[12px] font-medium text-[#4B5563]">{"Màu"}</div>
             <ColorField
-              label={t("slideEditor.common.color")}
+              label={"Màu"}
               color={shadow.color ?? fallback.color}
               onCommit={(color) => onChange({ color })}
             />
           </div>
 
           <SliderField
-            label={t("slideEditor.common.opacity")}
+            label={"Độ mờ"}
             value={shadow.opacity ?? fallback.opacity}
             min={0}
             max={1}

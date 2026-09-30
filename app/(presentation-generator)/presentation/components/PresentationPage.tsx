@@ -57,7 +57,6 @@ import {
   type TemplateV2SurfaceSelectedDetail,
 } from "@/components/slide-editor/events/events";
 import { isEditableTarget } from "@/components/slide-editor/model/core";
-import { useT } from "@/i18n/provider";
 
 function hasTemplateV2Layouts(layout: unknown): boolean {
   if (!layout || typeof layout !== "object") return false;
@@ -106,13 +105,12 @@ const NAVIGATION_SCROLL_WINDOW_MS = 800;
 const PresentationPage: React.FC<PresentationPageProps> = ({
   presentation_id,
 }) => {
-  const t = useT();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   // State management
   const [loading, setLoading] = useState(true);
   const [loadingState, setLoadingState] =
-    useState<LoadingState>(() => ({ isLoading: true, message: t("presentation.status.loading"), showProgress: false, duration: 0, extra_info: "" }));
+    useState<LoadingState>(() => ({ isLoading: true, message: "Đang tải bài thuyết trình", showProgress: false, duration: 0, extra_info: "" }));
   const [selectedSlide, setSelectedSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChatSending, setIsChatSending] = useState(false);
@@ -333,9 +331,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     }
 
     setLoadingState(stream
-      ? { isLoading: true, message: t("presentation.status.creating"), showProgress: true, duration: 90, extra_info: t("presentation.status.creatingHint") }
-      : { isLoading: true, message: t("presentation.status.loading"), showProgress: false, duration: 0, extra_info: "" });
-  }, [loading, stream, t]);
+      ? { isLoading: true, message: "Đang tạo bài thuyết trình của bạn", showProgress: true, duration: 90, extra_info: "Quá trình này có thể mất vài phút tùy theo số lượng slide." }
+      : { isLoading: true, message: "Đang tải bài thuyết trình", showProgress: false, duration: 0, extra_info: "" });
+  }, [loading, stream]);
 
   useEffect(() => {
     if (isStreaming && slidesLength > 0) {
@@ -795,9 +793,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           role="alert"
         >
           <AlertCircle className="w-16 h-16 mb-4 text-red-500" />
-          <h2 className="text-xl font-semibold mb-2">{t("presentation.error.title")}</h2>
+          <h2 className="text-xl font-semibold mb-2">{"Đã xảy ra lỗi"}</h2>
           <p className="text-center mb-4">
-            {t("presentation.error.loadDescription")}
+            {"Không thể tải bài thuyết trình. Vui lòng thử lại."}
           </p>
           <div className="flex gap-2 justify-center items-center">
             <Button
@@ -805,14 +803,14 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 window.location.reload();
               }}
             >
-              {t("presentation.error.refresh")}
+              {"Tải lại trang"}
             </Button>
             <Button
               onClick={() => {
                 router.push("/upload");
               }}
             >
-              {t("presentation.error.goToUpload")}
+              {"Đến trang tải lên"}
             </Button>
           </div>
         </div>
@@ -863,10 +861,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                   className="h-4 w-4 text-[#1D6FE8]"
                   aria-hidden="true"
                 />
-                <span>{t("presentation.page.navigateWith")}</span>
+                <span>{"Điều hướng bằng"}</span>
                 <span
                   className="flex items-center gap-1"
-                  aria-label={t("presentation.page.arrowKeys")}
+                  aria-label={"các phím mũi tên"}
                 >
                   {NAVIGATION_HINT_KEYS.map((key) => (
                     <kbd
@@ -877,10 +875,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                     </kbd>
                   ))}
                 </span>
-                <span>{t("presentation.page.orThumbnails")}</span>
+                <span>{"hoặc hình thu nhỏ bên trái"}</span>
                 <button
                   type="button"
-                  aria-label={t("presentation.page.dismissHint")}
+                  aria-label={"Đóng hướng dẫn điều hướng"}
                   onClick={dismissNavigationHint}
                   className="pointer-events-auto ml-1 flex h-7 w-7 items-center justify-center rounded-full text-[#667085] transition hover:bg-[#EFF6FF] hover:text-[#101323] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]"
                 >
@@ -940,12 +938,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             className="fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-white/70 px-4 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(29,111,232,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--gslide-accent-hover)] bg-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:hidden"
           >
             <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
-            {t("presentation.page.assistant")}
+            {"Trợ lý AI"}
           </button>
 
           <button
             type="button"
-            aria-label={t("presentation.page.closeAssistant")}
+            aria-label={"Đóng Trợ lý AI"}
             onClick={closeMobileAssistant}
             className={cn(
               "inset-0 z-[60] bg-black/35 xl:hidden",
@@ -956,7 +954,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           <div
             id="presentation-mobile-assistant"
             role={isMobileAssistantOpen ? "dialog" : undefined}
-            aria-label={isMobileAssistantOpen ? t("presentation.page.assistant") : undefined}
+            aria-label={isMobileAssistantOpen ? "Trợ lý AI" : undefined}
             aria-modal={isMobileAssistantOpen ? true : undefined}
             className={cn(
               "h-screen w-[calc(100vw-16px)] max-w-[375px] shrink-0 flex-col bg-white shadow-[-12px_0_32px_rgba(16,24,40,0.18)] transition-[width] duration-200 xl:relative xl:z-auto xl:h-full xl:max-w-none xl:self-start xl:border-l xl:border-[#EDEEEF] xl:shadow-none",
@@ -969,7 +967,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             {isRightPanelOpen ? (
               <button
                 type="button"
-                aria-label={t("presentation.page.closeTools")}
+                aria-label={"Đóng bảng công cụ"}
                 onClick={() => setIsRightPanelOpen(false)}
                 className="absolute -left-[10px] top-1/2 z-[80] hidden h-[36px] w-[16px] -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#BFDBFE] bg-[#FEFEFF] text-[#1558C0] shadow-[0_10px_26px_rgba(52,48,96,0.10)] transition-[border-color,box-shadow,color] hover:border-[#BFDBFE] hover:text-[#1558C0] hover:shadow-[0_12px_30px_rgba(52,48,96,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:flex"
               >
@@ -983,12 +981,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#EDEEEF] px-4 xl:hidden">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#101323]">
                 <Sparkles className="h-4 w-4 text-[#1D6FE8]" aria-hidden="true" />
-                {t("presentation.page.assistant")}
+                {"Trợ lý AI"}
               </div>
               <button
                 ref={mobileAssistantCloseRef}
                 type="button"
-                aria-label={t("presentation.page.closeAssistant")}
+                aria-label={"Đóng Trợ lý AI"}
                 onClick={closeMobileAssistant}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-[#667085] transition hover:bg-[#F6F6F9] hover:text-[#101323] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]"
               >

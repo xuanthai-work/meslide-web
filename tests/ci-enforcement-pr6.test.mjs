@@ -17,7 +17,6 @@ test("lint ceiling ratchets remaining warnings and only stays or goes down", asy
 const WEB_CI_COMMANDS = [
   "npm ci",
   "npm test",
-  "npm run check:i18n-copy",
   "npm run typecheck",
   "npm run lint",
   "npm run deadcode",

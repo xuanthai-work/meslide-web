@@ -37,7 +37,6 @@ import {
   preventInvalidNumberInput,
   sanitizeNumericInput,
 } from "@/components/slide-editor/toolbar/numericInput";
-import { useT } from "@/i18n/provider";
 
 type RawRecord = Record<string, unknown>;
 type LayoutElementType =
@@ -149,7 +148,6 @@ function GapControl({
   element: TemplateV2LayoutElement;
   onChange: (changes: RawRecord) => void;
 }) {
-  const t = useT();
   const value = readGapValue(element);
   const numericInputOptions = { allowDecimal: true, min: 0 };
   const commit = (nextValue: number) => {
@@ -159,12 +157,12 @@ function GapControl({
 
   return (
     <label className="flex  items-center gap-2.5 px-1 text-[14px] font-medium font-manrope text-[#191919]">
-      <span>{t("slideEditor.layout.gap")}</span>
+      <span>{"Khoảng cách"}</span>
       <span className="flex gap-2  items-center rounded-md bg-white">
         <input
           type="text"
           inputMode={numericInputMode(numericInputOptions)}
-          aria-label={t("slideEditor.layout.gap")}
+          aria-label={"Khoảng cách"}
           value={formatGapValue(value)}
           onKeyDown={(event) => {
             if (preventInvalidNumberInput(event, numericInputOptions)) return;
@@ -186,8 +184,8 @@ function GapControl({
         <span className="flex   flex-col items-center justify-center">
           <button
             type="button"
-            title={t("slideEditor.layout.increaseGap")}
-            aria-label={t("slideEditor.layout.increaseGap")}
+            title={"Tăng khoảng cách"}
+            aria-label={"Tăng khoảng cách"}
             onClick={() => commit(value + 1)}
             className="grid  place-items-center rounded-sm text-[#05070A] hover:bg-[#F8F8FA]"
           >
@@ -195,8 +193,8 @@ function GapControl({
           </button>
           <button
             type="button"
-            title={t("slideEditor.layout.decreaseGap")}
-            aria-label={t("slideEditor.layout.decreaseGap")}
+            title={"Giảm khoảng cách"}
+            aria-label={"Giảm khoảng cách"}
             onClick={() => commit(value - 1)}
             className="grid   place-items-center rounded-sm text-[#05070A] hover:bg-[#F8F8FA]"
           >
@@ -214,7 +212,6 @@ function ItemsControl({
   onToggle,
   openPanel,
 }: LayoutControlsProps) {
-  const t = useT();
   const { canAdd, canRemove, children } = layoutItemStats(element);
   const addItem = () => {
     if (!canAdd) return;
@@ -233,8 +230,8 @@ function ItemsControl({
     <div className="relative">
       <button
         type="button"
-        title={t("slideEditor.layout.items")}
-        aria-label={t("slideEditor.layout.items")}
+        title={"Mục"}
+        aria-label={"Mục"}
         aria-expanded={open}
         onClick={() => onToggle("items")}
         className={cn(
@@ -257,7 +254,7 @@ function ItemsControl({
             )}
           >
             <Plus size={16} strokeWidth={1} aria-hidden />
-            <span>{t("slideEditor.layout.addItem")}</span>
+            <span>{"Thêm mục"}</span>
           </button>
           <div className="h-px my-1 bg-[#E7E8EC]" aria-hidden />
           <button
@@ -271,7 +268,7 @@ function ItemsControl({
             )}
           >
             <Trash2 size={16} strokeWidth={1} aria-hidden />
-            <span>{t("slideEditor.layout.lastItem")}</span>
+            <span>{"Mục cuối"}</span>
             <span className="ml-auto text-[11px] text-[#8A8D96]">
               {children.length}
             </span>
@@ -310,7 +307,6 @@ export function TemplateV2LayoutToolbar({
   componentActions,
   ungroupAction: flowUngroupAction,
 }: TemplateV2LayoutToolbarProps) {
-  const t = useT();
   const [openPanel, setOpenPanel] = useState<PanelId>(null);
   const layoutType = element ? normalizedLayoutType(element) : null;
   const hasFlowControls = Boolean(
@@ -363,10 +359,10 @@ export function TemplateV2LayoutToolbar({
           <>
             <div
               className="inline-flex h-7 items-center gap-1 rounded-[6px] px-2 hover:bg-[var(--gslide-accent-soft)] cursor-pointer text-[14px] font-manrope font-medium leading-4 text-[#191919]"
-              title={t("slideEditor.common.ungroup")}
+              title={"Bỏ nhóm"}
               onClick={ungroupAction.onUngroup}
             >
-              <span>{t("slideEditor.common.ungroup")}</span>
+              <span>{"Bỏ nhóm"}</span>
             </div>
             <ToolbarDivider />
           </>
@@ -458,7 +454,6 @@ function normalizedLayoutType(element: TemplateV2ToolbarElement) {
   if (isTemplateV2LayoutElement(element)) return element.type;
   return null;
 }
-
 
 export function isTemplateV2LayoutElement(
   element: RawRecord | TemplateV2ToolbarElement | null | undefined,

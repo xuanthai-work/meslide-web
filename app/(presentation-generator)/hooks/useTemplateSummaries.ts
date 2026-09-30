@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useT } from "@/i18n/provider";
 import TemplateService, { type TemplateListItem } from "../services/api/template";
 import {
   filterTemplatesWithLayouts,
@@ -10,7 +9,6 @@ import {
 } from "../services/api/template-list";
 
 export function useTemplateSummaries() {
-  const t = useT();
   const [defaultTemplates, setDefaultTemplates] = useState<TemplateListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,9 +41,9 @@ export function useTemplateSummaries() {
         if (!cancelled) {
           const message = loadError instanceof Error
             ? loadError.message
-            : t("templates.error.serviceUnavailable");
+            : "Không thể kết nối đến dịch vụ mẫu. Vui lòng thử lại.";
           setError(message);
-          toast.error(t("templates.error.loadTitle"), { description: message });
+          toast.error("Không thể tải mẫu", { description: message });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -54,7 +52,7 @@ export function useTemplateSummaries() {
 
     void loadTemplates();
     return () => { cancelled = true; };
-  }, [retryToken, t]);
+  }, [retryToken]);
 
   return { defaultTemplates, loading, error, retry };
 }

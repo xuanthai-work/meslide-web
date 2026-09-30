@@ -71,7 +71,6 @@ import {
   type UnknownRecord,
 } from "./editor/templatePreviewUtils";
 import { TemplateV2PromptOverlay } from "../../_shared/TemplateV2PromptOverlay";
-import { useT } from "@/i18n/provider";
 
 type GroupLayoutPreviewProps = {
   useKonvaTemplateV2Preview?: boolean;
@@ -136,7 +135,6 @@ function blankLayoutWithFullSlideRectangle(layoutId: string): TemplateV2Layout {
 const GroupLayoutPreview = ({
   useKonvaTemplateV2Preview = true,
 }: GroupLayoutPreviewProps) => {
-  const t = useT();
   void useKonvaTemplateV2Preview;
 
   const searchParams = useSearchParams();
@@ -158,8 +156,8 @@ const GroupLayoutPreview = ({
   const [activePanel, setActivePanel] = useState<PanelMode>("schema");
   const [density, setDensity] = useState<Density>("");
   const [openFieldId, setOpenFieldId] = useState("");
-  const [templateNameDraft, setTemplateNameDraft] = useState(t("templateStudio.editor.templateFallback"));
-  const [savedTemplateName, setSavedTemplateName] = useState(t("templateStudio.editor.templateFallback"));
+  const [templateNameDraft, setTemplateNameDraft] = useState("Mẫu");
+  const [savedTemplateName, setSavedTemplateName] = useState("Mẫu");
   const [historyCommand, setHistoryCommand] = useState<HistoryCommand | null>(
     null,
   );
@@ -215,10 +213,10 @@ const GroupLayoutPreview = ({
   }, [layouts, templateId]);
 
   useEffect(() => {
-    const nextName = template?.name?.trim() || t("templateStudio.editor.templateFallback");
+    const nextName = template?.name?.trim() || "Mẫu";
     setTemplateNameDraft(nextName);
     setSavedTemplateName(nextName);
-  }, [t, template?.name, templateId]);
+  }, [template?.name, templateId]);
 
   const canEditTemplate = Boolean(template && !template.is_default);
   const activeLayout = editableLayouts[activeLayoutIndex] ?? null;
@@ -271,11 +269,11 @@ const GroupLayoutPreview = ({
 
     try {
       await navigator.clipboard.writeText(layoutToken);
-      notify.success(t("templateStudio.toast.copied"), t("templateStudio.toast.layoutIdCopied"));
+      notify.success("Đã sao chép", "Đã sao chép ID bố cục mẫu.");
     } catch {
-      notify.error(t("templateStudio.toast.copyFailed"), layoutToken);
+      notify.error("Sao chép thất bại", layoutToken);
     }
-  }, [editableLayouts, t, templateId]);
+  }, [editableLayouts, templateId]);
 
   const copyActiveLayoutId = useCallback(async () => {
     await copyLayoutId(activeLayoutIndex);
@@ -284,14 +282,14 @@ const GroupLayoutPreview = ({
   const copyTemplateId = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(templateId);
-      notify.success(t("templateStudio.toast.copied"), t("templateStudio.toast.templateIdCopied"));
+      notify.success("Đã sao chép", "Đã sao chép ID mẫu.");
     } catch (copyError) {
       notify.error(
-        t("templateStudio.toast.copyFailed"),
+        "Sao chép thất bại",
         copyError instanceof Error ? copyError.message : templateId,
       );
     }
-  }, [t, templateId]);
+  }, [templateId]);
 
   const commitTemplateName = useCallback(async () => {
     if (!templateId || !template) return;
@@ -300,7 +298,7 @@ const GroupLayoutPreview = ({
       return;
     }
 
-    const nextName = templateNameDraft.trim() || t("templateStudio.editor.untitled");
+    const nextName = templateNameDraft.trim() || "Mẫu không tiêu đề";
     if (nextName !== templateNameDraft) {
       setTemplateNameDraft(nextName);
     }
@@ -313,7 +311,6 @@ const GroupLayoutPreview = ({
     template,
     templateId,
     templateNameDraft,
-    t,
   ]);
 
   const cancelTemplateNameEdit = useCallback(() => {
@@ -367,8 +364,8 @@ const GroupLayoutPreview = ({
     );
     if (!hasEditableContent) {
       notify.warning(
-        t("templateStudio.editor.noEditableTitle"),
-        t("templateStudio.editor.noEditableDescription"),
+        "Không có nội dung có thể chỉnh sửa",
+        "Đánh dấu một trường schema là không trang trí trước khi kiểm thử mật độ nội dung.",
       );
       return;
     }
@@ -378,7 +375,6 @@ const GroupLayoutPreview = ({
     activeLayout,
     canEditTemplate,
     schemaFields,
-    t,
   ]);
 
   const resetContentDensity = useCallback(() => {
@@ -529,8 +525,8 @@ const GroupLayoutPreview = ({
       );
       if (targetIndex < 0) {
         notify.error(
-          t("templateStudio.editor.blankUnavailableTitle"),
-          t("templateStudio.editor.blankUnavailableDescription"),
+          "Slide không khả dụng",
+          "Slide trống không còn tồn tại. Hãy thêm slide mới rồi thử lại.",
         );
         setPromptLayoutId(null);
         return false;
@@ -569,16 +565,16 @@ const GroupLayoutPreview = ({
         setPromptLayoutId(null);
         setHasUnsavedChanges(true);
         notify.success(
-          t("templateStudio.editor.slideCreated"),
-          t("templateStudio.editor.slideCreatedDescription", { number: targetIndex + 1 }),
+          "Đã tạo slide",
+          `Đã tạo slide ${(targetIndex + 1)}. Hãy lưu để giữ lại thay đổi.`,
         );
         return true;
       } catch (generationError) {
         notify.error(
-          t("templateStudio.editor.createSlideFailed"),
+          "Không thể tạo slide",
           generationError instanceof Error
             ? generationError.message
-            : t("templateStudio.editor.createSlideFallback"),
+            : "Đã xảy ra lỗi khi tạo slide.",
         );
         return false;
       } finally {
@@ -590,7 +586,6 @@ const GroupLayoutPreview = ({
       isPromptGenerating,
       promptLayoutId,
       templateId,
-      t,
       updateEditableLayouts,
     ],
   );
@@ -624,8 +619,8 @@ const GroupLayoutPreview = ({
     if (!canEditTemplate) return;
     if (editableLayouts.length <= 1) {
       notify.warning(
-        t("templateStudio.editor.cannotDelete"),
-        t("templateStudio.editor.cannotDeleteDescription"),
+        "Không thể xóa slide",
+        "Mẫu phải có ít nhất một bố cục.",
       );
       return;
     }
@@ -644,7 +639,6 @@ const GroupLayoutPreview = ({
     canEditTemplate,
     editableLayouts.length,
     resetContentDensity,
-    t,
     updateEditableLayouts,
   ]);
 
@@ -669,15 +663,15 @@ const GroupLayoutPreview = ({
 
       updateActiveLayout(normalizeBackendAssetUrls(createdLayout.layout));
       notify.success(
-        t("templateStudio.editor.reconstructed"),
-        t("templateStudio.editor.reconstructedDescription", { number: activeLayoutIndex + 1 }),
+        "Đã tạo lại slide",
+        `Đã tạo lại slide ${(activeLayoutIndex + 1)}. Hãy lưu để giữ lại thay đổi.`,
       );
     } catch (reconstructError) {
       notify.error(
-        t("templateStudio.editor.reconstructFailed"),
+        "Không thể tạo lại slide",
         reconstructError instanceof Error
           ? reconstructError.message
-          : t("templateStudio.editor.reconstructFallback"),
+          : "Đã xảy ra lỗi khi tạo lại slide.",
       );
     } finally {
       setIsReconstructing(false);
@@ -689,7 +683,6 @@ const GroupLayoutPreview = ({
     isReconstructing,
     resetContentDensity,
     templateId,
-    t,
     updateActiveLayout,
   ]);
 
@@ -702,8 +695,8 @@ const GroupLayoutPreview = ({
       if (!canEditTemplate || !activeLayout || typeof window === "undefined") {
         if (!activeLayout) {
           notify.warning(
-            t("templateStudio.editor.createLayoutFirst"),
-            t("templateStudio.editor.createLayoutFirstDescription"),
+            "Hãy tạo bố cục trước",
+            "Thêm một bố cục trống trước khi chèn nội dung.",
           );
         }
         return false;
@@ -728,8 +721,8 @@ const GroupLayoutPreview = ({
 
       if (!detail.handled) {
         notify.warning(
-          t("templateStudio.editor.insertUnavailable"),
-          t("templateStudio.editor.selectActiveLayout"),
+          "Không thể chèn",
+          "Chọn bố cục đang hoạt động rồi thử lại.",
         );
         return false;
       }
@@ -741,7 +734,6 @@ const GroupLayoutPreview = ({
       activeLayoutId,
       activeLayoutIndex,
       canEditTemplate,
-      t,
     ],
   );
 
@@ -810,8 +802,8 @@ const GroupLayoutPreview = ({
         recordArray(block.raw, "elements").length === 0
       ) {
         notify.warning(
-          t("templateStudio.editor.componentUnavailable"),
-          t("templateStudio.editor.componentUnavailableDescription"),
+          "Thành phần chưa dùng được",
+          "Chưa thể chèn thành phần đã gộp này.",
         );
         return;
       }
@@ -822,7 +814,7 @@ const GroupLayoutPreview = ({
         true,
       );
     },
-    [insertEditorContent, t],
+    [insertEditorContent],
   );
 
   const saveTemplate = useCallback(async () => {
@@ -847,7 +839,7 @@ const GroupLayoutPreview = ({
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
       layoutsToSave = editableLayoutsRef.current;
 
-      const nextTemplateName = templateNameDraft.trim() || t("templateStudio.editor.untitled");
+      const nextTemplateName = templateNameDraft.trim() || "Mẫu không tiêu đề";
       if (nextTemplateName !== templateNameDraft) {
         setTemplateNameDraft(nextTemplateName);
       }
@@ -864,15 +856,15 @@ const GroupLayoutPreview = ({
       setHasUnsavedChanges(false);
       setSavedTemplateName(nextTemplateName);
       notify.success(
-        t("templateStudio.toast.changesSaved"),
-        t("templateStudio.toast.jsonUpdated"),
+        "Đã lưu thay đổi",
+        "JSON mẫu đã được cập nhật.",
       );
     } catch (saveError) {
       notify.error(
-        t("templateStudio.toast.saveFailedTitle"),
+        "Không thể lưu mẫu",
         saveError instanceof Error
           ? saveError.message
-          : t("templateStudio.editor.saveFallback"),
+          : "Đã xảy ra lỗi khi lưu mẫu.",
       );
     } finally {
       setIsSaving(false);
@@ -882,7 +874,6 @@ const GroupLayoutPreview = ({
     template,
     templateId,
     templateNameDraft,
-    t,
   ]);
 
   const openDeleteTemplateDialog = useCallback(() => {
@@ -899,28 +890,28 @@ const GroupLayoutPreview = ({
       if (result.success) {
         setIsDeleteDialogOpen(false);
         notify.success(
-          t("templateStudio.toast.deleted"),
-          t("templateStudio.toast.deletedDescription"),
+          "Đã xóa mẫu",
+          "Mẫu đã được xóa thành công.",
         );
         router.push("/templates");
         return;
       }
 
       notify.error(
-        t("templateStudio.toast.deleteFailed"),
-        result.message || t("templateStudio.editor.deleteFallback"),
+        "Không thể xóa mẫu",
+        result.message || "Đã xảy ra lỗi khi xóa mẫu.",
       );
     } catch (deleteError) {
       notify.error(
-        t("templateStudio.toast.deleteFailed"),
+        "Không thể xóa mẫu",
         deleteError instanceof Error
           ? deleteError.message
-          : t("templateStudio.editor.deleteFallback"),
+          : "Đã xảy ra lỗi khi xóa mẫu.",
       );
     } finally {
       setIsDeletingTemplate(false);
     }
-  }, [isDeletingTemplate, router, t, template?.is_default, templateId]);
+  }, [isDeletingTemplate, router, template?.is_default, templateId]);
 
   if (!templateId) {
     return (
@@ -977,14 +968,14 @@ const GroupLayoutPreview = ({
             !activeLayout ||
             !activePreviewLayout ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 text-sm text-[#696969]">
-              <p>{t("templateStudio.editor.noLayouts")}</p>
+              <p>{"Mẫu này chưa có bố cục."}</p>
               {canEditTemplate ? (
                 <button
                   className="rounded-[8px] border border-[#BFDBFE] bg-white px-4 py-2 text-[13px] font-medium text-[#1D6FE8] transition-colors hover:bg-[#DBEAFE]"
                   onClick={createBlankLayout}
                   type="button"
                 >
-                  {t("templateStudio.editor.createBlankLayout")}
+                  {"Tạo bố cục trống"}
                 </button>
               ) : null}
             </div>

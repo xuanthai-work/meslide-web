@@ -8,12 +8,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { LLMConfig } from '@/types/llm_config';
 import { GSlideSplashLoader, GSLIDE_SPLASH_MIN_DURATION_MS } from '@/components/gslide';
-import { useT } from '@/i18n/provider';
 import { startPathnameWait } from '@/lib/wait-for-pathname';
 
 function ConfigurationLoadingScreen() {
-  const t = useT();
-  return <GSlideSplashLoader message={t('loading.configLoading')} />;
+  return <GSlideSplashLoader message={"Đang tải GSlide…"} />;
 }
 
 export function ConfigurationInitializer({ children }: { children: React.ReactNode }) {

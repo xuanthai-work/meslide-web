@@ -58,8 +58,6 @@ import {
 import type { RootState } from "@/store/store";
 import { normalizeBackendAssetUrls, resolveBackendAssetUrl } from "@/utils/api";
 import { setupImageUrlConverter } from "@/utils/image-url-converter";
-import { useI18n, useT } from "@/i18n/provider";
-import { formatFileSize } from "@/i18n/format";
 import { normalizeSearchText } from "@/utils/normalizeSearchText";
 
 import { loadPresentationFonts as loadFontAssets } from "../hooks/useFontLoad";
@@ -81,11 +79,7 @@ import {
   showTemplateV2ModelWarningIfNeeded,
 } from "./utils/templateModelWarning";
 
-
-
 type StudioStep = 1 | 2 | 3 | 4;
-
-
 
 const FONT_FALLBACK_OPTION_HEIGHT = 40;
 const FONT_FALLBACK_MAX_VISIBLE_ROWS = 7;
@@ -128,8 +122,7 @@ function UploadPanel({
   onRemove: () => void;
   onStart: () => void;
 }) {
-  const t = useT();
-  const { locale } = useI18n();
+
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dropInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -150,8 +143,8 @@ function UploadPanel({
   return (
     <main className="flex min-h-[100dvh] flex-col items-center bg-white">
       <GSlideStudioTitle
-        title={t("templateStudio.topbar.title")}
-        description={t("templateStudio.topbar.description")}
+        title={"Xưởng mẫu"}
+        description={"Tải lên tệp PPTX để trích xuất slide và chuyển thành mẫu có thể tái sử dụng khi tạo bài thuyết trình bằng AI."}
       />
 
       <section className="mt-8 w-full max-w-[640px] px-4 sm:mt-10 sm:max-w-[700px] 2xl:mt-12 2xl:max-w-[820px]">
@@ -164,7 +157,7 @@ function UploadPanel({
               className="flex h-[34px] 2xl:h-[42px] items-center gap-1.5 2xl:gap-2 rounded-[80px] bg-white px-3.5 2xl:px-4 text-[12px] 2xl:text-sm font-semibold text-black shadow-[0_0_4px_rgba(0,0,0,0.06)]"
             >
               <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[var(--gslide-accent)]" />
-              {t("templateStudio.upload.uploadPptx")}
+              {"Tải tệp PPTX lên"}
             </button>
             <input
               ref={inputRef}
@@ -205,12 +198,19 @@ function UploadPanel({
                       </p>
                       <p className="mt-2 2xl:mt-2.5 text-sm 2xl:text-base text-[#777985]">
                         {isProcessing ? (
-                          t("templateStudio.upload.processingFile")
+                          "Đang xử lý…"
                         ) : (
                           <>
-                            {formatFileSize(selectedFile.size, locale)}
+                            {(selectedFile.size / (1024 * 1024)).toLocaleString(
+                              "vi-VN",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}{" "}
+                            MB
                             <span className="px-2">•</span>
-                            {t("templateStudio.upload.ready")}
+                            {"Sẵn sàng"}
                           </>
                         )}
                       </p>
@@ -226,7 +226,7 @@ function UploadPanel({
                       }}
                       disabled={isProcessing}
                       className="w-[36px] h-[36px] 2xl:w-[44px] 2xl:h-[44px] top-1/2 z-20 flex items-center justify-center rounded-full border border-[#E8E8EF] bg-[#EFF0F4] text-black disabled:opacity-50"
-                      aria-label={t("templateStudio.upload.removeFileAria")}
+                      aria-label={"Xóa tệp"}
                     >
                       <X className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                     </button>
@@ -241,7 +241,7 @@ function UploadPanel({
                     draggable={false}
                   />
                   <p className="mt-3 2xl:mt-4 text-sm 2xl:text-base font-normal text-[#808080]">
-                    {t("templateStudio.upload.dropTitle")}
+                    {"Kéo thả tệp PPTX vào đây"}
                   </p>
                 </div>
               )}
@@ -253,7 +253,7 @@ function UploadPanel({
                 disabled={isProcessing}
                 className="h-9 gap-2 px-5 py-0 text-xs font-semibold"
               >
-                {isProcessing ? t("templateStudio.upload.processing") : t("templateStudio.upload.getStarted")}
+                {isProcessing ? "Đang xử lý" : "Bắt đầu"}
                 {isProcessing ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -264,7 +264,7 @@ function UploadPanel({
         </GSlideDropCard>
 
         <ul className="mx-auto mt-6 2xl:mt-8 flex max-w-[480px] 2xl:max-w-[600px] items-center justify-between gap-5 2xl:gap-8">
-          {[t("templateStudio.upload.realtime"), t("templateStudio.upload.maxSize"), t("templateStudio.upload.generationTime")].map((item) => (
+          {["Kiểm thử theo thời gian thực", "Tối đa 100 MB", "Tạo trong khoảng 5 phút"].map((item) => (
             <li key={item} className="flex items-center gap-2 2xl:gap-2.5">
               <span className="h-2.5 w-2.5 2xl:h-3 2xl:w-3 rounded-full bg-[#EBE9FE]" />
               <span className="text-[13px] 2xl:text-[15px] font-normal text-[#3A3A3A]">{item}</span>
@@ -279,7 +279,7 @@ function UploadPanel({
             i
           </span>
           <p>
-            {t("templateStudio.upload.modelHint")}
+            {"GSlide gửi từng slide dưới dạng ảnh chụp và tham chiếu HTML. Hãy dùng mô hình có khả năng xử lý hình ảnh để tạo bố cục chính xác; mô hình chỉ xử lý văn bản có thể cho kết quả kém hoặc thất bại."}
           </p>
         </div>
       </div>
@@ -346,7 +346,6 @@ function FontFallbackPicker({
   onLoadOptions: () => void;
   onChange: (option: GoogleFontOption) => void;
 }) {
-  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [scrollTop, setScrollTop] = useState(0);
@@ -424,12 +423,12 @@ function FontFallbackPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          aria-label={t("templateStudio.fonts.fallbackFor", { name: fontName })}
+          aria-label={`Phông chữ thay thế cho ${fontName}`}
           disabled={disabled}
           className="h-11 w-full justify-between rounded-lg border-[#DADDE6] bg-white px-3 text-sm font-medium text-[#282A32] shadow-none hover:border-[#B8BCC8] hover:bg-white"
         >
           <span className="min-w-0 truncate">
-            {selectedOption?.family ?? t("templateStudio.fonts.chooseFallback")}
+            {selectedOption?.family ?? "Chọn phông thay thế"}
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-[#61646F]" />
         </Button>
@@ -442,7 +441,7 @@ function FontFallbackPicker({
           <CommandInput
             value={query}
             onValueChange={setQuery}
-            placeholder={t("templateStudio.fonts.search")}
+            placeholder={"Tìm phông chữ"}
             className="text-sm"
           />
           <CommandList
@@ -453,7 +452,7 @@ function FontFallbackPicker({
           >
             {filteredOptions.length === 0 ? (
               <CommandEmpty>
-                {options.length === 0 ? t("templateStudio.fonts.loading") : t("templateStudio.fonts.empty")}
+                {options.length === 0 ? "Đang tải phông chữ…" : "Không tìm thấy phông chữ"}
               </CommandEmpty>
             ) : (
               <CommandGroup
@@ -518,13 +517,12 @@ function AnalyzePanel({
   onContinue: () => void;
   isAutoContinuing?: boolean;
 }) {
-  const t = useT();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [resolvingFont, setResolvingFont] = useState<FontItem | null>(null);
   const missingFonts = fontsData?.unavailable_fonts ?? [];
-  const fontChips = fontsData ? uniqueFontChips(fontsData, t("templateStudio.fonts.unknown")) : [];
+  const fontChips = fontsData ? uniqueFontChips(fontsData, "Phông chữ không xác định") : [];
   const missingFontsByKey = new Map(
-    missingFonts.map((font) => [chipLabel(font, t("templateStudio.fonts.unknown")).toLowerCase(), font]),
+    missingFonts.map((font) => [chipLabel(font, "Phông chữ không xác định").toLowerCase(), font]),
   );
 
   const uploadedFontNames = new Set(uploadedFonts.map((font) => font.fontName));
@@ -538,19 +536,19 @@ function AnalyzePanel({
     ? allFontsAvailable
       ? {
         tone: "success",
-        title: t("templateStudio.fonts.allAvailable"),
-        description: t("templateStudio.fonts.preparingPreview"),
+        title: "Tất cả phông chữ đều khả dụng",
+        description: "Đang tự động chuẩn bị bản xem trước slide.",
       }
       : allMissingFontsResolved
         ? {
           tone: "success",
-          title: t("templateStudio.fonts.resolved"),
-          description: t("templateStudio.fonts.resolvedDescription"),
+          title: "Đã xử lý phông chữ bị thiếu",
+          description: "Đã đính kèm mọi tệp phông chữ cần thiết. Hãy tiếp tục xem trước.",
         }
         : {
           tone: "warning",
-          title: t("templateStudio.fonts.attentionCount", { count: pendingMissingCount }),
-          description: t("templateStudio.fonts.uploadOrFallback"),
+          title: `${pendingMissingCount} phông chữ cần được xử lý`,
+          description: "Tải lên đúng tệp phông chữ hoặc giữ phông thay thế đã chọn trước khi tiếp tục.",
         }
     : null;
 
@@ -571,14 +569,11 @@ function AnalyzePanel({
   return (
     <main className="flex min-h-[100dvh] flex-col bg-white px-4 pb-28 sm:px-6 sm:pb-32 2xl:px-10 2xl:pb-36">
       <GSlideStudioTitle
-        title={t("templateStudio.topbar.title")}
-        description={t("templateStudio.topbar.description")}
+        title={"Xưởng mẫu"}
+        description={"Tải lên tệp PPTX để trích xuất slide và chuyển thành mẫu có thể tái sử dụng khi tạo bài thuyết trình bằng AI."}
         compact
       />
       <section className="mx-auto mt-8 w-full max-w-[600px] sm:mt-10 2xl:mt-12 2xl:max-w-[900px]">
-
-
-
 
         <div className="relative z-10 ml-8 2xl:ml-10 w-max rounded-t-[28px] 2xl:rounded-t-[32px] border border-b-0 border-[#EDEEF4] bg-white px-3 2xl:px-4 pb-2.5 2xl:pb-3 pt-2 2xl:pt-2.5">
           <button
@@ -590,7 +585,7 @@ function AnalyzePanel({
             className="flex h-[34px] 2xl:h-[42px] items-center gap-1.5 2xl:gap-2 rounded-[80px] bg-white px-3.5 2xl:px-4 text-[12px] 2xl:text-sm font-semibold text-black shadow-[0_0_4px_rgba(0,0,0,0.06)]"
           >
             <Upload className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[var(--gslide-accent)]" />
-            {t("templateStudio.fonts.uploadTitle")}
+            {"Tải phông chữ lên"}
           </button>
         </div>
 
@@ -638,7 +633,7 @@ function AnalyzePanel({
           <div className="flex flex-wrap gap-3 pt-2 min-h-[140px] ">
             {fontChips.length > 0 ? (
               fontChips.map((font, index) => {
-                const label = chipLabel(font, t("templateStudio.fonts.unknown"));
+                const label = chipLabel(font, "Phông chữ không xác định");
                 const missingFont = missingFontsByKey.get(label.toLowerCase());
                 const isMissing = Boolean(missingFont);
                 const isUploaded = missingFont
@@ -676,7 +671,7 @@ function AnalyzePanel({
               })
             ) : (
               <div className="col-span-full flex min-h-[140px] items-center justify-center rounded-xl border border-[#E8EAF0] bg-white text-sm font-medium text-[#686C78]">
-                {t("templateStudio.fonts.noDetected")}
+                {"Không phát hiện phông chữ nào"}
               </div>
             )}
           </div>
@@ -690,11 +685,11 @@ function AnalyzePanel({
               {isUploading || isAutoContinuing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {isAutoContinuing ? t("templateStudio.fonts.preparing") : t("templateStudio.fonts.creating")}
+                  {isAutoContinuing ? "Đang chuẩn bị…" : "Đang tạo…"}
                 </>
               ) : (
                 <>
-                  {t("templateStudio.fonts.continue")}
+                  {"Tiếp tục"}
                   <ChevronRight className="h-4 w-4" />
                 </>
               )}
@@ -708,7 +703,7 @@ function AnalyzePanel({
               <button
                 type="button"
                 onClick={() => setResolvingFont(null)}
-                aria-label={t("templateStudio.preview.close")}
+                aria-label={"Đóng"}
                 className="absolute -right-14 top-0 flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#20222B] shadow-sm"
               >
                 <X className="h-6 w-6" />
@@ -717,10 +712,10 @@ function AnalyzePanel({
               <div className="flex items-center justify-between gap-4 border-b border-[#EEF0F5] px-5 py-4">
                 <div className="min-w-0">
                   <h3 className=" text-lg font-semibold text-[#191919]">
-                    {t("templateStudio.fonts.resolveTitle")}
+                    {"Xử lý phông chữ bị thiếu"}
                   </h3>
                   <p className="mt-1 text-xs text-[#808080]">
-                    {t("templateStudio.fonts.missingDescription", { name: resolvingFontName })}
+                    {`Đang thiếu phông chữ ${resolvingFontName}.`}
                   </p>
                 </div>
                 <button
@@ -728,14 +723,14 @@ function AnalyzePanel({
                   onClick={() => setResolvingFont(null)}
                   className="h-9 rounded-full px-5 text-sm font-medium text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors"
                 >
-                  {t("templateStudio.modal.save")}
+                  {"Lưu"}
                 </button>
               </div>
 
               <div className="space-y-4 px-5 py-4">
                 <div>
                   <p className="mb-2 text-xs font-semibold text-[#30323A]">
-                    {t("templateStudio.fonts.uploadOriginal")}
+                    {"Tải tệp phông chữ gốc lên"}
                   </p>
                   <input
                     ref={(node) => {
@@ -759,19 +754,19 @@ function AnalyzePanel({
                         <Upload className="h-4 w-4" />
                       )}
                     </span>
-                    {resolvingFontUploaded ? t("templateStudio.fonts.uploaded") : t("templateStudio.fonts.uploadFile")}
+                    {resolvingFontUploaded ? "Đã tải tệp phông chữ lên" : "Tải lên .ttf / .otf"}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
                   <span className="h-px bg-[#EEF0F5]" />
-                  <span className="text-xs font-medium text-[#686C78]">{t("templateStudio.fonts.or")}</span>
+                  <span className="text-xs font-medium text-[#686C78]">{"hoặc"}</span>
                   <span className="h-px bg-[#EEF0F5]" />
                 </div>
 
                 <div>
                   <p className="mb-2 text-xs font-semibold text-[#30323A]">
-                    {t("templateStudio.fonts.fallback")}
+                    {"Phông chữ thay thế"}
                   </p>
                   <FontFallbackPicker
                     fontName={resolvingFontName}
@@ -797,7 +792,7 @@ function AnalyzePanel({
             i
           </span>
           <p>
-            {t("templateStudio.fonts.exactHint")}
+            {"Tệp phông chữ chính xác giúp giữ nguyên kiểu chữ và khoảng cách. Phông thay thế có thể làm thay đổi nhẹ bố cục và cách xuống dòng."}
           </p>
         </div>
       </div>
@@ -910,14 +905,13 @@ function KonvaLayoutSlide({
 }
 
 function GeneratingSlidesOverlay() {
-  const t = useT();
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center sm:bottom-8">
       <span className="relative z-20 flex items-center overflow-hidden rounded-[50px] bg-white px-4 py-2.5 text-sm font-medium text-[#666666] shadow-[0_2px_12px_rgba(16,24,40,0.08)]">
         <span aria-hidden className="generating-slides-background absolute" />
         <span className="relative z-10 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[#9034EA]" />
-          {t("templateStudio.preview.updating")}
+          {"Đang cập nhật slide…"}
         </span>
       </span>
     </div>
@@ -974,7 +968,6 @@ function ThumbnailStrip({
   onSelect: (index: number) => void;
   bottomOffset?: string;
 }) {
-  const t = useT();
   const count = slides?.length ?? urls?.length ?? 0;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -1043,7 +1036,7 @@ function ThumbnailStrip({
         <button
           type="button"
           onClick={() => scrollThumbnails(-1)}
-          aria-label={t("templateStudio.preview.scrollLeft")}
+          aria-label={"Cuộn hình thu nhỏ sang trái"}
           className={`absolute left-0 top-1/2 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E6E7ED] bg-white/95 text-black shadow-[0_2px_10px_rgba(16,24,40,0.14)] transition sm:h-9 sm:w-9 ${canScrollLeft ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1089,7 +1082,7 @@ function ThumbnailStrip({
         <button
           type="button"
           onClick={() => scrollThumbnails(1)}
-          aria-label={t("templateStudio.preview.scrollRight")}
+          aria-label={"Cuộn hình thu nhỏ sang phải"}
           className={`absolute right-0 top-1/2 z-10 flex h-8 w-8 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E6E7ED] bg-white/95 text-black shadow-[0_2px_10px_rgba(16,24,40,0.14)] transition sm:h-9 sm:w-9 ${canScrollRight ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
           <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1114,7 +1107,6 @@ function ReviewSlideCanvas({
   fonts?: Record<string, string>;
   isGenerating?: boolean;
 }) {
-  const t = useT();
   if (hasRenderableKonvaLayout(slide)) {
     return (
       <KonvaLayoutSlide
@@ -1149,7 +1141,7 @@ function ReviewSlideCanvas({
   return (
     <ResponsiveSlideViewport className="border border-[#E8E8EF] bg-[#F7F7FA]">
       <div className="flex h-full w-full items-center justify-center text-sm text-[#777985] 2xl:text-base">
-        {slide.processing ? t("templateStudio.preview.generating") : t("templateStudio.preview.unavailable")}
+        {slide.processing ? "Đang tạo slide…" : "Slide không khả dụng"}
       </div>
     </ResponsiveSlideViewport>
   );
@@ -1184,7 +1176,6 @@ function PreviewPanel({
   selectedIndex: number;
   onSelect: (index: number) => void;
 }) {
-  const t = useT();
   const selectedUrl = previewUrls[selectedIndex] ?? previewUrls[0];
 
   return (
@@ -1204,7 +1195,7 @@ function PreviewPanel({
             bottomReserve={176}
           >
             <div className="flex h-full w-full items-center justify-center text-sm text-[#777985] 2xl:text-base">
-              {t("templateStudio.preview.unavailable")}
+              {"Slide không khả dụng"}
             </div>
           </ResponsiveSlideViewport>
         )}
@@ -1234,7 +1225,6 @@ function ReviewPanel({
   enableEditing?: boolean;
   isGenerating?: boolean;
 }) {
-  const t = useT();
   const selectedSlide = slides[selectedIndex] ?? slides[0];
   const isReady =
     Boolean(selectedSlide?.processed && !selectedSlide.processing && selectedSlide.v2Layout) ||
@@ -1263,7 +1253,7 @@ function ReviewPanel({
                     disabled={!selectedSlide || selectedSlide.processing}
                     className="h-8 rounded-[4px] px-2.5 text-[12px] font-medium text-black transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:px-3 2xl:text-sm"
                   >
-                    {t("templateStudio.preview.reconstruct")}
+                    {"Tạo lại"}
                   </button>
                   <span className="h-6 w-px bg-[#E8E8EE] 2xl:h-7" />
                   <button
@@ -1271,7 +1261,7 @@ function ReviewPanel({
                     onClick={handleDelete}
                     disabled={!isReady}
                     className="flex h-8 w-8 items-center justify-center rounded-[4px] text-black transition hover:bg-[var(--gslide-bg)] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-9 2xl:w-9"
-                    aria-label={t("templateStudio.preview.deleteSlide")}
+                    aria-label={"Xóa slide"}
                   >
                     <Trash2 className="h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" />
                   </button>
@@ -1317,7 +1307,6 @@ function SaveTemplateModal({
   onClose: () => void;
   onSave: (name: string, description: string) => Promise<void>;
 }) {
-  const t = useT();
   const [name, setName] = useState(defaultName);
   const [description, setDescription] = useState("");
 
@@ -1343,15 +1332,15 @@ function SaveTemplateModal({
           type="button"
           onClick={onClose}
           disabled={isSaving}
-          aria-label={t("templateStudio.preview.close")}
+          aria-label={"Đóng"}
           className="absolute -right-[54px] 2xl:-right-[62px] top-0 flex h-[46px] w-[46px] 2xl:h-[52px] 2xl:w-[52px] items-center justify-center rounded-full bg-white text-black shadow-sm disabled:opacity-50"
         >
           <X className="h-6 w-6 2xl:h-7 2xl:w-7" />
         </button>
         <div className="flex h-[74px] 2xl:h-[84px] items-center justify-between border-b border-[#EDEEF3] px-5 2xl:px-6">
           <div>
-            <h2 className="text-[16px] 2xl:text-lg font-medium text-black">{title ?? t("templateStudio.modal.saveTitle")}</h2>
-            <p className="mt-1 text-[11px] 2xl:text-[13px] text-[#7E818C]">{subtitle ?? t("templateStudio.modal.saveSubtitle")}</p>
+            <h2 className="text-[16px] 2xl:text-lg font-medium text-black">{title ?? "Lưu mẫu"}</h2>
+            <p className="mt-1 text-[11px] 2xl:text-[13px] text-[#7E818C]">{subtitle ?? "Đặt tên cho mẫu của bạn."}</p>
           </div>
           <button
             type="button"
@@ -1359,32 +1348,32 @@ function SaveTemplateModal({
             disabled={isSaving || !name.trim()}
             className="inline-flex h-8 2xl:h-9 min-w-[78px] 2xl:min-w-[88px] items-center justify-center rounded-[58px] px-5 2xl:px-6 text-[13px] 2xl:text-sm font-medium text-white bg-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? <Loader2 className="h-4 w-4 2xl:h-5 2xl:w-5 animate-spin" /> : (submitLabel ?? t("templateStudio.modal.save"))}
+            {isSaving ? <Loader2 className="h-4 w-4 2xl:h-5 2xl:w-5 animate-spin" /> : (submitLabel ?? "Lưu")}
           </button>
         </div>
 
         <div className="space-y-4 2xl:space-y-5 px-[18px] 2xl:px-6 pb-[18px] 2xl:pb-6 pt-5 2xl:pt-6">
           <label className="block">
             <span className="mb-2 2xl:mb-2.5 block text-[12px] 2xl:text-sm font-medium text-[#25272F]">
-              {t("templateStudio.modal.name")}
+              {"Tên mẫu"}
             </span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               disabled={isSaving}
-              placeholder={t("templateStudio.modal.namePlaceholder")}
+              placeholder={"Ví dụ: Bộ slide giới thiệu công nghệ hiện đại"}
               className="h-9 2xl:h-10 w-full rounded-[5px] border border-[#E1E2E8] bg-white px-3 2xl:px-4 text-[13px] 2xl:text-[15px] text-black outline-none placeholder:text-[#8C8E96] focus:border-[#B9ABFF]"
             />
           </label>
           <label className="block">
             <span className="mb-2 2xl:mb-2.5 block text-[12px] 2xl:text-sm font-medium text-[#25272F]">
-              {t("templateStudio.modal.description")}
+              {"Mô tả"}
             </span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               disabled={isSaving}
-              placeholder={t("templateStudio.modal.descriptionPlaceholder")}
+              placeholder={"Mô tả ngắn gọn thời điểm hoặc cách sử dụng mẫu này."}
               rows={4}
               className="h-[86px] 2xl:h-[100px] w-full resize-none rounded-[5px] border border-[#E1E2E8] bg-white px-3 2xl:px-4 py-3 2xl:py-3.5 text-[13px] 2xl:text-[15px] text-black outline-none placeholder:text-[#8C8E96] focus:border-[#B9ABFF]"
             />
@@ -1396,7 +1385,6 @@ function SaveTemplateModal({
 }
 
 const CustomTemplatePage = () => {
-  const t = useT();
   const router = useRouter();
   const llmConfig = useSelector((state: RootState) => state.userConfig.llm_config);
   const [reviewSlideIndex, setReviewSlideIndex] = useState(0);
@@ -1429,7 +1417,7 @@ const CustomTemplatePage = () => {
     retrySlide,
   } = useTemplateCreation();
 
-  const defaultTemplateName = getDefaultTemplateName(selectedFile) || t("templateStudio.modal.untitled");
+  const defaultTemplateName = getDefaultTemplateName(selectedFile) || "Mẫu không tiêu đề";
   const activeStep = activeStudioStep(state.step);
   const showUpload = state.step === "file-upload";
   const showAnalyze = state.step === "font-check" || state.step === "font-upload";
@@ -1611,24 +1599,24 @@ const CustomTemplatePage = () => {
     const unavailableFontCount = data.unavailable_fonts?.length ?? 0;
     if (unavailableFontCount === 0) {
       notify.success(
-        t("templateStudio.fonts.allAvailable"),
-        t("templateStudio.fonts.preparingPreview"),
+        "Tất cả phông chữ đều khả dụng",
+        "Đang tự động chuẩn bị bản xem trước slide.",
       );
       return;
     }
 
     notify.warning(
-      t("templateStudio.fonts.needAttention"),
-      t("templateStudio.fonts.unavailableCount", { count: unavailableFontCount }),
+      "Phông chữ cần được xử lý",
+      `${unavailableFontCount} phông chữ không khả dụng. Hãy tải lên đúng tệp phông chữ hoặc dùng phông thay thế đã chọn trước khi tiếp tục.`,
     );
-  }, [checkFonts, selectedFile, t]);
+  }, [checkFonts, selectedFile]);
 
   const handleFontUploadAndPreview = useCallback(async () => {
     if (!selectedFile) return;
     if (hasPendingMissingFonts) {
       notify.warning(
-        t("templateStudio.fonts.missing"),
-        t("templateStudio.fonts.continueWithFallback"),
+        "Thiếu phông chữ",
+        "Tiếp tục mà không tải phông chữ lên. Các phông Google thay thế đã chọn sẽ được áp dụng.",
       );
     }
     const data = await fontUploadAndPreview(
@@ -1643,7 +1631,6 @@ const CustomTemplatePage = () => {
     hasPendingMissingFonts,
     selectedGoogleFontReplacements,
     selectedFile,
-    t,
   ]);
 
   useEffect(() => {
@@ -1683,7 +1670,7 @@ const CustomTemplatePage = () => {
   const handleCreateTemplate = useCallback(
     async (name: string, description: string) => {
       if (!state.previewData) {
-        notify.error(t("templateStudio.preview.unavailable"), t("templateStudio.preview.createFirst"));
+        notify.error("Slide không khả dụng", "Hãy tạo bản xem trước slide trước khi tiếp tục.");
         return;
       }
 
@@ -1700,27 +1687,27 @@ const CustomTemplatePage = () => {
           description: description || null,
         });
         notify.success(
-          t("templateStudio.toast.generationStartedTitle"),
-          t("templateStudio.toast.generationStartedDescription"),
+          "Đã bắt đầu tạo mẫu",
+          "Bạn có thể theo dõi trạng thái mẫu trên trang Mẫu.",
         );
         setTemplateModalMode(null);
         router.push("/templates?tab=custom");
       } catch (error) {
         notify.error(
-          t("templateStudio.toast.generationFailedTitle"),
-          error instanceof Error ? error.message : t("templateStudio.toast.unexpected"),
+          "Tạo mẫu thất bại",
+          error instanceof Error ? error.message : "Đã xảy ra lỗi không mong muốn",
         );
       } finally {
         setIsSubmittingTemplate(false);
       }
     },
-    [router, selectedGoogleFontAssets, state.previewData, t],
+    [router, selectedGoogleFontAssets, state.previewData],
   );
 
   const handleSaveTemplate = useCallback(
     async (name: string, description: string) => {
       if (!state.templateId) {
-        notify.error(t("templateStudio.preview.unavailableTitle"), t("templateStudio.preview.generateFirst"));
+        notify.error("Mẫu chưa sẵn sàng", "Hãy tạo mẫu trước khi lưu.");
         return;
       }
 
@@ -1730,19 +1717,19 @@ const CustomTemplatePage = () => {
           name,
           description: description || null,
         });
-        notify.success(t("templateStudio.toast.savedTitle"), t("templateStudio.toast.savedDescription"));
+        notify.success("Đã lưu mẫu", "Mẫu đã được lưu thành công.");
         setTemplateModalMode(null);
         router.push(`/template-preview?templateV2Id=${encodeURIComponent(state.templateId)}`);
       } catch (error) {
         notify.error(
-          t("templateStudio.toast.saveFailedTitle"),
-          error instanceof Error ? error.message : t("templateStudio.toast.unexpected"),
+          "Không thể lưu mẫu",
+          error instanceof Error ? error.message : "Đã xảy ra lỗi không mong muốn",
         );
       } finally {
         setIsSubmittingTemplate(false);
       }
     },
-    [router, state.templateId, t],
+    [router, state.templateId],
   );
 
   const handleTemplateModalSubmit = useCallback(
@@ -1768,7 +1755,7 @@ const CustomTemplatePage = () => {
           disabled={state.isLoading || isSubmittingTemplate}
           fullWidth
         >
-          {isSubmittingTemplate ? t("templateStudio.modal.creating") : t("templateStudio.modal.createTitle")}
+          {isSubmittingTemplate ? "Đang tạo mẫu…" : "Tạo mẫu"}
         </GSlideButton>
       );
     }
@@ -1781,7 +1768,7 @@ const CustomTemplatePage = () => {
           fullWidth
           muted
         >
-          {generatedSlidesReady ? t("templateStudio.modal.saveAs") : t("templateStudio.modal.generating")}
+          {generatedSlidesReady ? "Lưu thành mẫu" : "Đang tạo mẫu"}
         </GSlideButton>
       );
     }
@@ -1794,7 +1781,6 @@ const CustomTemplatePage = () => {
     showPreview,
     showReview,
     state.isLoading,
-    t,
   ]);
 
   return (
@@ -1804,20 +1790,20 @@ const CustomTemplatePage = () => {
           left={
             <a
               href="/dashboard"
-              aria-label={t("templateStudio.topbar.dashboard")}
+              aria-label={"Trang chủ"}
             >
               <GSlideWordmark className="text-sm sm:text-base 2xl:text-lg" />
             </a>
           }
           center={
             <GSlideStepRail
-              aria-label={t("templateStudio.topbar.progressAria")}
+              aria-label={"Tiến trình Xưởng mẫu"}
               activeId={activeStep}
               steps={[
-                { id: 1, label: t("templateStudio.steps.upload") },
-                { id: 2, label: t("templateStudio.steps.analyze") },
-                { id: 3, label: t("templateStudio.steps.preview") },
-                { id: 4, label: t("templateStudio.steps.review") },
+                { id: 1, label: "Tải lên" },
+                { id: 2, label: "Phân tích" },
+                { id: 3, label: "Xem trước" },
+                { id: 4, label: "Rà soát" },
               ]}
             />
           }
@@ -1877,19 +1863,18 @@ const CustomTemplatePage = () => {
         isOpen={isTemplateModalOpen}
         defaultName={defaultTemplateName}
         isSaving={isSubmittingTemplate}
-        title={isCreateTemplateModal ? t("templateStudio.modal.createTitle") : t("templateStudio.modal.saveTitle")}
+        title={isCreateTemplateModal ? "Tạo mẫu" : "Lưu mẫu"}
         subtitle={
           isCreateTemplateModal
-            ? t("templateStudio.modal.createSubtitle")
-            : t("templateStudio.modal.saveSubtitle")
+            ? "Đặt tên cho mẫu trước khi bắt đầu tạo."
+            : "Đặt tên cho mẫu của bạn."
         }
-        submitLabel={isCreateTemplateModal ? t("templateStudio.modal.create") : t("templateStudio.modal.save")}
+        submitLabel={isCreateTemplateModal ? "Tạo" : "Lưu"}
         onClose={() => {
           if (!isSubmittingTemplate) setTemplateModalMode(null);
         }}
         onSave={handleTemplateModalSubmit}
       />
-
 
     </div>
   );

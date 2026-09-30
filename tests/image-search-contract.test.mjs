@@ -3,9 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
-  BACKEND_ERROR_KEYS,
-  BACKEND_STATUS_KEYS,
-} from "../i18n/backend-messages.ts";
+  BACKEND_ERROR_MESSAGES,
+  BACKEND_STATUS_MESSAGES,
+} from "../lib/backend-messages.ts";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -27,15 +27,15 @@ const IMAGE_SEARCH_FAILURE_CODES = [
 test("every backend image-search failure code has a frontend mapping", () => {
   assert.deepEqual(
     IMAGE_SEARCH_FAILURE_CODES.filter(
-      (code) => !(code in BACKEND_ERROR_KEYS),
+      (code) => !(code in BACKEND_ERROR_MESSAGES),
     ),
     [],
   );
 });
 
 test("image-search progress status codes have a frontend mapping", () => {
-  assert.ok("images.searching_web" in BACKEND_STATUS_KEYS);
-  assert.ok("images.importing" in BACKEND_STATUS_KEYS);
+  assert.ok("images.searching_web" in BACKEND_STATUS_MESSAGES);
+  assert.ok("images.importing" in BACKEND_STATUS_MESSAGES);
 });
 
 test("generation payloads still send the existing web_search boolean", async () => {
@@ -69,13 +69,13 @@ test("searxng is never offered as an image provider option", async () => {
   assert.doesNotMatch(imageProviderSection, /searxng/i);
 });
 
-test("streamed slide warnings localize through the catalog", async () => {
+test("streamed slide warnings localize through the backend messages", async () => {
   const streaming = await read(
     "app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
   );
 
   assert.match(streaming, /translateBackendError/);
-  assert.match(streaming, /imageSearchWarningTitle/);
+  assert.match(streaming, /Một số ảnh slide dùng ảnh giữ chỗ/);
   // Coded image-search warnings keep their own dedupe key, not the
   // English fallback text.
   assert.match(streaming, /errorCode \?\? detail/);
@@ -90,8 +90,7 @@ test("web search provider settings UI is removed", async () => {
 });
 
 test("image-search copy never claims royalty-free results", async () => {
-  const en = await read("i18n/locales/en.ts");
-  const vi = await read("i18n/locales/vi.ts");
+  const backendMessages = await read("lib/backend-messages.ts");
   const streaming = await read(
     "app/(presentation-generator)/presentation/hooks/usePresentationStreaming.ts",
   );
@@ -100,8 +99,7 @@ test("image-search copy never claims royalty-free results", async () => {
   // rights; no copy may promise they are free to use (spec FR-7).
   const royaltyFreePattern = /royalty[- ]free|free to use|miễn phí bản quyền|miễn phí giấy phép/i;
   for (const [name, source] of [
-    ["en", en],
-    ["vi", vi],
+    ["backend-messages", backendMessages],
     ["streaming", streaming],
   ]) {
     const matches = [...source.matchAll(

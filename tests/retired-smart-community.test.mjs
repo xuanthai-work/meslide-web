@@ -134,9 +134,9 @@ test("template v2 keeps the shared selection overlay under a neutral name", () =
 
 test("runtime localization contains no retired Smart or Community contracts", () => {
   for (const path of [
-    "i18n/locales/en.ts",
-    "i18n/locales/vi.ts",
-    "i18n/backend-messages.ts",
+    "lib/backend-messages.ts",
+    "app/(presentation-generator)/presentation/components/chat/chat-activity.ts",
+    "app/(presentation-generator)/presentation/components/chat/chat-i18n.ts",
   ]) {
     assert.doesNotMatch(
       read(path),

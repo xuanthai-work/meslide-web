@@ -5,7 +5,6 @@ import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared
 
 import UploadPage from "../../app/(presentation-generator)/upload/components/UploadPage";
 import { FeatureFlagsProvider } from "../../components/FeatureFlagsProvider";
-import { I18nProvider } from "../../i18n/provider";
 import presentationGenerationReducer from "../../store/slices/presentationGeneration";
 import pptGenUploadReducer from "../../store/slices/presentationGenUpload";
 import userConfigReducer from "../../store/slices/userConfig";
@@ -42,9 +41,7 @@ const mountUpload = () => {
     <AppRouterContext.Provider value={router}>
       <FeatureFlagsProvider value={{ documentAwareRewrite: false }}>
         <Provider store={store}>
-          <I18nProvider locale="vi-VN">
             <UploadPage />
-          </I18nProvider>
         </Provider>
       </FeatureFlagsProvider>
     </AppRouterContext.Provider>,

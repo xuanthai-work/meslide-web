@@ -6,13 +6,16 @@ export interface ApiErrorResponse {
   error_params?: Record<string, unknown>;
 }
 
-import { BACKEND_ERROR_KEYS, translateBackendError, type BackendErrorCode } from "@/i18n/backend-messages";
-import { translateRaw } from "@/i18n/translate";
+import {
+  BACKEND_ERROR_MESSAGES,
+  translateBackendError,
+  type BackendErrorCode,
+} from "@/lib/backend-messages";
 
 const INVALID_API_KEY_MESSAGE =
-  "Invalid API key. Please verify your API key and try again.";
+  "Khóa API không hợp lệ. Vui lòng kiểm tra lại khóa API và thử lại.";
 const SAFETY_BLOCK_MESSAGE =
-  "The request was blocked by the provider's safety system. Please revise it and try again.";
+  "Yêu cầu bị hệ thống an toàn của nhà cung cấp chặn. Vui lòng điều chỉnh và thử lại.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -138,16 +141,13 @@ export function extractApiErrorMessage(
     const apiError = errorData as ApiErrorResponse;
     if (
       typeof apiError.error_code === "string" &&
-      apiError.error_code in BACKEND_ERROR_KEYS
+      apiError.error_code in BACKEND_ERROR_MESSAGES
     ) {
-      return translateBackendError(
-        (key, params) => translateRaw(key, params),
-        {
-          detail: normalizeApiErrorDetail(apiError.detail) ?? undefined,
-          error_code: apiError.error_code as BackendErrorCode,
-          error_params: apiError.error_params,
-        },
-      );
+      return translateBackendError({
+        detail: normalizeApiErrorDetail(apiError.detail) ?? undefined,
+        error_code: apiError.error_code as BackendErrorCode,
+        error_params: apiError.error_params,
+      });
     }
     message =
       normalizeApiErrorDetail(apiError.detail) ||

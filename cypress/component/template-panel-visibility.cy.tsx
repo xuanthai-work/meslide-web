@@ -2,7 +2,6 @@ import React from "react";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 import TemplatePanel from "../../app/(presentation-generator)/(dashboard)/templates/components/TemplatePanel";
-import { I18nProvider } from "../../i18n/provider";
 
 describe("public template library", () => {
   it("shows built-in templates without entry points to personal templates", () => {
@@ -31,9 +30,7 @@ describe("public template library", () => {
 
     cy.mount(
       <AppRouterContext.Provider value={router}>
-        <I18nProvider locale="vi-VN">
           <TemplatePanel />
-        </I18nProvider>
       </AppRouterContext.Provider>,
     );
 
