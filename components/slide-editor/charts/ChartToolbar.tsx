@@ -21,17 +21,17 @@ const CHART_TYPE_OPTIONS: Array<{
   label: string;
   value: ChartSlideElement["chart_type"];
 }> = [
-    { value: "bar", label: "Bar Chart" },
-    { value: "horizontal_bar", label: "Horizontal Bar" },
-    { value: "stacked_bar", label: "Stacked Bar" },
-    { value: "horizontal_stacked_bar", label: "Horizontal Stack Bar" },
-    { value: "line", label: "Line Chart" },
-    { value: "area", label: "Area Chart" },
-    { value: "pie", label: "Pie Chart" },
-    { value: "donut", label: "Donut Chart" },
-    { value: "scatter", label: "Scatter Chart" },
-    { value: "radar", label: "Radar Chart" },
-    { value: "polar_area", label: "Polar Area" },
+    { value: "bar", label: "Biểu đồ cột" },
+    { value: "horizontal_bar", label: "Biểu đồ thanh ngang" },
+    { value: "stacked_bar", label: "Biểu đồ cột chồng" },
+    { value: "horizontal_stacked_bar", label: "Biểu đồ thanh ngang chồng" },
+    { value: "line", label: "Biểu đồ đường" },
+    { value: "area", label: "Biểu đồ miền" },
+    { value: "pie", label: "Biểu đồ tròn" },
+    { value: "donut", label: "Biểu đồ vành khuyên" },
+    { value: "scatter", label: "Biểu đồ phân tán" },
+    { value: "radar", label: "Biểu đồ radar" },
+    { value: "polar_area", label: "Biểu đồ miền cực" },
   ];
 
 export function ChartToolbarControls({

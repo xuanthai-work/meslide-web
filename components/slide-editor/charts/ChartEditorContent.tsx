@@ -48,26 +48,26 @@ import { TemplateV2ChartJsElement } from "@/components/slide-editor/charts/Templ
 import { GSlideInput } from "@/components/gslide";
 
 const CHART_TYPES: Array<{ label: string; value: ChartType }> = [
-  { label: "Bar Chart", value: "bar" },
-  { label: "Horizontal Bar", value: "horizontal_bar" },
-  { label: "Stacked Bar", value: "stacked_bar" },
-  { label: "Horizontal Stack Bar", value: "horizontal_stacked_bar" },
-  { label: "Line Chart", value: "line" },
-  { label: "Area Chart", value: "area" },
-  { label: "Pie Chart", value: "pie" },
-  { label: "Donut Chart", value: "donut" },
-  { label: "Scatter Chart", value: "scatter" },
-  { label: "Radar Chart", value: "radar" },
-  { label: "Polar Area", value: "polar_area" },
+  { label: "Biểu đồ cột", value: "bar" },
+  { label: "Biểu đồ thanh ngang", value: "horizontal_bar" },
+  { label: "Biểu đồ cột chồng", value: "stacked_bar" },
+  { label: "Biểu đồ thanh ngang chồng", value: "horizontal_stacked_bar" },
+  { label: "Biểu đồ đường", value: "line" },
+  { label: "Biểu đồ miền", value: "area" },
+  { label: "Biểu đồ tròn", value: "pie" },
+  { label: "Biểu đồ vành khuyên", value: "donut" },
+  { label: "Biểu đồ phân tán", value: "scatter" },
+  { label: "Biểu đồ radar", value: "radar" },
+  { label: "Biểu đồ miền cực", value: "polar_area" },
 ];
 const DATA_LABEL_TABS: Array<{
   label: string;
   value: DataLabelPosition;
 }> = [
-  { label: "Base", value: "base" },
-  { label: "Middle", value: "mid" },
-  { label: "Top", value: "top" },
-  { label: "Outside", value: "outside" },
+  { label: "Dưới cùng", value: "base" },
+  { label: "Giữa", value: "mid" },
+  { label: "Trên cùng", value: "top" },
+  { label: "Bên ngoài", value: "outside" },
 ];
 const DATA_MODAL_CHART_PREVIEW_WIDTH = 215;
 const DATA_MODAL_CHART_PREVIEW_HEIGHT = 180;
