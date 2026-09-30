@@ -961,10 +961,10 @@ function ChartDataModal({
           <header className="flex h-[70px] shrink-0 items-center justify-between border-b border-[#ECECF1] px-5">
             <div>
               <h2 className="text-[15px] font-semibold text-[#191919]">
-                Edit Data Table
+                Chỉnh sửa bảng dữ liệu
               </h2>
               <p className="mt-1 text-[11px] text-[#8B8B94]">
-                Edit Data Table
+                Chỉnh sửa dữ liệu hiển thị trên biểu đồ
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -978,7 +978,7 @@ function ChartDataModal({
                 }
               >
                 <Trash2 size={14} strokeWidth={2} />
-                Clear data
+                Xóa dữ liệu
               </button>
               <button
                 type="button"
@@ -988,7 +988,7 @@ function ChartDataModal({
                   onClose();
                 }}
               >
-                Save
+                Lưu
               </button>
             </div>
           </header>
@@ -996,7 +996,7 @@ function ChartDataModal({
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <aside className="min-h-0 w-[255px] shrink-0 overflow-y-auto overscroll-contain border-r border-[#ECECF1] px-4 py-4 hide-scrollbar">
               <label className="mb-2 block text-[12px] font-medium text-[#191919]">
-                Charts
+                Biểu đồ
               </label>
               <ChartTypeSelect
                 compact
@@ -1531,6 +1531,8 @@ function EditableDataTable({
         {allowMultipleSeries ? (
           <button
             type="button"
+            title={"Thêm cột"}
+            aria-label={"Thêm cột"}
             className="absolute right-0 top-1/2 z-10 grid h-8 w-9 -translate-y-1/2 place-items-center text-[#191919]"
             onClick={addSeries}
           >
@@ -1539,6 +1541,8 @@ function EditableDataTable({
         ) : null}
         <button
           type="button"
+          title={"Thêm hàng"}
+          aria-label={"Thêm hàng"}
           className="absolute bottom-0 left-1/2 z-10 grid h-9 w-16 -translate-x-1/2 place-items-center text-[#191919]"
           onClick={addRow}
         >
