@@ -38,6 +38,38 @@ const vietnameseBuiltinCopy: Record<string, { name: string; description: string 
     name: "Biên tập",
     description: "Bố cục mang phong cách biên tập, nhấn mạnh hình ảnh và nội dung.",
   },
+  civic: {
+    name: "Đô thị",
+    description: "Bố cục đơn sắc hiện đại với cấu trúc chặt chẽ, phù hợp với chính sách, nghiên cứu và khu vực công.",
+  },
+  horizon: {
+    name: "Chân trời",
+    description: "Bố cục ấm áp, tinh tế với đường nét trang nhã, phù hợp với bất động sản, kiến trúc và đầu tư.",
+  },
+  landmark: {
+    name: "Dấu ấn",
+    description: "Bố cục kiến trúc nổi bật với điểm nhấn đỏ ấn tượng và hình ảnh lớn, phù hợp cho dự án và thương mại.",
+  },
+  mosaic: {
+    name: "Sắc màu",
+    description: "Bố cục module sinh động với các khối màu tương phản trẻ trung, phù hợp cho bài thuyết trình sáng tạo.",
+  },
+  nova: {
+    name: "Tân tinh",
+    description: "Bố cục công nghệ tương lai với dải màu phát quang nổi bật, phù hợp cho đổi mới, công nghệ và dữ liệu.",
+  },
+  pulse: {
+    name: "Nhịp sống",
+    description: "Bố cục chuyên nghiệp, chỉn chu với điểm nhấn xanh dịu mắt, phù hợp cho y tế, sức khỏe và nghiên cứu.",
+  },
+  signal: {
+    name: "Tín hiệu",
+    description: "Bố cục năng động tông ấm với hình ảnh mạnh mẽ, phù hợp cho tiếp thị, chiến dịch và tăng trưởng.",
+  },
+  verdant: {
+    name: "Sức sống",
+    description: "Bố cục hữu cơ trang nhã với kiểu chữ có chân và sắc xanh tươi mới, phù hợp cho câu chuyện thương hiệu và bền vững.",
+  },
 };
 
 export function templateCardCopy(

@@ -77,7 +77,17 @@ test("built-in template cards show Vietnamese names and descriptions", () => {
     modern: "Hiện đại",
     general: "Cơ bản",
     editorial: "Biên tập",
+    civic: "Đô thị",
+    horizon: "Chân trời",
+    landmark: "Dấu ấn",
+    mosaic: "Sắc màu",
+    nova: "Tân tinh",
+    pulse: "Nhịp sống",
+    signal: "Tín hiệu",
+    verdant: "Sức sống",
   };
+
+  assert.equal(Object.keys(names).length, 16);
 
   for (const [id, name] of Object.entries(names)) {
     const copy = templateCardCopy({ id, name: id, description: "English description", is_default: true }, "vi-VN");

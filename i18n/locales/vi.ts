@@ -321,7 +321,7 @@ const vi = {
       ideaPlaceholder:
         "Nhập ý tưởng, chủ đề cho AI...",
       optionalPill: "Tùy chọn",
-      contentLabel: "Dàn ý hoặc nội dung chi tiết bài thuyết trình",
+      contentLabel: "Dàn ý hoặc nội dung bài thuyết trình",
       contentPlaceholder:
         "Dán bộ dàn ý hoặc báo cáo chi tiết ...",
       action: "Viết lại",
