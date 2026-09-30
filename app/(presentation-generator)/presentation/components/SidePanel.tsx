@@ -276,15 +276,15 @@ const SidePanel = ({
               )}
             </div>
           </DndContext>
-          <div className="absolute -bottom-5 -left-4 flex w-[150px] justify-center bg-[linear-gradient(to_top,#FEFEFF_76%,rgba(254,254,255,0)_100%)] py-5">
+          <div className="absolute -bottom-5 -left-4 flex w-[150px] justify-center bg-[linear-gradient(to_top,#FFFFFF_80%,rgba(255,255,255,0)_100%)] py-5">
               <button
                 type="button"
                 onClick={handleAddSlideClick}
-                className="flex w-[70px] cursor-pointer flex-col items-center justify-center gap-2 px-3 text-black transition-opacity duration-200 hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141E5] focus-visible:ring-offset-2"
+                className="flex w-[110px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[#D0D5DD] bg-[#F9FAFB] py-2 text-[#344054] transition-all hover:border-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)]"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span className="whitespace-nowrap text-[11px] font-normal leading-normal tracking-[0.11px]">
-                  Add Slides
+                <span className="whitespace-nowrap text-[11px] font-medium leading-normal">
+                  Thêm slide
                 </span>
               </button>
           </div>

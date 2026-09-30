@@ -97,9 +97,11 @@ const SlideScale = ({
     >
       <div
         className={
-          presentMode || fixedSize || fitToContainer
+          presentMode || fixedSize
             ? "relative mx-auto shrink-0"
-            : "relative mx-auto max-w-[1280px]"
+            : fitToContainer
+              ? "relative mx-auto shrink-0 rounded-[12px] bg-white shadow-[0_12px_32px_-4px_rgba(16,24,40,0.08),0_4px_12px_-2px_rgba(16,24,40,0.04)]"
+              : "relative mx-auto max-w-[1280px]"
         }
         style={{
           width: `${BASE_WIDTH * scale}px`,

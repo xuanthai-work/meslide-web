@@ -267,7 +267,7 @@ const SlideActionBar = ({
             : "opacity-100"
         )}
       >
-        <div className="pointer-events-auto hide-scrollbar flex h-10 max-w-[calc(100%_-_2rem)] items-center overflow-x-auto rounded-[8px] border border-[#E6E6EC] bg-white px-2 shadow-[0_2px_14px_rgba(17,24,39,0.12)]">
+        <div className="pointer-events-auto hide-scrollbar flex h-10 max-w-[calc(100%_-_2rem)] items-center overflow-x-auto rounded-full border border-[#EDEEEF] bg-white/95 backdrop-blur px-2 shadow-[0_8px_24px_rgba(16,24,40,0.08)]">
           <>
               <button
                 type="button"

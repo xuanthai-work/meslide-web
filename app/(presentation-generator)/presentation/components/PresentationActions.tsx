@@ -355,7 +355,7 @@ const NavButton = ({
           active && "border-[#EDEEEF] bg-white",
         )}
         style={{
-          boxShadow: active ? "0 6.6px 13.2px 0 rgba(124, 81, 248, 0.14)" : "",
+          boxShadow: active ? "0 4px 12px rgba(29, 111, 232, 0.12)" : "",
         }}
       >
         <img
@@ -371,7 +371,7 @@ const NavButton = ({
 };
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <h4 className="mb-2 text-[10px] font-normal uppercase leading-[15px] tracking-[0.367px] text-[#99A1AF]">
+  <h4 className="text-[10px] font-semibold uppercase tracking-[0.5px] text-[#99A1AF] mb-2.5">
     {children}
   </h4>
 );
@@ -392,13 +392,13 @@ const PaletteCard = ({
     disabled={disabled}
     onClick={onClick}
     className={cn(
-      "flex h-[clamp(50px,4vw,58px)] min-w-0 flex-col items-center justify-center gap-[clamp(6px,0.6vw,8px)] rounded-[8px] border border-[#EDEEF0] bg-white px-[clamp(6px,0.6vw,8px)] text-center transition-colors hover:border-[#DCD8EA] hover:bg-[#FBFAFF]",
-      disabled && "cursor-not-allowed opacity-50 hover:border-[#EDEEF0] hover:bg-white",
+      "group flex h-[clamp(50px,4vw,58px)] min-w-0 flex-col items-center justify-center gap-[clamp(6px,0.6vw,8px)] rounded-[10px] border border-[#EDEEF0] bg-white px-[clamp(6px,0.6vw,8px)] text-center hover:border-[#BFDBFE] hover:bg-[#F8FAFF] hover:shadow-sm transition-all duration-200",
+      disabled && "cursor-not-allowed opacity-50 hover:border-[#EDEEF0] hover:bg-white hover:shadow-none",
     )}
     title={label}
   >
     <Icon
-      className="h-[clamp(12px,0.9vw,14px)] w-[clamp(12px,0.9vw,14px)] shrink-0 text-[#1F2937]"
+      className="h-[clamp(12px,0.9vw,14px)] w-[clamp(12px,0.9vw,14px)] shrink-0 text-[#1F2937] transition-colors duration-200 group-hover:text-[#1D6FE8]"
       strokeWidth={1.8}
       aria-hidden
     />

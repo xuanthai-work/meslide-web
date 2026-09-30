@@ -396,7 +396,7 @@ const PresentationHeader = ({
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             </div>
           )}
-          <div className="flex items-center gap-2 bg-[var(--gslide-bg)] px-3.5 h-[38px] border border-[#EDECEC] rounded-[80px]">
+          <div className="flex items-center gap-1.5 bg-white px-3 h-[38px] border border-[#EDECEC] rounded-full shadow-sm">
             <ToolTip content={"Tạo lại bài thuyết trình"}>
               <button
                 type="button"
@@ -430,25 +430,6 @@ const PresentationHeader = ({
                 <Redo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-[var(--gslide-accent)] duration-300" />
               </button>
             </ToolTip>
-            <Separator orientation="vertical" className="h-4 w-[2px]" />
-            <ToolTip content={"Trình chiếu"}>
-              <button
-                onClick={() => {
-                  const to = `?id=${presentation_id}&mode=present&slide=${
-                    currentSlide || 0
-                  }`;
-                  router.push(to);
-                }}
-                disabled={
-                  isStreaming ||
-                  !presentationData?.slides ||
-                  presentationData?.slides.length === 0
-                }
-                className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
-              >
-                <Play className="w-3.5 h-3.5 text-[#101323] group-hover:text-[var(--gslide-accent)] duration-300" />
-              </button>
-            </ToolTip>
           </div>
 
         {
@@ -460,7 +441,7 @@ const PresentationHeader = ({
               aria-expanded={shortcutsDialogOpen}
               aria-keyshortcuts="?"
               data-testid="keyboard-shortcuts-btn"
-              className="hidden h-[38px] w-[38px] items-center justify-center rounded-full border border-[#EDECEC] bg-[var(--gslide-bg)] text-[#101323] transition-colors hover:border-[var(--gslide-border)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2 sm:inline-flex"
+              className="hidden h-[38px] w-[38px] items-center justify-center rounded-full border border-[#EDECEC] bg-white shadow-sm text-[#101323] transition-colors hover:border-[var(--gslide-border)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2 sm:inline-flex"
               onClick={() => setShortcutsDialogOpen(true)}
             >
               <Keyboard
@@ -471,10 +452,32 @@ const PresentationHeader = ({
             </button>
           </ToolTip>}
 
+          <ToolTip content={"Trình chiếu bài thuyết trình"}>
+            <button
+              type="button"
+              onClick={() => {
+                const to = `?id=${presentation_id}&mode=present&slide=${
+                  currentSlide || 0
+                }`;
+                router.push(to);
+              }}
+              disabled={
+                isStreaming ||
+                !presentationData?.slides ||
+                presentationData?.slides.length === 0
+              }
+              className="flex h-[38px] items-center gap-2 rounded-full border border-[#EDECEC] bg-white px-3.5 text-sm font-medium text-[#101323] shadow-sm transition-all duration-200 hover:border-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={"Trình chiếu"}
+            >
+              <Play className="h-3.5 w-3.5 fill-current" />
+              <span className="hidden sm:inline">{"Trình chiếu"}</span>
+            </button>
+          </ToolTip>
+
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <button
-                className="flex items-center gap-[7px] rounded-[53px] bg-[var(--gslide-accent)] px-3 py-[11px] text-sm font-semibold text-white hover:bg-[var(--gslide-accent-hover)] sm:px-[18px]"
+                className="flex h-[38px] items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[var(--gslide-accent-hover)] hover:shadow-[0_4px_12px_rgba(29,111,232,0.24)] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
                 disabled={isExporting || isStreaming === true}
               >
                 {isExporting ? (
