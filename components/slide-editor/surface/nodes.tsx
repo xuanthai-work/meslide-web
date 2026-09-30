@@ -53,6 +53,7 @@ import {
   keyForSelection,
   layoutChildren,
   nullableBoxEqual,
+  siblingPillHugBoxes,
   numberPathEqual,
   positionFromNodeInParent,
   polygonElementFromFrame,
@@ -481,9 +482,15 @@ export function RawComponentNode({
     },
     [key, setNodeRef],
   );
-  const elements = readArray(renderedComponent.elements).filter(
-    isRecord,
-  ) as RawElement[];
+  const elements = useMemo(
+    () =>
+      readArray(renderedComponent.elements).filter(isRecord) as RawElement[],
+    [renderedComponent],
+  );
+  const siblingPillBoxes = useMemo(
+    () => siblingPillHugBoxes(elements),
+    [elements],
+  );
   const isSingleVectorElementComponent =
     elements.length === 1 && isVectorType(readString(elements[0]?.type));
   const canNormalizeSingleVectorWrapper =
@@ -722,6 +729,7 @@ export function RawComponentNode({
             width: box.width,
             height: box.height,
           }}
+          renderBox={siblingPillBoxes.get(elementIndex)}
           layoutManaged={false}
           allowVectorResizeBeyondParent={
             canNormalizeSingleVectorWrapper && elementIndex === 0

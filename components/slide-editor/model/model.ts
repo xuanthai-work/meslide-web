@@ -1615,20 +1615,125 @@ export function polygonLocalPointsForElement(
 
 export function elementBox(element: RawElement): Box {
   const type = readString(element.type);
-  const box =
-    isVectorType(type)
-      ? polygonRenderBox(element)
-      : {
-          ...readPoint(element.position),
-          ...elementSize(element),
-        };
+  const box = declaredElementBox(element);
   if (type === "text") {
     return textVisualLocalBox(element, box);
   }
   if (type === "text-list") {
     return textListVisualLocalBox(element, box);
   }
+  const pillHug = pillContainerTextHug(element);
+  if (pillHug) {
+    // Giữ nguyên tâm ngang ban đầu rồi co khung viên thuốc lại ôm khít chữ.
+    const baseWidth = readOptionalSize(element.size)?.width ?? box.width;
+    const centerX = box.x + baseWidth / 2;
+    return {
+      ...box,
+      x: centerX - pillHug.width / 2,
+      width: pillHug.width,
+      height: pillHug.height,
+    };
+  }
   return box;
+}
+
+function declaredElementBox(element: RawElement): Box {
+  const type = readString(element.type);
+  return isVectorType(type)
+    ? polygonRenderBox(element)
+    : {
+        ...readPoint(element.position),
+        ...elementSize(element),
+      };
+}
+
+function isPillCornerRadius(element: RawElement) {
+  const raw = element.border_radius ?? element.borderRadius;
+  const candidates: unknown[] = [raw];
+  if (Array.isArray(raw)) candidates.push(...raw);
+  const record = asRecord(raw);
+  if (record) {
+    candidates.push(record.radius, record.tl, record.tr, record.br, record.bl);
+  }
+  return candidates.some(
+    (value) => typeof value === "number" && value >= 16,
+  );
+}
+
+function pillContainerTextHug(element: RawElement): Size | null {
+  if (readString(element.type) !== "container") return null;
+  if (!isPillCornerRadius(element)) return null;
+  const child = asRecord(element.child);
+  if (!child || readString(child.type) !== "text") return null;
+  const text = displayText(rawTextContent(child));
+  if (!text.trim()) return null;
+  const font = rawFont(child);
+  const padding = readPadding(element.padding);
+  const textWidth = estimateTextWidth(text, font);
+  const textHeight = estimateTextHeight(text, font, Math.max(1, textWidth));
+  // 20px padding mỗi bên, tối thiểu 80px để badge không bị bóp quá nhỏ.
+  const width = Math.max(80, Math.ceil(textWidth) + 40);
+  return {
+    width,
+    height: Math.max(1, Math.ceil(textHeight) + padding.top + padding.bottom),
+  };
+}
+
+function boxesOverlap(a: Box, b: Box) {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
+function isPillBackgroundElement(element: RawElement) {
+  const type = readString(element.type);
+  if (type === "text" || type === "text-list") return false;
+  if (pillContainerTextHug(element)) return false;
+  return isBoxVisualType(type) && isPillCornerRadius(element);
+}
+
+/**
+ * Ghép cặp sibling (shape nền viên thuốc + text) trong cùng một component:
+ * co chiều rộng shape nền lại ôm khít dòng chữ và căn giữa theo tâm chữ.
+ * Trả về map index -> box để surface truyền vào `renderBox`.
+ */
+export function siblingPillHugBoxes(elements: RawElement[]): Map<number, Box> {
+  const result = new Map<number, Box>();
+  if (elements.length < 2) return result;
+
+  for (let index = 0; index < elements.length; index += 1) {
+    const element = elements[index];
+    if (!isPillBackgroundElement(element)) continue;
+    const shapeBox = declaredElementBox(element);
+    const textIndex = elements.findIndex((candidate, candidateIndex) => {
+      if (candidateIndex === index) return false;
+      if (readString(candidate.type) !== "text") return false;
+      return boxesOverlap(declaredElementBox(candidate), shapeBox);
+    });
+    if (textIndex < 0) continue;
+
+    const textElement = elements[textIndex];
+    const textBox = declaredElementBox(textElement);
+    const font = rawFont(textElement);
+    const text = displayText(rawTextContent(textElement));
+    if (!text.trim()) continue;
+
+    const textWidth = estimateTextWidth(text, font);
+    const pillWidth = Math.max(80, Math.ceil(textWidth) + 40);
+    if (pillWidth >= shapeBox.width) continue;
+
+    const centerX = textBox.x + textBox.width / 2;
+    result.set(index, {
+      ...shapeBox,
+      x: centerX - pillWidth / 2,
+      width: pillWidth,
+    });
+  }
+
+  return result;
 }
 
 export function isManualPositioned(element: RawElement) {
@@ -1641,6 +1746,9 @@ export function elementSize(element: RawElement, fallback?: Size): Size {
     const box = polygonRenderBox(element);
     return { width: box.width, height: box.height };
   }
+
+  const pillHug = pillContainerTextHug(element);
+  if (pillHug) return pillHug;
 
   const explicit = readOptionalSize(element.size);
   if (explicit) return explicit;
@@ -1705,7 +1813,7 @@ export function childrenBounds(children: unknown[]): Size {
 
   return records.reduce<Size>(
     (bounds, child) => {
-      const box = elementBox(child);
+      const box = declaredElementBox(child);
       return {
         width: Math.max(bounds.width, box.x + box.width),
         height: Math.max(bounds.height, box.y + box.height),

@@ -92,6 +92,8 @@ const Chat = ({
   onAgentSlideFocus,
   onChatSendingStateChange,
   onFollowModeChange,
+  isPanelMaximized,
+  onTogglePanelMaximize,
 }: ChatProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [input, setInput] = useState("");
@@ -1415,6 +1417,8 @@ const Chat = ({
         setIsQuickPromptsOpen={setIsQuickPromptsOpen}
         setExpandedEditPreviewByMessage={setExpandedEditPreviewByMessage}
         applyEditPreviewVersion={applyEditPreviewVersion}
+        isPanelMaximized={isPanelMaximized}
+        onTogglePanelMaximize={onTogglePanelMaximize}
       />
     );
   }
