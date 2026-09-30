@@ -11,6 +11,7 @@ import type { TemplateV2TextEditStyle } from "@/components/slide-editor/text/tem
 import {
   fitTextListToBox,
   fitTextToBox,
+  isSingleLineBox,
   measureTextByUnits,
 } from "./template-v2-text-fit.mjs";
 import {
@@ -120,6 +121,43 @@ export function fitRenderTextListToBox(
     box,
     { measure: measureRenderText },
   );
+}
+
+/**
+ * Auto-shrink cho nhãn/tiêu đề 1 dòng: khi nội dung dài hơn bề rộng slot, co
+ * font-size theo ``max(0.8, min(1, box.width / measuredLineWidth))`` để chữ vừa
+ * vặn thay vì tràn/rớt dòng phá vỡ layout. Chỉ áp dụng cho box thiết kế 1 dòng;
+ * trường hợp vượt quá 25% để thuật toán fit hiện có (kèm ellipsis) xử lý.
+ */
+export function autoShrinkTextRuns(
+  runs: RenderTextRun[],
+  box: { width: number; height: number } | null | undefined,
+): RenderTextRun[] {
+  if (!box || !runs.length || !(box.width > 0)) return runs;
+  const designedSize = runs.reduce(
+    (max, run) => Math.max(max, run.font?.size ?? 0),
+    0,
+  );
+  if (
+    !isSingleLineBox({ width: box.width, height: box.height }, designedSize)
+  ) {
+    return runs;
+  }
+  const measuredLineWidth = layoutRenderTextRuns(
+    runs,
+    Number.POSITIVE_INFINITY,
+    "none",
+  ).reduce(
+    (max, line) => Math.max(max, line.reduce((sum, seg) => sum + seg.width, 0)),
+    0,
+  );
+  if (measuredLineWidth <= box.width) return runs;
+  const shrinkRatio = Math.max(0.8, Math.min(1, box.width / measuredLineWidth));
+  if (shrinkRatio >= 1 || shrinkRatio < 0.8) return runs;
+  return runs.map((run) => ({
+    ...run,
+    font: { ...run.font, size: run.font.size * shrinkRatio },
+  }));
 }
 
 const DEFAULT_FONT: RenderTextFont = {
