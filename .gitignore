@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 app_data
 # SDD scratch workspaces
 .superpowers/
+next-env.d.ts

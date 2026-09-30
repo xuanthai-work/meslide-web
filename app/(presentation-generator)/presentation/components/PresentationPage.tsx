@@ -839,7 +839,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           currentSlide={selectedSlide}
         />
         <div className="flex flex-1 min-h-0 gap-3 overflow-hidden xl:gap-5 2xl:gap-6">
-          <div className="sticky top-0 hidden h-full w-[150px] shrink-0 self-start md:block">
+          <div className="sticky top-0 hidden h-full w-[150px] shrink-0 self-start md:block min-[1200px]:w-[124px] 2xl:w-[150px]">
             <SidePanel
               selectedSlide={selectedSlide}
               onSlideClick={handleEditorSlideNavigation}
@@ -935,7 +935,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             aria-controls="presentation-mobile-assistant"
             aria-expanded={isMobileAssistantOpen}
             onClick={() => setIsMobileAssistantOpen(true)}
-            className="fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-white/70 px-4 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(29,111,232,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--gslide-accent-hover)] bg-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:hidden"
+            className="fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-white/70 px-4 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(29,111,232,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--gslide-accent-hover)] bg-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 min-[1200px]:hidden"
           >
             <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
             {"Trợ lý AI"}
@@ -946,7 +946,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             aria-label={"Đóng Trợ lý AI"}
             onClick={closeMobileAssistant}
             className={cn(
-              "inset-0 z-[60] bg-black/35 xl:hidden",
+              "inset-0 z-[60] bg-black/35 min-[1200px]:hidden",
               isMobileAssistantOpen ? "fixed" : "hidden"
             )}
           />
@@ -957,11 +957,13 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             aria-label={isMobileAssistantOpen ? "Trợ lý AI" : undefined}
             aria-modal={isMobileAssistantOpen ? true : undefined}
             className={cn(
-              "h-screen w-[calc(100vw-16px)] max-w-[375px] shrink-0 flex-col bg-white shadow-[-12px_0_32px_rgba(16,24,40,0.18)] transition-[width] duration-200 xl:relative xl:z-auto xl:h-full xl:max-w-none xl:self-start xl:border-l xl:border-[#EDEEEF] xl:shadow-none",
-              isRightPanelOpen ? "xl:w-[383px]" : "xl:w-[78px]",
+              "h-screen w-[calc(100vw-16px)] max-w-[375px] shrink-0 flex-col bg-white shadow-[-12px_0_32px_rgba(16,24,40,0.18)] transition-[width] duration-200 min-[1200px]:relative min-[1200px]:z-auto min-[1200px]:h-full min-[1200px]:max-w-none min-[1200px]:self-start min-[1200px]:border-l min-[1200px]:border-[#EDEEEF] min-[1200px]:shadow-none",
+              isRightPanelOpen
+                ? "min-[1200px]:w-[320px] 2xl:w-[383px]"
+                : "min-[1200px]:w-[78px]",
               isMobileAssistantOpen
                 ? "fixed inset-y-0 right-0 z-[70] flex"
-                : "hidden xl:flex"
+                : "hidden min-[1200px]:flex"
             )}
           >
             {isRightPanelOpen ? (
@@ -969,7 +971,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 type="button"
                 aria-label={"Đóng bảng công cụ"}
                 onClick={() => setIsRightPanelOpen(false)}
-                className="absolute -left-[10px] top-1/2 z-[80] hidden h-[36px] w-[16px] -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#BFDBFE] bg-[#FEFEFF] text-[#1558C0] shadow-[0_10px_26px_rgba(52,48,96,0.10)] transition-[border-color,box-shadow,color] hover:border-[#BFDBFE] hover:text-[#1558C0] hover:shadow-[0_12px_30px_rgba(52,48,96,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 xl:flex"
+                className="absolute -left-[10px] top-1/2 z-[80] hidden h-[36px] w-[16px] -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#BFDBFE] bg-[#FEFEFF] text-[#1558C0] shadow-[0_10px_26px_rgba(52,48,96,0.10)] transition-[border-color,box-shadow,color] hover:border-[#BFDBFE] hover:text-[#1558C0] hover:shadow-[0_12px_30px_rgba(52,48,96,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8] focus-visible:ring-offset-2 min-[1200px]:flex"
               >
                 <ChevronRight
                   className="h-4 w-4"
@@ -978,7 +980,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 />
               </button>
             ) : null}
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#EDEEEF] px-4 xl:hidden">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#EDEEEF] px-4 min-[1200px]:hidden">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#101323]">
                 <Sparkles className="h-4 w-4 text-[#1D6FE8]" aria-hidden="true" />
                 {"Trợ lý AI"}

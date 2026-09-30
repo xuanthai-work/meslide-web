@@ -370,7 +370,7 @@ const PresentationHeader = ({
 
   return (
     <>
-      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between gap-2 border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-3 sm:h-[80px] sm:gap-4 sm:px-4">
+      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between gap-1.5 border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-3 sm:h-[80px] sm:gap-2 sm:px-4 xl:gap-2.5">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <button
             type="button"
@@ -390,7 +390,7 @@ const PresentationHeader = ({
          
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 xl:gap-2.5">
           {isPresentationSaving && (
             <div className="flex items-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

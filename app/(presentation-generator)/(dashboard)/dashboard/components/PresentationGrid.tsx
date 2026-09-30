@@ -43,7 +43,7 @@ export const PresentationGrid = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 min-[1200px]:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 2xl:gap-6 w-full">
         {[...Array(12)].map((_, i) => (
           <ShimmerCard key={i} />
         ))}
@@ -75,7 +75,7 @@ export const PresentationGrid = ({
     <div
       className={
         viewMode === "grid"
-          ? "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4"
+          ? "grid grid-cols-1 md:grid-cols-2 min-[1200px]:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 2xl:gap-6"
           : "grid grid-cols-1 gap-4"
       }
     >
