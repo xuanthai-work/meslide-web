@@ -1,9 +1,12 @@
 import { resolveBackendAssetUrl } from "@/utils/api";
 import {
+  autoShrinkTextRuns,
   fitRenderTextListToBox as fitTextListToBox,
   fitRenderTextToBox as fitTextToBox,
   isSingleLineBox,
+  layoutRenderTextRuns,
   normalizeRawTextMarkdownElement,
+  type RenderTextRun,
 } from "@/components/slide-editor/text/template-v2-text";
 import { isLatexTextRun } from "@/components/slide-editor/text/text-runs";
 import { normalizeMathLatex, renderMathHtml } from "@/lib/math";
@@ -131,6 +134,8 @@ function templateV2RenderPayload(
   const height = options.height ?? TEMPLATE_V2_HTML_HEIGHT;
   const background = normalizeCssColor(readString(record.background) ?? "#FFFFFF");
 
+  applyVerticalCollisionAvoidance(items);
+
   return {
     items,
     width,
@@ -138,6 +143,118 @@ function templateV2RenderPayload(
     fonts: options.fonts,
     background,
   };
+}
+
+const TITLE_ZONE_MAX_Y = 120;
+const HEADER_BODY_MIN_GAP = 24;
+const SAFE_BOTTOM_Y = 700;
+
+function isTitleCandidate(component: JsonRecord): boolean {
+  const box = readBox(component);
+  if (box.y >= TITLE_ZONE_MAX_Y) return false;
+  return readArray(component.elements)
+    .map(readRecord)
+    .some((element) => readString(element.type) === "text");
+}
+
+function findTitleComponentIndex(components: JsonRecord[]): number {
+  const candidates = components
+    .map((component, index) => ({ component, index }))
+    .filter(({ component }) => isTitleCandidate(component));
+  if (candidates.length === 0) return -1;
+
+  const labelled = candidates.find(({ component }) =>
+    /title|header|heading|hero/i.test(
+      [
+        readString(component.id),
+        readString(component.name),
+        readString(component.description),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    ),
+  );
+  if (labelled) return labelled.index;
+
+  return candidates.reduce((top, candidate) =>
+    readBox(candidate.component).y < readBox(top.component).y ? candidate : top,
+  ).index;
+}
+
+/** Chiều cao thực tế (không co chữ) của một text element khi wrap trong slot. */
+function naturalTextElementHeight(element: JsonRecord): number {
+  const designed = readBox(element).height ?? 0;
+  if (readString(element.type) !== "text") return designed;
+  const font = readRecord(element.font);
+  const runs = htmlPreparedRuns(
+    normalizedRunsForHtml(element, font),
+    font,
+  ) as unknown as RenderTextRun[];
+  const fitBox = htmlTextFitBox(element);
+  const width = fitBox?.width ?? readBox(element).width ?? 0;
+  if (!(width > 0)) return designed;
+  const lines = layoutRenderTextRuns(runs, width, "word");
+  const natural = lines.reduce(
+    (sum, line) =>
+      sum +
+      Math.max(
+        1,
+        ...line.map((segment) => {
+          const lineHeight = readNumber(segment.font.lineHeight) ?? 1.15;
+          return segment.font.size * lineHeight;
+        }),
+      ),
+    0,
+  );
+  return Math.max(designed, natural);
+}
+
+function titleComponentBottom(component: JsonRecord): number {
+  const box = readBox(component);
+  let bottom = box.y + (box.height ?? 0);
+  for (const element of readArray(component.elements).map(readRecord)) {
+    const childBox = readBox(element);
+    bottom = Math.max(
+      bottom,
+      box.y + childBox.y + naturalTextElementHeight(element),
+    );
+  }
+  return bottom;
+}
+
+/**
+ * Vertical Collision Avoidance: khi khối tiêu đề mở rộng chiều cao (title dài
+ * 2-3 dòng), tự động dời các component nội dung bên dưới xuống để giữ khoảng
+ * cách an toàn ``HEADER_BODY_MIN_GAP`` và không đè chữ lên nhau.
+ */
+function applyVerticalCollisionAvoidance(items: JsonRecord[]): void {
+  const components = items.filter(isComponent);
+  if (components.length < 2) return;
+
+  const headerIndex = findTitleComponentIndex(components);
+  if (headerIndex < 0) return;
+
+  const header = components[headerIndex];
+  const headerBox = readBox(header);
+  const headerBottom = titleComponentBottom(header);
+  const designedBottom = headerBox.y + (headerBox.height ?? 0);
+  if (headerBottom <= designedBottom) return;
+
+  components.forEach((component, index) => {
+    if (index === headerIndex) return;
+    const box = readBox(component);
+    if (box.y <= headerBox.y) return;
+    const overlap = headerBottom + HEADER_BODY_MIN_GAP - box.y;
+    if (overlap <= 0) return;
+    const bottom = box.y + (box.height ?? 0);
+    const push = Math.min(overlap, Math.max(0, SAFE_BOTTOM_Y - bottom));
+    if (push <= 0) return;
+    const position = readRecord(component.position);
+    component.position = {
+      ...position,
+      y: (readNumber(position.y) ?? 0) + push,
+    };
+  });
 }
 
 export function hasTemplateV2RenderableUi(ui: unknown): boolean {
@@ -516,8 +633,14 @@ function renderText(item: JsonRecord, mode: RenderMode): string {
   const alignment = readRecord(item.alignment);
   const horizontal = readString(alignment.horizontal);
   const vertical = readString(alignment.vertical);
-  const runs = htmlPreparedRuns(normalizedRunsForHtml(item, font), font);
   const fitBox = htmlTextFitBox(item);
+  const runs = autoShrinkTextRuns(
+    htmlPreparedRuns(
+      normalizedRunsForHtml(item, font),
+      font,
+    ) as unknown as RenderTextRun[],
+    fitBox,
+  );
   const fitted = fitBox ? fitTextToBox(runs, fitBox) : null;
   const lineHtml = fitted
     ? renderFittedLinesHtml(fitted.lines, htmlSingleLineBox(fitBox, runs))
@@ -531,7 +654,7 @@ function renderText(item: JsonRecord, mode: RenderMode): string {
   )};justify-content:${horizontalAlign(horizontal)};${lineHeightStyle(
     font,
     1.1
-  )}overflow:visible;white-space:pre-wrap;text-align:${textAlign(horizontal)};"><span style="display:block;width:100%">${lineHtml}</span></div>`;
+  )}overflow:visible;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;text-align:${textAlign(horizontal)};"><span style="display:block;width:100%">${lineHtml}</span></div>`;
 }
 
 function renderTextList(item: JsonRecord, mode: RenderMode): string {
@@ -604,7 +727,7 @@ function renderFittedLinesHtml(lines: unknown, singleLineBox = false): string {
         fontSize != null ? `font-size:${cssNumber(fontSize)}px;` : "";
       const singleLineStyle = singleLine
         ? "white-space:nowrap;word-break:normal;overflow:hidden;text-overflow:ellipsis;"
-        : "white-space:pre-wrap;word-break:break-word;";
+        : "white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;";
       return `<span style="display:block;width:100%;${singleLineStyle}${sizeStyle}line-height:${cssNumber(lineHeight)};">${content}</span>`;
     })
     .join("");
@@ -1380,5 +1503,5 @@ function readListRuns(value: unknown): JsonRecord[] {
 }
 
 function textOverflowStyle(): string {
-  return "overflow:hidden;white-space:pre-wrap;";
+  return "overflow:hidden;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;";
 }
