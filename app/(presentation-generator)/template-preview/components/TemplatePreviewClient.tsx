@@ -941,7 +941,7 @@ const GroupLayoutPreview = ({
   if (isPersonalTemplate) return null;
 
   return (
-    <div className="flex h-screen min-h-[764px] flex-col overflow-hidden bg-[#FBFBFA] font-syne text-[#191919]">
+    <div className="flex h-screen overflow-hidden flex-col bg-[#FBFBFA] font-syne text-[#191919]">
       <TemplateEditorHeader
         activeLayoutToken={activeLayoutToken}
         canEdit={canEditTemplate}

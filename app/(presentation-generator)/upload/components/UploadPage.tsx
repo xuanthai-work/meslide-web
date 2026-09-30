@@ -609,12 +609,12 @@ const UploadPage = () => {
         error={currentPreparingError}
         onRetry={handleRetryPreparing}
       />
-      <div className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[780px] xl:max-w-[900px]">
+      <div className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[820px] xl:max-w-[940px] 2xl:max-w-[1100px]">
         <GSlideStudioTitle
           title={"G-SLIDE"}
           description={"Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI"}
           compact
-          className="pt-10 sm:pt-12 2xl:pt-14"
+          className="pt-6 sm:pt-8 2xl:pt-12"
         />
         <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
           <ConfigurationSelects

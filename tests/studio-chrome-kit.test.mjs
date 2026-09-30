@@ -43,7 +43,7 @@ test("upload page uses studio title keys without the outer drop card", async () 
   const routeShell = await read("app/(presentation-generator)/upload/page.tsx");
   assert.match(source, /GSlideStudioTitle/);
   assert.match(source, /title=\{"G-SLIDE"\}/);
-  assert.match(source, /className="pt-10 sm:pt-12 2xl:pt-14"/);
+  assert.match(source, /className="pt-6 sm:pt-8 2xl:pt-12"/);
   assert.doesNotMatch(source, /GSlideDropCard/);
   assert.doesNotMatch(source, /font-syne/);
   assert.doesNotMatch(routeShell, /upload\.hero\.(title|subtitle)/);
