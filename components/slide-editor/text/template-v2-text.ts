@@ -800,8 +800,8 @@ export function textVisualLocalBox(
     } else if (verticalAlign === "bottom") {
       nextY = box.y + (box.height - contentHeight);
     }
-  } else {
-    nextHeight = Math.max(box.height, contentHeight);
+  } else if (!(box.height > 0)) {
+    nextHeight = contentHeight;
   }
 
   // Auto-fit width: tiêu đề 1 dòng co khung theo bề rộng chữ thực tế và bù

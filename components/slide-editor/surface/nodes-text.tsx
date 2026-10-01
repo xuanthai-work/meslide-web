@@ -69,7 +69,11 @@ export function RawRichTextElement({
 
   const layoutRuns =
     renderRuns.length > 0 ? renderRuns : [{ text: displayContent, font }];
-  const fitted = fitTextToBox(layoutRuns, { width, height });
+  const declaredWidth = Number(element.size?.width);
+  const declaredHeight = Number(element.size?.height);
+  const fitWidth = declaredWidth > 0 ? declaredWidth : width;
+  const fitHeight = declaredHeight > 0 ? declaredHeight : height;
+  const fitted = fitTextToBox(layoutRuns, { width: fitWidth, height: fitHeight });
   const lines = fitted.lines as Array<
     Array<RenderTextRun & { width: number }>
   >;
@@ -211,7 +215,11 @@ export function RawTextListElement({
 }) {
   const font = rawFont(element);
   const items = rawTextListRenderItems(element);
-  const fitted = fitTextListToBox(items, { width, height });
+  const declaredWidth = Number(element.size?.width);
+  const declaredHeight = Number(element.size?.height);
+  const fitWidth = declaredWidth > 0 ? declaredWidth : width;
+  const fitHeight = declaredHeight > 0 ? declaredHeight : height;
+  const fitted = fitTextListToBox(items, { width: fitWidth, height: fitHeight });
   const lines = fitted.lines as Array<
     Array<RenderTextRun & { width: number }>
   >;
