@@ -2,6 +2,10 @@ import { resolveBackendAssetUrl } from "@/utils/api";
 import { chartDataFromSeriesWithColors } from "@/components/slide-editor/charts/chart-data";
 import { renderMarkdownTextRuns } from "@/components/slide-editor/text/markdown-text";
 import {
+  layoutFitTextRuns,
+  measureTextByUnits,
+} from "../text/template-v2-text-fit.mjs";
+import {
   EDITOR_STAGE_HEIGHT,
   EDITOR_STAGE_WIDTH,
   type Alignment,
@@ -29,6 +33,14 @@ import {
 
 const MIN_ELEMENT_SIZE = 1;
 const MAX_BORDER_RADIUS = 128;
+const TITLE_COMPONENT_IDS = new Set([
+  "primary_title",
+  "hero_image_with_title",
+  "title_summary_block",
+]);
+const TITLE_KEY_RE = /(^|_)title($|_)/i;
+const TITLE_COLLISION_GAP = 24;
+const SAFE_BOTTOM_Y = 700;
 type UnknownRecord = Record<string, unknown>;
 type AdaptedPosition = { x: number; y: number };
 type AdaptedSize = { width: number; height: number };
@@ -345,12 +357,153 @@ function adaptLayoutToSlide(layout: TemplateV2Layout, index: number): Slide {
 
   const slideElements =
     elements.length > 0 ? elements : [invisibleFallbackElement()];
+  pushElementsClearOfTitles(slideElements);
 
   return normalizeTemplateV2Slide({
     title: titleFromLayout(layout, index),
     background: backgroundFromElements(slideElements),
     elements: slideElements,
   });
+}
+
+type CollisionBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+function hasTitleKey(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return TITLE_COMPONENT_IDS.has(value) || TITLE_KEY_RE.test(value);
+}
+
+function naturalTextHeight(element: Extract<SlideElement, { type: "text" }>) {
+  const boxHeight = element.size?.height ?? MIN_ELEMENT_SIZE;
+  const width = element.size?.width ?? 0;
+  if (!(width > 0)) return boxHeight;
+
+  const runs = (element.runs ?? [])
+    .map((run): { text: string; font: Record<string, unknown> } | null => {
+      if (!("text" in run) || typeof run.text !== "string") return null;
+      const font: Record<string, unknown> = {
+        ...(run.font ?? {}),
+        size: run.font?.size ?? element.font?.size ?? 18,
+        lineHeight: run.font?.line_height ?? element.font?.line_height ?? 1.15,
+      };
+      return { text: run.text, font };
+    })
+    .filter((run): run is { text: string; font: Record<string, unknown> } =>
+      Boolean(run),
+    );
+  if (runs.length === 0) return boxHeight;
+
+  const lines = layoutFitTextRuns(runs, width, measureTextByUnits, {
+    allowCharSplit: false,
+  }) as Array<Array<{ font?: Record<string, unknown> }>>;
+  const natural = lines.reduce((sum, line) => {
+    const lineHeight = Math.max(
+      1,
+      ...line.map((segment) => {
+        const size = Number(segment.font?.size) || 18;
+        const leading = Number(segment.font?.lineHeight) || 1.15;
+        return size * leading;
+      }),
+    );
+    return sum + lineHeight;
+  }, 0);
+  return Math.max(boxHeight, natural);
+}
+
+function titleCollisionBox(
+  element: SlideElement,
+  offsetX: number,
+  offsetY: number,
+  insideTitle: boolean,
+): CollisionBox | null {
+  const x = offsetX + (element.position?.x ?? 0);
+  const y = offsetY + (element.position?.y ?? 0);
+  const width = element.size?.width ?? MIN_ELEMENT_SIZE;
+  const isTitle =
+    insideTitle ||
+    hasTitleKey(element.component_slot) ||
+    hasTitleKey(element.component_id) ||
+    hasTitleKey(element.name);
+
+  if (element.type === "text") {
+    return isTitle
+      ? { x, y, width, height: naturalTextHeight(element) }
+      : null;
+  }
+
+  if ("children" in element && Array.isArray(element.children)) {
+    for (const child of element.children) {
+      const found = titleCollisionBox(child, x, y, isTitle);
+      if (found) return found;
+    }
+  }
+  if (element.type === "container" && element.child) {
+    return titleCollisionBox(element.child, x, y, isTitle);
+  }
+  return null;
+}
+
+function absoluteElementBox(element: SlideElement): CollisionBox {
+  const bounds = adaptedElementBounds(element);
+  return {
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+  };
+}
+
+function boxesOverlapX(left: CollisionBox, right: CollisionBox): boolean {
+  return left.x < right.x + right.width && right.x < left.x + left.width;
+}
+
+/**
+ * A heading can outgrow the single-line frame the template reserved for it.
+ * Because template V2 positions every component absolutely, the taller heading
+ * then paints straight over the component stacked underneath. Push each lower
+ * sibling down just enough to keep ``TITLE_COLLISION_GAP`` of breathing room,
+ * never dragging it past the safe bottom edge of the canvas.
+ */
+function pushElementsClearOfTitles(elements: SlideElement[]): void {
+  const titleBoxes: CollisionBox[] = [];
+  const targets: { element: SlideElement; box: CollisionBox }[] = [];
+
+  for (const element of elements) {
+    const titleBox = titleCollisionBox(element, 0, 0, false);
+    if (titleBox) {
+      titleBoxes.push(titleBox);
+    } else {
+      targets.push({ element, box: absoluteElementBox(element) });
+    }
+  }
+  if (titleBoxes.length === 0) return;
+
+  for (const { element, box } of targets) {
+    let pushDelta = 0;
+    for (const titleBox of titleBoxes) {
+      if (titleBox.y >= box.y) continue;
+      if (!boxesOverlapX(titleBox, box)) continue;
+      const requiredTop = titleBox.y + titleBox.height + TITLE_COLLISION_GAP;
+      if (requiredTop > box.y) {
+        pushDelta = Math.max(pushDelta, requiredTop - box.y);
+      }
+    }
+    if (pushDelta <= 0) continue;
+
+    const maxPush = SAFE_BOTTOM_Y - (box.y + box.height);
+    const applied = Math.max(0, Math.min(pushDelta, maxPush));
+    if (applied <= 0) continue;
+
+    element.position = {
+      x: element.position?.x ?? 0,
+      y: (element.position?.y ?? 0) + applied,
+    };
+  }
 }
 
 function normalizeTemplateV2Element(element: SlideElement): SlideElement {

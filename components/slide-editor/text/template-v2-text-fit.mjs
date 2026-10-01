@@ -61,8 +61,16 @@ export function measureTextByUnits(text, font) {
 
 export function floorFontPx(designedSize) {
   const size = Number(designedSize) > 0 ? designedSize : 18;
-  const minPx = size >= TITLE_SIZE_THRESHOLD ? TITLE_MIN_PX : BODY_MIN_PX;
-  return Math.max(size * SHRINK_RATIO, minPx);
+  if (size >= 60) {
+    return Math.max(size * 0.45, 28);
+  }
+  if (size >= 40) {
+    return Math.max(size * 0.52, 22);
+  }
+  if (size >= TITLE_SIZE_THRESHOLD) {
+    return Math.max(size * 0.65, TITLE_MIN_PX);
+  }
+  return Math.max(size * SHRINK_RATIO, BODY_MIN_PX);
 }
 
 export function floorScale(designedSize) {
@@ -348,6 +356,8 @@ const SHORT_TEXT_SINGLE_LINE_MIN_SCALE = 0.8;
 const SHORT_TEXT_MAX_CHARS = 25;
 const SHORT_TEXT_MAX_WORDS = 3;
 const SHORT_TEXT_MIN_FONT_SIZE = 36;
+const LARGE_TITLE_SIZE = 60;
+const LARGE_TITLE_MAX_LINES = 2;
 
 /**
  * A tall box usually means "this text may wrap", but a big headline holding a
@@ -479,6 +489,25 @@ export function fitTextToBox(runs, box, options = {}) {
       ellipsis: false,
       height: layoutHeight(lines),
     };
+  }
+  if (
+    designedSize >= LARGE_TITLE_SIZE &&
+    lines.length > LARGE_TITLE_MAX_LINES
+  ) {
+    const floor = floorScale(designedSize);
+    const floorLines = layout(floor, false);
+    if (
+      floorLines.length <= LARGE_TITLE_MAX_LINES &&
+      layoutFits(floorLines, fitBox)
+    ) {
+      return {
+        runs: scaleFitRuns(source, floor),
+        fontScale: floor,
+        lines: floorLines,
+        ellipsis: false,
+        height: layoutHeight(floorLines),
+      };
+    }
   }
   if (preferSingleLine) {
     const singleLine = fitSingleLineOverflow(layout, fitBox, measure, designedSize);

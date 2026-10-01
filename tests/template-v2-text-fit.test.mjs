@@ -67,11 +67,14 @@ test("measureTextByUnits multiplies units by font size and letterSpacing", () =>
   assert.equal(width, 20 * 2 * LATIN_EM + 2);
 });
 
-test("title floor is max(72% size, 16px); body floor is max(72% size, 12px)", () => {
-  assert.equal(floorFontPx(32), 32 * 0.72);
+test("title floor shrinks in tiers as designed size grows", () => {
+  assert.equal(floorFontPx(64), 64 * 0.45);
+  assert.equal(floorFontPx(48), 48 * 0.52);
+  assert.equal(floorFontPx(32), 32 * 0.65);
   assert.equal(floorFontPx(18), 18 * 0.72);
   assert.equal(floorFontPx(14), 12);
-  assert.equal(floorScale(32), 0.72);
+  assert.equal(floorScale(32), 0.65);
+  assert.equal(floorScale(64), 0.45);
   assert.ok(Math.abs(floorScale(14) - 12 / 14) < 1e-9);
 });
 
@@ -426,7 +429,7 @@ test("a designed one-line box is distinguished from a multi-line paragraph box",
   assert.equal(isSingleLineBox({ width: 791.37, height: 62.27 }, 21.33), false);
   assert.equal(isSingleLineBox({ width: 400, height: 120 }, 18), false);
   assert.equal(isSingleLineBox({ width: 400, height: 0 }, 18), false);
-  assert.equal(singleLineMinScale(64) < floorScale(64), true);
+  assert.equal(singleLineMinScale(64) >= floorScale(64), true);
   assert.equal(singleLineMinScale(64) >= 0.55, true);
 });
 
@@ -581,4 +584,109 @@ test("html preview refits after document fonts are ready", async () => {
     source,
     /templateV2UiToHtmlFragment[\s\S]*fontsReady/,
   );
+});
+
+const novaTitleFont = {
+  family: "Archivo Black",
+  size: 71.11,
+  bold: true,
+  italic: false,
+  underline: false,
+  lineHeight: 1.15,
+  letterSpacing: -0.5,
+};
+
+test("large display titles get a deeper tiered shrink floor", () => {
+  assert.ok(floorScale(71.11) <= 0.48, `scale ${floorScale(71.11)}`);
+  assert.ok(floorFontPx(71.11) >= 28, `px ${floorFontPx(71.11)}`);
+});
+
+test("an oversized renderer title collapses to two lines inside its box", () => {
+  const box = { width: 390.22, height: 190.8 };
+  const result = fitTextToBox(
+    [{ text: "Tầng 3: Renderer — Render Tree", font: novaTitleFont }],
+    box,
+    { measure: measureTextByUnits },
+  );
+
+  assert.equal(result.ellipsis, false);
+  assert.equal(result.lines.length, 2);
+  assert.ok(result.height <= 95, `height ${result.height}`);
+  assert.ok(result.height <= box.height);
+});
+
+test("a wide builder title collapses to two lines and clears the canvas bottom", () => {
+  const box = { width: 565.62, height: 129.47 };
+  const result = fitTextToBox(
+    [{ text: "Builder: Chuyển đổi AST sang Tree", font: novaTitleFont }],
+    box,
+    { measure: measureTextByUnits },
+  );
+
+  assert.equal(result.ellipsis, false);
+  assert.equal(result.lines.length, 2);
+  assert.ok(result.height <= 90, `height ${result.height}`);
+  const absoluteTop = 12.51 + 492;
+  assert.ok(absoluteTop + result.height < 720);
+});
+
+const cardLabelFont = {
+  family: "Montserrat",
+  size: 49.78,
+  bold: false,
+  italic: false,
+  underline: false,
+  lineHeight: 1.4,
+  letterSpacing: -0.5,
+};
+
+const cardLabelPhrases = [
+  "Dữ liệu Trực tiếp",
+  "Dữ liệu Trò chơi",
+  "Phân tích Replay",
+];
+
+function visibleCardLabelChars(lines) {
+  return lines
+    .map((line) => line.map((segment) => segment.text).join(""))
+    .join("")
+    .replace("…", "").length;
+}
+
+test("a narrow card label stays on one line and shrinks below 26px", () => {
+  const box = { width: 117.45, height: 66.71 };
+  assert.equal(isSingleLineBox(box, cardLabelFont.size), true);
+
+  for (const text of cardLabelPhrases) {
+    const result = fitTextToBox([{ text, font: cardLabelFont }], box, {
+      measure: measureTextByUnits,
+    });
+    assert.equal(result.lines.length, 1, text);
+    const size = result.lines[0][0].font.size;
+    assert.ok(size <= 26, `${text} -> ${size}`);
+  }
+});
+
+test("a widened card label shows more of every phrase on one line", () => {
+  const narrowBox = { width: 117.45, height: 66.71 };
+  const wideBox = { width: 248.58, height: 66.71 };
+
+  for (const text of cardLabelPhrases) {
+    const narrow = fitTextToBox([{ text, font: cardLabelFont }], narrowBox, {
+      measure: measureTextByUnits,
+    });
+    const wide = fitTextToBox([{ text, font: cardLabelFont }], wideBox, {
+      measure: measureTextByUnits,
+    });
+
+    assert.equal(wide.lines.length, 1, text);
+    assert.ok(wide.height <= wideBox.height);
+    assert.ok(wide.fontScale < 1);
+    const wideSize = wide.lines[0][0].font.size;
+    assert.ok(wideSize >= 25 && wideSize <= 36, `${text} -> ${wideSize}`);
+    assert.ok(
+      visibleCardLabelChars(wide.lines) >= visibleCardLabelChars(narrow.lines),
+      text,
+    );
+  }
 });
