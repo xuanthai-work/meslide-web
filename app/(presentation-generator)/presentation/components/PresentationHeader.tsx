@@ -42,11 +42,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { buildSafeExportFileName } from "@/utils/exportFilename";
+
+function formatDisplayTitle(rawTitle?: string | null): string {
+  if (!rawTitle) return "Bài thuyết trình";
+  const firstLine = rawTitle.split(/\r?\n/)[0].trim();
+  const cleaned = firstLine
+    .replace(/\s*(Người trình bày|Tác giả|Author|Presenter|Ngày|Date)\s*:.*$/i, "")
+    .replace(/^#+\s*/, "")
+    .trim();
+  return cleaned || rawTitle.slice(0, 60);
+}
 
 function PresentationExportOptions({
   mobile,
@@ -346,17 +355,14 @@ const PresentationHeader = ({
           onClick={beginTitleEdit}
           disabled={isStreaming || !presentationData}
           className={cn(
-            "group/title flex w-full min-w-0 items-center gap-2.5 rounded-[14px] px-3 py-2 text-left -mx-3 transition-colors",
-            "hover:bg-[var(--gslide-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2",
+            "group/title flex min-w-0 max-w-[480px] items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left transition-colors",
+            "hover:bg-[var(--gslide-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]",
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
-          <h2 className="min-w-0 flex-1 font-unbounded text-lg leading-snug text-[#101323]">
-            <MarkdownRenderer
-              content={presentationData?.title || "Bài thuyết trình"}
-              className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-[#101323] prose-p:my-0 prose-headings:my-0"
-            />
-          </h2>
+          <span className="min-w-0 truncate font-unbounded text-sm font-semibold text-[#101323] leading-none">
+            {formatDisplayTitle(presentationData?.title)}
+          </span>
           {presentationData && !isStreaming && (
             <Pencil
               className="h-3.5 w-3.5 shrink-0 text-[#101323]/40 transition-all duration-200 group-hover/title:text-[var(--gslide-accent)] opacity-80 sm:opacity-0 sm:group-hover/title:opacity-100 group-hover/title:opacity-100"
@@ -371,23 +377,23 @@ const PresentationHeader = ({
   return (
     <>
       <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between gap-1.5 border-b border-[var(--gslide-border)] bg-[var(--gslide-bg)] px-3 sm:h-[80px] sm:gap-2 sm:px-4 xl:gap-2.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => {
               router.push("/dashboard");
             }}
             aria-label={"Về trang chủ"}
-            className="hidden shrink-0 sm:block"
+            className="hidden shrink-0 items-center sm:flex"
           >
             <GSlideWordmark className="text-base" />
           </button>
+          <div className="hidden h-4 w-[1px] bg-[#E5E7EB] sm:block shrink-0" aria-hidden="true" />
           {presentationData && !isStreaming && !isEditingTitle ? (
             <ToolTip content={"Đổi tên bài thuyết trình"}>{titleBlock}</ToolTip>
           ) : (
             titleBlock
           )}
-         
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 xl:gap-2.5">
