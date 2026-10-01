@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   AlignCenter,
   AreaChart,
@@ -1216,6 +1216,7 @@ function ActionsPanel({
   onImageItemSelect,
   onTableItemSelect,
   onTextItemSelect,
+  panelOpen = true,
   presentationData,
   presentationId,
 }: {
@@ -1235,11 +1236,14 @@ function ActionsPanel({
   onImageItemSelect: (item: PaletteItem) => void;
   onTableItemSelect: (item: PaletteItem) => void;
   onTextItemSelect: (item: PaletteItem) => void;
+  panelOpen?: boolean;
   presentationData?: unknown;
   presentationId: string;
 }) {
   return (
-    <div className="min-w-0 flex-1 bg-white">
+    <div
+      className={cn("min-w-0 flex-1 bg-white", panelOpen ? "block" : "hidden")}
+    >
       <div className={cn("h-full", activeAction === "ai" ? "block" : "hidden")}>
         <Chat
           {...chatProps}
@@ -1534,38 +1538,45 @@ const PresentationActions = (props: PresentationActionsProps) => {
     onPanelOpenChange(true);
   };
 
+  const openAiPanel = useCallback(() => {
+    dispatchUiState({ type: "selectAction", activeAction: "ai" });
+    onPanelOpenChange(true);
+  }, [onPanelOpenChange]);
+
+  const resolvedChatProps = {
+    ...chatProps,
+    currentSlide: chatSlide,
+    selectedTemplateV2Target,
+    onOpenAiPanel: openAiPanel,
+    onClearChatSlideReference:
+      typeof chatProps.currentSlide === "number"
+        ? () => setHiddenSlideReference(chatProps.currentSlide!)
+        : undefined,
+    onClearChatTargetReference: targetReferenceKey
+      ? () => setHiddenTargetReferenceKey(targetReferenceKey)
+      : undefined,
+  };
+
   return (
     <div
       data-inline-edit-ignore="true"
       className="flex h-full w-full overflow-hidden bg-white text-[clamp(12px,0.82vw,14px)]"
     >
-      {panelOpen ? (
-        <ActionsPanel
-          activeAction={activeAction}
-          blocksUnavailable={blocksUnavailable}
-          chatProps={{
-            ...chatProps,
-            currentSlide: chatSlide,
-            selectedTemplateV2Target,
-            onClearChatSlideReference:
-              typeof chatProps.currentSlide === "number"
-                ? () => setHiddenSlideReference(chatProps.currentSlide!)
-                : undefined,
-            onClearChatTargetReference: targetReferenceKey
-              ? () => setHiddenTargetReferenceKey(targetReferenceKey)
-              : undefined,
-          }}
-          editingDisabled={editingDisabled}
-          onBlockSelect={handleBlockSelect}
-          onChartItemSelect={handleChartItemSelect}
-          onElementItemSelect={handleElementItemSelect}
-          onImageItemSelect={handleImageItemSelect}
-          onTableItemSelect={handleTableItemSelect}
-          onTextItemSelect={handleTextItemSelect}
-          presentationData={presentationData}
-          presentationId={props.presentationId}
-        />
-      ) : null}
+      <ActionsPanel
+        activeAction={activeAction}
+        blocksUnavailable={blocksUnavailable}
+        chatProps={resolvedChatProps}
+        editingDisabled={editingDisabled}
+        onBlockSelect={handleBlockSelect}
+        onChartItemSelect={handleChartItemSelect}
+        onElementItemSelect={handleElementItemSelect}
+        onImageItemSelect={handleImageItemSelect}
+        onTableItemSelect={handleTableItemSelect}
+        onTextItemSelect={handleTextItemSelect}
+        panelOpen={panelOpen}
+        presentationData={presentationData}
+        presentationId={props.presentationId}
+      />
       <ActionsSidebar
         activeAction={activeAction}
         blocksUnavailable={blocksUnavailable}

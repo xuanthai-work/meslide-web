@@ -126,14 +126,14 @@ function TemplateV2PromptOverlay({
                             htmlFor={`blank-slide-prompt-${slideIndex}`}
                             className="block text-[18px] font-normal leading-[22px] text-[#333333]"
                         >
-                            Write prompt
+                            Tạo nội dung cho slide
                         </label>
                         <input
                             id={`blank-slide-prompt-${slideIndex}`}
                             autoFocus
                             value={prompt}
                             onChange={(event) => setPrompt(event.target.value)}
-                            placeholder="Start with your idea... we'll handle the slides"
+                            placeholder="Nhập nội dung bạn muốn tạo cho slide này (VD: Lời cảm ơn, Giới thiệu đội ngũ, Báo cáo doanh thu...)"
                             className="mt-3 h-8 w-full border-0 bg-transparent p-0 text-[18px] font-normal leading-8 text-[#191919] outline-none placeholder:text-[#9B9BA1]"
                         />
                     </div>

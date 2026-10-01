@@ -10,6 +10,11 @@ interface SortableSlideProps {
     onSlideClick: (index: any) => void;
     fonts?: unknown;
     presentationVersion?: unknown;
+    slideCount?: number;
+    onDeleteSlide?: (index: number) => void;
+    onDuplicateSlide?: (index: number) => void;
+    onMoveUpSlide?: (index: number) => void;
+    onMoveDownSlide?: (index: number) => void;
 }
 
 export const SortableSlide = memo(function SortableSlide({
@@ -19,6 +24,11 @@ export const SortableSlide = memo(function SortableSlide({
     onSlideClick,
     fonts,
     presentationVersion,
+    slideCount,
+    onDeleteSlide,
+    onDuplicateSlide,
+    onMoveUpSlide,
+    onMoveDownSlide,
 }: SortableSlideProps) {
     const lastClickTime = useRef(0);
     const {
@@ -63,6 +73,11 @@ export const SortableSlide = memo(function SortableSlide({
             {...attributes}
             {...listeners}
             onClick={handleClick}
+            onDelete={onDeleteSlide}
+            onDuplicate={onDuplicateSlide}
+            onMoveUp={onMoveUpSlide}
+            onMoveDown={onMoveDownSlide}
+            slideCount={slideCount}
         />
     );
 }, (previous, next) =>
@@ -71,6 +86,11 @@ export const SortableSlide = memo(function SortableSlide({
     previous.onSlideClick === next.onSlideClick &&
     previous.fonts === next.fonts &&
     previous.presentationVersion === next.presentationVersion &&
+    previous.slideCount === next.slideCount &&
+    previous.onDeleteSlide === next.onDeleteSlide &&
+    previous.onDuplicateSlide === next.onDuplicateSlide &&
+    previous.onMoveUpSlide === next.onMoveUpSlide &&
+    previous.onMoveDownSlide === next.onMoveDownSlide &&
     (previous.selectedSlide === previous.index) ===
     (next.selectedSlide === next.index)
 );

@@ -86,6 +86,7 @@ const Chat = ({
   selectedTemplateV2Target,
   onClearChatSlideReference,
   onClearChatTargetReference,
+  onOpenAiPanel,
   onBeforeSend,
   onPresentationChanged,
   onChatMutationStateChange,
@@ -1159,10 +1160,15 @@ const Chat = ({
       const instruction =
         detail.promptKind === "layout"
           ? `Fill the existing selected ${target} using its selected layout${layoutReference} as the layout reference. Preserve the layout structure and update this slide; do not add another slide.`
-          : `Create content on the existing selected ${target}. Update this slide; do not add another slide.`;
+          : `The user wants to create content for this slide with request: "${prompt}".
+Inspect the available layouts for this presentation template using getAvailableLayouts.
+Choose the layout that best fits the user request (e.g., closing/thank-you, cards, metrics, team, or title).
+Then fill the existing selected ${target} with rich, styled content matching that layout using updateSlide, addComponent, or element tools.
+Do not leave the slide blank. Do not add another slide. Ensure all text matches the requested language (Vietnamese by default).`;
       if (typeof detail.slideIndex === "number") {
         setHiddenOverlaySlideReference(detail.slideIndex);
       }
+      onOpenAiPanel?.();
       void submitMessageRef.current(prompt, {
         backendContext: instruction,
         layoutPreview:
@@ -1186,7 +1192,7 @@ const Chat = ({
         handleBlankSlidePrompt,
       );
     };
-  }, [variant]);
+  }, [onOpenAiPanel, variant]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
