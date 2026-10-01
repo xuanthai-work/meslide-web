@@ -102,6 +102,7 @@ export type ChatProps = {
   selectedTemplateV2Target?: TemplateV2SurfaceSelectedDetail["selection"];
   onClearChatSlideReference?: () => void;
   onClearChatTargetReference?: () => void;
+  onOpenAiPanel?: () => void;
   onBeforeSend?: () => Promise<void> | void;
   onPresentationChanged?: () => Promise<void> | void;
   onChatMutationStateChange?: (isMutating: boolean) => void;

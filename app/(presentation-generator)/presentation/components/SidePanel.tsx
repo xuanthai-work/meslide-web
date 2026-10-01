@@ -1,7 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Plus } from "lucide-react";
+import { useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 import { RootState } from "@/store/store";
@@ -20,16 +18,20 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
-  addNewSlide,
+  deletePresentationSlide,
+  duplicatePresentationSlide,
+  movePresentationSlide,
+  replaceSlidesWithBlankFallback,
   setPresentationData,
 } from "@/store/slices/presentationGeneration";
+import { addToHistory } from "@/store/slices/undoRedoSlice";
 import { SortableSlide } from "./SortableSlide";
 import { notify } from "@/components/ui/sonner";
-import NewSlide from "./NewSlide";
 import { SlideThumbnailCard } from "./SlideThumbnailCard";
 import {
   BLANK_SLIDE_LAYOUT_GROUP,
   createBlankPresentationSlide,
+  getSlideTemplateId,
   isTemplateFreePresentation,
 } from "../../_shared/blank-slide";
 import { MAX_NUMBER_OF_SLIDES } from "@/utils/presentationLimits";
@@ -55,7 +57,6 @@ const SidePanel = ({
 
   loading,
 }: SidePanelProps) => {
-  const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
   const thumbnailScrollRef = useRef<HTMLDivElement | null>(null);
 
   const { presentationData, isStreaming } = useSelector(
@@ -68,49 +69,160 @@ const SidePanel = ({
     ? presentationData.slides.length - 1
     : 0;
   const lastSlide = presentationData?.slides?.[lastSlideIndex];
-  const lastSlideLayoutGroup =
-    typeof lastSlide?.layout_group === "string" ? lastSlide.layout_group : "";
-  const lastSlideLayoutTemplateId =
-    typeof lastSlide?.layout === "string" ? lastSlide.layout.split(":")[0] : "";
-  const lastSlideTemplateId = lastSlideLayoutGroup.startsWith("template-v2")
-    ? lastSlideLayoutGroup
-    : lastSlideLayoutGroup || lastSlideLayoutTemplateId;
+  const lastSlideTemplateId = getSlideTemplateId(lastSlide);
   const isTemplateFree = isTemplateFreePresentation(presentationData);
 
-  const handleAddSlideClick = () => {
-    if (!presentationData?.slides?.length || isStreaming) return;
+  const handleDeleteSlide = useCallback(
+    (indexToDelete: number) => {
+      if (!presentationData?.slides?.length || isStreaming) return;
+      if (
+        indexToDelete < 0 ||
+        indexToDelete >= presentationData.slides.length
+      ) {
+        return;
+      }
 
-    if (presentationData.slides.length >= MAX_NUMBER_OF_SLIDES) {
-      notify.warning(
-        "Đã đạt giới hạn slide",
-        `Bạn có thể tạo tối đa ${MAX_NUMBER_OF_SLIDES} slide.`
+      if (presentationData.slides.length <= 1) {
+        const slideId = uuidv4();
+        const blankSlide = createBlankPresentationSlide({
+          id: slideId,
+          index: 0,
+          presentationId,
+          templateId: isTemplateFree
+            ? BLANK_SLIDE_LAYOUT_GROUP
+            : lastSlideTemplateId || BLANK_SLIDE_LAYOUT_GROUP,
+          isTemplateV2: true,
+        });
+
+        dispatch(
+          addToHistory({
+            slides: presentationData.slides,
+            actionType: "DELETE_LAST_SLIDE",
+          })
+        );
+        dispatch(replaceSlidesWithBlankFallback({ slideData: blankSlide }));
+        onSlideClick(0);
+        return;
+      }
+
+      const nextIndex = Math.min(
+        selectedSlide >= indexToDelete
+          ? Math.max(0, selectedSlide - 1)
+          : selectedSlide,
+        presentationData.slides.length - 2
       );
-      return;
-    }
-
-    if (isTemplateFree) {
-      const slideId = uuidv4();
-      const newIndex = lastSlideIndex + 1;
-      const blankSlide = createBlankPresentationSlide({
-        id: slideId,
-        index: newIndex,
-        presentationId,
-        templateId: BLANK_SLIDE_LAYOUT_GROUP,
-        isTemplateV2: true,
-      });
 
       dispatch(
-        addNewSlide({
-          slideData: blankSlide,
-          index: lastSlideIndex,
+        addToHistory({
+          slides: presentationData.slides,
+          actionType: "DELETE_SLIDE",
         })
       );
-      onSlideClick(newIndex);
-      return;
-    }
+      dispatch(deletePresentationSlide(indexToDelete));
+      onSlideClick(nextIndex);
+    },
+    [
+      presentationData,
+      isStreaming,
+      selectedSlide,
+      isTemplateFree,
+      lastSlideTemplateId,
+      presentationId,
+      onSlideClick,
+      dispatch,
+    ]
+  );
 
-    setShowNewSlideSelection(true);
-  };
+  const handleDuplicateSlide = useCallback(
+    (indexToDuplicate: number) => {
+      if (!presentationData?.slides?.length || isStreaming) return;
+
+      if (presentationData.slides.length >= MAX_NUMBER_OF_SLIDES) {
+        notify.warning(
+          "Đã đạt giới hạn slide",
+          `Bạn có thể tạo tối đa ${MAX_NUMBER_OF_SLIDES} slide.`
+        );
+        return;
+      }
+
+      if (
+        indexToDuplicate < 0 ||
+        indexToDuplicate >= presentationData.slides.length
+      ) {
+        return;
+      }
+
+      dispatch(
+        addToHistory({
+          slides: presentationData.slides,
+          actionType: "DUPLICATE_SLIDE",
+        })
+      );
+      dispatch(
+        duplicatePresentationSlide({
+          index: indexToDuplicate,
+          slideId: uuidv4(),
+        })
+      );
+      onSlideClick(indexToDuplicate + 1);
+    },
+    [presentationData, isStreaming, onSlideClick, dispatch]
+  );
+
+  const handleMoveSlide = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (!presentationData?.slides?.length || isStreaming) return;
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= presentationData.slides.length ||
+        toIndex >= presentationData.slides.length
+      ) {
+        return;
+      }
+
+      dispatch(
+        addToHistory({
+          slides: presentationData.slides,
+          actionType: "MOVE_SLIDE",
+        })
+      );
+      dispatch(movePresentationSlide({ fromIndex, toIndex }));
+      onSlideClick(toIndex);
+    },
+    [presentationData, isStreaming, onSlideClick, dispatch]
+  );
+
+  const handleMoveSlideUp = useCallback(
+    (index: number) => handleMoveSlide(index, index - 1),
+    [handleMoveSlide]
+  );
+
+  const handleMoveSlideDown = useCallback(
+    (index: number) => handleMoveSlide(index, index + 1),
+    [handleMoveSlide]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (!presentationData?.slides?.length || isStreaming) return;
+      e.preventDefault();
+      handleDeleteSlide(selectedSlide);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedSlide, presentationData, isStreaming, handleDeleteSlide]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -177,37 +289,6 @@ const SidePanel = ({
     return null;
   }
 
-  const shouldShowNewSlideModal =
-    showNewSlideSelection &&
-    !isTemplateFree &&
-    lastSlideTemplateId &&
-    typeof document !== "undefined";
-
-  const newSlideModal = shouldShowNewSlideModal
-    ? createPortal(
-        <div
-          className="fixed inset-0 z-[1000] overflow-y-auto bg-black/50 px-4 py-16"
-          onClick={() => setShowNewSlideSelection(false)}
-        >
-          <div className="relative z-[1001] flex min-h-full items-start justify-center pt-10">
-            <div
-              className="w-full max-w-[675px]"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <NewSlide
-                index={lastSlideIndex}
-                templateID={lastSlideTemplateId}
-                setShowNewSlideSelection={setShowNewSlideSelection}
-                presentationId={presentationId}
-                onSlideAdded={onSlideClick}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )
-    : null;
-
   return (
     <aside
       className="relative h-full w-[164px] bg-white px-2 py-5"
@@ -228,7 +309,7 @@ const SidePanel = ({
             <div
               ref={thumbnailScrollRef}
               data-slide-thumbnail-scroll-container="true"
-              className="hide-scrollbar min-h-0 w-full flex-1 space-y-[15px] overflow-y-auto pb-[76px]"
+              className="hide-scrollbar min-h-0 w-full flex-1 space-y-[15px] overflow-y-auto pb-5"
             >
               {isStreaming ? (
                 presentationData &&
@@ -244,6 +325,11 @@ const SidePanel = ({
                     fonts={presentationData.fonts}
                     presentationVersion={presentationData.version}
                     onClick={() => onSlideClick(index)}
+                    onDelete={handleDeleteSlide}
+                    onDuplicate={handleDuplicateSlide}
+                    onMoveUp={handleMoveSlideUp}
+                    onMoveDown={handleMoveSlideDown}
+                    slideCount={presentationData.slides.length}
                   />
                 ))
               ) : (
@@ -269,6 +355,11 @@ const SidePanel = ({
                           fonts={presentationData.fonts}
                           presentationVersion={presentationData.version}
                           onSlideClick={onSlideClick}
+                          onDeleteSlide={handleDeleteSlide}
+                          onDuplicateSlide={handleDuplicateSlide}
+                          onMoveUpSlide={handleMoveSlideUp}
+                          onMoveDownSlide={handleMoveSlideDown}
+                          slideCount={presentationData.slides.length}
                         />
                       )
                     )}
@@ -276,21 +367,8 @@ const SidePanel = ({
               )}
             </div>
           </DndContext>
-          <div className="absolute -bottom-5 left-0 flex w-full justify-center bg-[linear-gradient(to_top,#FFFFFF_80%,rgba(255,255,255,0)_100%)] py-5">
-              <button
-                type="button"
-                onClick={handleAddSlideClick}
-                className="flex w-[110px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[#D0D5DD] bg-[#F9FAFB] py-2 text-[#344054] transition-all hover:border-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)]"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="whitespace-nowrap text-[11px] font-medium leading-normal">
-                  Thêm slide
-                </span>
-              </button>
-          </div>
         </div>
       </div>
-      {newSlideModal}
     </aside>
   );
 };
