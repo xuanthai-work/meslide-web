@@ -64,11 +64,11 @@ const SlideThumbnailCardComponent = forwardRef<
         data-slide-thumbnail-index={index}
         aria-current={selected ? "true" : undefined}
         style={style}
-        className={`relative flex h-[62px] w-full cursor-pointer items-start justify-between transition-opacity duration-200 ${className}`}
+        className={`relative flex h-[62px] w-full cursor-pointer items-center gap-2.5 transition-opacity duration-200 ${className}`}
         {...props}
       >
         <p
-          className={`pointer-events-none shrink-0 whitespace-nowrap text-[12px] font-medium leading-normal ${
+          className={`pointer-events-none w-5 shrink-0 text-right whitespace-nowrap text-[12px] font-medium leading-none ${
             selected
               ? "text-[#1D6FE8]"
               : "text-[#333333]"

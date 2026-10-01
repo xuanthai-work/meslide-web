@@ -210,7 +210,7 @@ const SidePanel = ({
 
   return (
     <aside
-      className="relative h-full w-[150px] bg-white px-4 py-5"
+      className="relative h-full w-[164px] bg-white px-2 py-5"
       aria-label={"Các slide của bài thuyết trình"}
     >
       <div
@@ -276,7 +276,7 @@ const SidePanel = ({
               )}
             </div>
           </DndContext>
-          <div className="absolute -bottom-5 -left-4 flex w-[150px] justify-center bg-[linear-gradient(to_top,#FFFFFF_80%,rgba(255,255,255,0)_100%)] py-5">
+          <div className="absolute -bottom-5 left-0 flex w-full justify-center bg-[linear-gradient(to_top,#FFFFFF_80%,rgba(255,255,255,0)_100%)] py-5">
               <button
                 type="button"
                 onClick={handleAddSlideClick}
