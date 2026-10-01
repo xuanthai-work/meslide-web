@@ -726,7 +726,7 @@ function renderFittedLinesHtml(lines: unknown, singleLineBox = false): string {
       const sizeStyle =
         fontSize != null ? `font-size:${cssNumber(fontSize)}px;` : "";
       const singleLineStyle = singleLine
-        ? "white-space:nowrap;word-break:normal;overflow:hidden;text-overflow:ellipsis;"
+        ? "white-space:nowrap;word-break:normal;overflow:hidden;"
         : "white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;";
       return `<span style="display:block;width:100%;${singleLineStyle}${sizeStyle}line-height:${cssNumber(lineHeight)};">${content}</span>`;
     })

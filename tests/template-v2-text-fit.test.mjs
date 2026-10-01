@@ -68,13 +68,13 @@ test("measureTextByUnits multiplies units by font size and letterSpacing", () =>
 });
 
 test("title floor shrinks in tiers as designed size grows", () => {
-  assert.equal(floorFontPx(64), 64 * 0.45);
-  assert.equal(floorFontPx(48), 48 * 0.52);
-  assert.equal(floorFontPx(32), 32 * 0.65);
+  assert.equal(floorFontPx(64), 64 * 0.35);
+  assert.equal(floorFontPx(48), 48 * 0.4);
+  assert.equal(floorFontPx(32), 32 * 0.5);
   assert.equal(floorFontPx(18), 18 * 0.72);
   assert.equal(floorFontPx(14), 12);
-  assert.equal(floorScale(32), 0.65);
-  assert.equal(floorScale(64), 0.45);
+  assert.equal(floorScale(32), 0.5);
+  assert.equal(floorScale(64), 0.35);
   assert.ok(Math.abs(floorScale(14) - 12 / 14) < 1e-9);
 });
 
@@ -167,7 +167,7 @@ test("tall copy in a one-line box shrinks to the floor and stays inside", () => 
   assert.ok(result.height <= 40 + 0.5);
 });
 
-test("copy that still overflows at the floor gets an ellipsis on the last visible line", () => {
+test("copy that still overflows at the floor is never ellipsized", () => {
   const result = fitTextToBox(
     [{
       text: "word ".repeat(80),
@@ -176,15 +176,16 @@ test("copy that still overflows at the floor gets an ellipsis on the last visibl
     { width: 80, height: 80 },
     { measure: wideCharMeasure },
   );
-  assert.equal(result.ellipsis, true);
-  assert.ok(result.height <= 80 + 0.5);
-  const last = result.lines.at(-1);
-  assert.ok(last.some((segment) => segment.text.includes(ELLIPSIS)));
-  const width = last.reduce((sum, segment) => sum + segment.width, 0);
-  assert.ok(width <= 80 + 0.5);
+  assert.equal(result.ellipsis, false);
+  assert.ok(result.lines.length >= 1);
+  for (const line of result.lines) {
+    for (const segment of line) {
+      assert.ok(!String(segment.text).includes(ELLIPSIS));
+    }
+  }
 });
 
-test("text-list that does not fit the box shrinks and ellipsizes the last visible item", () => {
+test("text-list that does not fit the box keeps every item without ellipsis", () => {
   const itemFont = { ...font, size: 18 };
   const result = fitTextListToBox(
     Array.from({ length: 12 }, (_, index) => ({
@@ -196,10 +197,12 @@ test("text-list that does not fit the box shrinks and ellipsizes the last visibl
     { measure: wideCharMeasure },
   );
   assert.ok(result.fontScale <= 1);
-  assert.ok(result.height <= 60 + 0.5);
-  if (result.ellipsis) {
-    const last = result.lines.at(-1);
-    assert.ok(last.some((segment) => String(segment.text).includes(ELLIPSIS)));
+  assert.equal(result.ellipsis, false);
+  assert.ok(result.lines.length >= 12);
+  for (const line of result.lines) {
+    for (const segment of line) {
+      assert.ok(!String(segment.text).includes(ELLIPSIS));
+    }
   }
 });
 
@@ -240,7 +243,7 @@ test("whitespace that does not fit remaining width does not start a new line", (
   }
 });
 
-test("mixed bold and regular ellipsis last-line width stays within the box", () => {
+test("mixed bold and regular copy wraps without an ellipsis tail", () => {
   const regular = { ...font, bold: false, size: 20 };
   const bold = { ...font, bold: true, size: 28 };
   const result = fitTextToBox(
@@ -251,55 +254,53 @@ test("mixed bold and regular ellipsis last-line width stays within the box", () 
     { width: 90, height: 60 },
     { measure: wideCharMeasure },
   );
-  assert.equal(result.ellipsis, true);
-  const last = result.lines.at(-1);
-  const width = last.reduce((sum, segment) => sum + segment.width, 0);
-  assert.ok(width <= 90 + 0.5);
-  const tail = last.at(-1);
-  assert.ok(String(tail.text).includes(ELLIPSIS));
+  assert.equal(result.ellipsis, false);
+  const tail = result.lines.at(-1).at(-1);
+  assert.ok(!String(tail.text).includes(ELLIPSIS));
   assert.ok(Math.abs(tail.width - wideCharMeasure(tail.text, tail.font)) < 1e-6);
 });
 
-test("ellipsis is omitted when it cannot fit the box width", () => {
+test("a box narrower than one glyph keeps the whole word without ellipsis", () => {
   const result = fitTextToBox(
     [{ text: "Hello", font: { ...font, size: 200 } }],
     { width: 1, height: 80 },
     { measure: wideCharMeasure },
   );
-  assert.equal(result.lines.length, 0);
-  assert.equal(result.height, 0);
+  assert.equal(result.ellipsis, false);
+  assert.ok(result.lines.length >= 1);
   for (const line of result.lines) {
     for (const segment of line) {
-      assert.ok(segment.width <= 1 + 0.5);
+      assert.ok(!String(segment.text).includes(ELLIPSIS));
     }
   }
 });
 
-test("ellipsis last line respects letterSpacing on the painted string", () => {
+test("wrapped copy keeps letterSpacing metrics without an ellipsis tail", () => {
   const spacedFont = { size: 20, bold: false, letterSpacing: 8, lineHeight: 1.15 };
   const result = fitTextToBox(
     [{ text: "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ", font: spacedFont }],
     { width: 120, height: 80 },
     { measure: measureTextByUnits },
   );
-  assert.equal(result.ellipsis, true);
-  const last = result.lines.at(-1);
-  const lineWidth = last.reduce((sum, segment) => sum + segment.width, 0);
-  assert.ok(lineWidth <= 120 + 0.5);
-  const tail = last.at(-1);
-  assert.ok(String(tail.text).includes(ELLIPSIS));
+  assert.equal(result.ellipsis, false);
+  const tail = result.lines.at(-1).at(-1);
+  assert.ok(!String(tail.text).includes(ELLIPSIS));
   assert.ok(Math.abs(tail.width - measureTextByUnits(tail.text, tail.font)) < 1e-6);
 });
 
-test("box shorter than one line height at floor keeps one ellipsized line", () => {
+test("box shorter than one line height keeps the copy on one line without ellipsis", () => {
   const result = fitTextToBox(
     [{ text: "Hello world", font: { ...font, size: 32 } }],
     { width: 800, height: 20 },
     { measure: wideCharMeasure },
   );
   assert.ok(result.lines.length >= 1);
-  const last = result.lines.at(-1);
-  assert.ok(last.some((segment) => String(segment.text).includes(ELLIPSIS)));
+  assert.equal(result.ellipsis, false);
+  for (const line of result.lines) {
+    for (const segment of line) {
+      assert.ok(!String(segment.text).includes(ELLIPSIS));
+    }
+  }
 });
 
 test("an oversized latex run stays atomic during layout", () => {
@@ -429,8 +430,8 @@ test("a designed one-line box is distinguished from a multi-line paragraph box",
   assert.equal(isSingleLineBox({ width: 791.37, height: 62.27 }, 21.33), false);
   assert.equal(isSingleLineBox({ width: 400, height: 120 }, 18), false);
   assert.equal(isSingleLineBox({ width: 400, height: 0 }, 18), false);
-  assert.equal(singleLineMinScale(64) >= floorScale(64), true);
-  assert.equal(singleLineMinScale(64) >= 0.55, true);
+  assert.equal(singleLineMinScale(64) <= floorScale(64), true);
+  assert.equal(singleLineMinScale(64) <= 0.45, true);
 });
 
 test("wide glyphs take a wider paint safety margin than latin copy", () => {
@@ -478,8 +479,10 @@ test("a one-line box never spends its second line even when shrinking deep", () 
   );
 
   assert.equal(result.lines.length, 1);
-  const width = result.lines[0].reduce((sum, segment) => sum + segment.width, 0);
-  assert.ok(width <= box.width + 0.5);
+  assert.equal(result.ellipsis, false);
+  for (const segment of result.lines[0]) {
+    assert.ok(!String(segment.text).includes(ELLIPSIS));
+  }
 });
 
 test("a multi-line paragraph box still wraps to a second line", () => {
@@ -598,7 +601,7 @@ const novaTitleFont = {
 
 test("large display titles get a deeper tiered shrink floor", () => {
   assert.ok(floorScale(71.11) <= 0.48, `scale ${floorScale(71.11)}`);
-  assert.ok(floorFontPx(71.11) >= 28, `px ${floorFontPx(71.11)}`);
+  assert.ok(floorFontPx(71.11) >= 20, `px ${floorFontPx(71.11)}`);
 });
 
 test("an oversized renderer title collapses to two lines inside its box", () => {
@@ -615,7 +618,7 @@ test("an oversized renderer title collapses to two lines inside its box", () => 
   assert.ok(result.height <= box.height);
 });
 
-test("a wide builder title collapses to two lines and clears the canvas bottom", () => {
+test("a wide builder title fits in full and clears the canvas bottom", () => {
   const box = { width: 565.62, height: 129.47 };
   const result = fitTextToBox(
     [{ text: "Builder: Chuyển đổi AST sang Tree", font: novaTitleFont }],
@@ -624,8 +627,12 @@ test("a wide builder title collapses to two lines and clears the canvas bottom",
   );
 
   assert.equal(result.ellipsis, false);
-  assert.equal(result.lines.length, 2);
-  assert.ok(result.height <= 90, `height ${result.height}`);
+  assert.ok(result.lines.length <= 2);
+  assert.equal(
+    result.lines.map((line) => line.map((segment) => segment.text).join("")).join(""),
+    "Builder: Chuyển đổi AST sang Tree",
+  );
+  assert.ok(result.height <= box.height);
   const absoluteTop = 12.51 + 492;
   assert.ok(absoluteTop + result.height < 720);
 });
@@ -667,7 +674,7 @@ test("a narrow card label stays on one line and shrinks below 26px", () => {
   }
 });
 
-test("a widened card label shows more of every phrase on one line", () => {
+test("a widened card label shows every phrase in full on one line", () => {
   const narrowBox = { width: 117.45, height: 66.71 };
   const wideBox = { width: 248.58, height: 66.71 };
 
@@ -680,13 +687,32 @@ test("a widened card label shows more of every phrase on one line", () => {
     });
 
     assert.equal(wide.lines.length, 1, text);
+    assert.equal(wide.ellipsis, false, text);
     assert.ok(wide.height <= wideBox.height);
     assert.ok(wide.fontScale < 1);
     const wideSize = wide.lines[0][0].font.size;
-    assert.ok(wideSize >= 25 && wideSize <= 36, `${text} -> ${wideSize}`);
+    assert.ok(wideSize >= 20 && wideSize <= 36, `${text} -> ${wideSize}`);
     assert.ok(
       visibleCardLabelChars(wide.lines) >= visibleCardLabelChars(narrow.lines),
       text,
     );
   }
+});
+
+test("the replay card label fits in full on one line without ellipsis", () => {
+  const box = { width: 248.58, height: 66.71 };
+  const text = "Phân tích Replay";
+  const result = fitTextToBox([{ text, font: cardLabelFont }], box, {
+    measure: measureTextByUnits,
+  });
+
+  assert.equal(result.ellipsis, false);
+  assert.equal(result.lines.length, 1);
+  assert.equal(
+    result.lines[0].map((segment) => segment.text).join(""),
+    text,
+  );
+  const size = result.lines[0][0].font.size;
+  assert.ok(size >= 20 && size <= 30, `font ${size}`);
+  assert.ok(result.height <= box.height);
 });

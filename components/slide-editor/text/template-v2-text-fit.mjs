@@ -62,13 +62,13 @@ export function measureTextByUnits(text, font) {
 export function floorFontPx(designedSize) {
   const size = Number(designedSize) > 0 ? designedSize : 18;
   if (size >= 60) {
-    return Math.max(size * 0.45, 28);
+    return Math.max(size * 0.35, 20);
   }
   if (size >= 40) {
-    return Math.max(size * 0.52, 22);
+    return Math.max(size * 0.4, 16);
   }
   if (size >= TITLE_SIZE_THRESHOLD) {
-    return Math.max(size * 0.65, TITLE_MIN_PX);
+    return Math.max(size * 0.5, TITLE_MIN_PX);
   }
   return Math.max(size * SHRINK_RATIO, BODY_MIN_PX);
 }
@@ -238,94 +238,6 @@ function layoutFits(lines, box) {
   return lines.every((line) => lineWidthOf(line) <= box.width + 0.01);
 }
 
-function graphemes(text) {
-  if (typeof Intl !== "undefined" && Intl.Segmenter) {
-    return Array.from(
-      new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text),
-      (part) => part.segment,
-    );
-  }
-  return Array.from(text);
-}
-
-function ellipsizeLine(line, maxWidth, measure) {
-  const fallbackFont = line[0]?.font ?? { size: 18 };
-  const copy = line.map((segment) => ({ ...segment }));
-  const paintedWidth = () => {
-    if (!copy.length) {
-      return measure(ELLIPSIS, fallbackFont);
-    }
-    const prefixWidth =
-      copy.length > 1
-        ? copy.slice(0, -1).reduce((sum, segment) => sum + segment.width, 0)
-        : 0;
-    const tail = copy[copy.length - 1];
-    return prefixWidth + measure(`${tail.text}${ELLIPSIS}`, tail.font);
-  };
-  while (copy.length && paintedWidth() > maxWidth) {
-    const last = copy[copy.length - 1];
-    const parts = graphemes(last.text);
-    if (parts.length <= 1) {
-      copy.pop();
-      continue;
-    }
-    last.text = parts.slice(0, -1).join("");
-    last.width = measure(last.text, last.font);
-  }
-  if (!copy.length) {
-    const font = fallbackFont;
-    const width = measure(ELLIPSIS, font);
-    if (width > maxWidth) {
-      return [];
-    }
-    return [
-      {
-        text: ELLIPSIS,
-        font,
-        width,
-      },
-    ];
-  }
-  const tail = copy[copy.length - 1];
-  tail.text = `${tail.text}${ELLIPSIS}`;
-  tail.width = measure(tail.text, tail.font);
-  if (lineWidthOf(copy) > maxWidth + 0.01) {
-    return [];
-  }
-  return copy;
-}
-
-function applyEllipsis(lines, box, measure, singleLine = false) {
-  if (singleLine) {
-    if (!lines[0]?.length) return [];
-    const single = ellipsizeLine(lines[0], box.width, measure);
-    return single.length ? [single] : [];
-  }
-  const kept = [];
-  let y = 0;
-  for (const line of lines) {
-    const height = lineHeightOf(line);
-    if (y + height > box.height + 0.01) break;
-    kept.push(line);
-    y += height;
-  }
-  if (!kept.length) {
-    if (!lines[0]?.length) return [];
-    const ellipsisLine = ellipsizeLine(lines[0], box.width, measure);
-    if (!ellipsisLine.length) return [];
-    // Painters clip. Keep one ellipsized line even if it is taller than the box.
-    return [ellipsisLine];
-  }
-  const ellipsized = ellipsizeLine(
-    kept[kept.length - 1],
-    box.width,
-    measure,
-  );
-  if (!ellipsized.length) return [];
-  kept[kept.length - 1] = ellipsized;
-  return kept;
-}
-
 function designedSizeOf(runs) {
   const sizes = (runs ?? [])
     .map((run) => Number(run.font?.size))
@@ -376,10 +288,9 @@ export function hasShortSingleLineText(source, designedFontSize) {
 }
 
 export function singleLineMinScale(designedSize) {
-  return Math.max(
-    SINGLE_LINE_MIN_SCALE,
-    floorScale(designedSize) * SINGLE_LINE_FLOOR_RATIO,
-  );
+  const size = Number(designedSize) > 0 ? designedSize : 18;
+  // Cho phép single line co linh hoạt theo floorScale thực tế:
+  return Math.min(floorScale(size), 0.45);
 }
 
 export function hasWideGlyphs(text) {
@@ -440,8 +351,12 @@ function finishOverflowFit(layoutAt, box, measure, minScale, singleLine = false)
   }
   return {
     bestScale: minScale,
-    bestLines: applyEllipsis(splitFit.bestLines, box, measure, singleLine),
-    ellipsis: true,
+    // Never cut copy and never spend a second line in a single-line box: keep
+    // every glyph on that one designed line and let the painter clip the spill.
+    bestLines: singleLine
+      ? (splitFit.bestLines.length ? [splitFit.bestLines.flat()] : [])
+      : splitFit.bestLines,
+    ellipsis: false,
   };
 }
 
@@ -491,6 +406,7 @@ export function fitTextToBox(runs, box, options = {}) {
     };
   }
   if (
+    !forcedSingleLine &&
     designedSize >= LARGE_TITLE_SIZE &&
     lines.length > LARGE_TITLE_MAX_LINES
   ) {
