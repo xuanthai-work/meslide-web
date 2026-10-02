@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
@@ -136,18 +137,20 @@ const SlideActionBar = ({
       >
         <div className="pointer-events-auto hide-scrollbar flex h-10 max-w-[calc(100%_-_2rem)] items-center overflow-x-auto rounded-full border border-[#EDEEEF] bg-white/95 backdrop-blur px-2 shadow-[0_8px_24px_rgba(16,24,40,0.08)]">
           <>
-              <button
+              <motion.button
                 type="button"
                 onClick={handleAddNewSlideWithAi}
                 disabled={hasReachedSlideLimit}
+                whileHover={hasReachedSlideLimit ? undefined : { scale: 1.02 }}
+                whileTap={hasReachedSlideLimit ? undefined : { scale: 0.97 }}
                 className={cn(
-                  "flex h-8 shrink-0 items-center gap-2 rounded-[6px] px-3 text-sm font-normal leading-none text-[#111324] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
+                  "group/add transform-gpu flex h-8 shrink-0 items-center gap-2 rounded-[6px] px-3 text-sm font-normal leading-none text-[#111324] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
                   hasReachedSlideLimit && "cursor-not-allowed opacity-50"
                 )}
               >
                 <span>{"Thêm slide"}</span>
-                <Plus className="h-4 w-4" strokeWidth={2.4} />
-              </button>
+                <Plus className="h-4 w-4 stroke-[2.4] transition-transform duration-200 group-hover/add:rotate-90" />
+              </motion.button>
               <Separator orientation="vertical" className="mx-2 h-6 shrink-0 bg-[#EDEEEF]" />
           </>
           {speakerNote &&
@@ -156,11 +159,13 @@ const SlideActionBar = ({
               onOpenChange={setIsSpeakerPopoverOpen}
             >
               <PopoverTrigger asChild>
-                <button
+                <motion.button
                   type="button"
                   aria-label={"Ghi chú thuyết trình"}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className={cn(
-                    "flex h-8 w-10 shrink-0 items-center justify-center rounded-[6px] text-[#050505] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
+                    "transform-gpu flex h-8 w-10 shrink-0 items-center justify-center rounded-[6px] text-[#050505] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
                     isSpeakerPopoverOpen && "bg-[#F7F6F9]"
                   )}
                 >
@@ -169,7 +174,7 @@ const SlideActionBar = ({
                     <path d="M13.2002 11.8668C14.1374 10.9294 14.6641 9.65834 14.6645 8.33284C14.6648 7.00735 14.1389 5.73594 13.2022 4.7981" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M11.3336 10C11.5517 9.78195 11.7244 9.52279 11.8417 9.23755C11.9591 8.95231 12.0187 8.64663 12.0171 8.33821C12.0156 8.02978 11.9529 7.72472 11.8327 7.44067C11.7125 7.15662 11.5372 6.89922 11.3169 6.68335" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </button>
+                </motion.button>
               </PopoverTrigger>
               <PopoverContent
                 side="top"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { motion } from "motion/react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -180,18 +181,20 @@ export function OutlineComposer({
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gslide-border)] pt-2.5">
               <div className="min-w-0 flex-1">{children}</div>
-              <button
+              <motion.button
                 type="button"
                 disabled={!canGenerate || isGenerating}
                 aria-busy={isGenerating}
                 onClick={onGenerate}
+                whileHover={!canGenerate || isGenerating ? undefined : { scale: 1.02 }}
+                whileTap={!canGenerate || isGenerating ? undefined : { scale: 0.98 }}
                 data-testid="rewrite-action-button"
                 // The solid accent is the base layer and the gradient is the
                 // enhancement on top: background-color and background-image
                 // are independent, so if the gradient ever fails to resolve
                 // the label stays readable on a solid accent button instead
                 // of disappearing as white on white.
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 self-end whitespace-nowrap rounded-lg bg-[var(--gslide-accent)] bg-gradient-to-r from-[var(--gslide-accent)] to-[var(--gslide-accent-hover)] px-3 text-xs font-semibold text-white shadow-[0_4px_14px_0_color-mix(in_srgb,var(--gslide-accent)_30%,transparent)] transition hover:bg-[var(--gslide-accent-hover)] hover:from-[var(--gslide-accent-hover)] hover:to-[var(--gslide-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_30%,transparent)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                className="transform-gpu inline-flex h-8 shrink-0 items-center gap-1.5 self-end whitespace-nowrap rounded-lg bg-[var(--gslide-accent)] bg-gradient-to-r from-[var(--gslide-accent)] to-[var(--gslide-accent-hover)] px-3 text-xs font-semibold text-white shadow-[0_4px_14px_0_color-mix(in_srgb,var(--gslide-accent)_30%,transparent)] transition-all hover:bg-[var(--gslide-accent-hover)] hover:from-[var(--gslide-accent-hover)] hover:to-[var(--gslide-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_30%,transparent)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
               >
                 {isGenerating ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -199,7 +202,7 @@ export function OutlineComposer({
                   <Zap className="h-3.5 w-3.5 fill-current opacity-90" aria-hidden="true" />
                 )}
                 {actionLabel}
-              </button>
+              </motion.button>
             </div>
           </div>
         </section>

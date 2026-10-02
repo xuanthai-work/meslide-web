@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
   Popover,
@@ -407,7 +408,7 @@ const PresentationHeader = ({
               <button
                 type="button"
                 onClick={() => setIsRegenerateConfirmOpen(true)}
-                className="group"
+                className="group transform-gpu transition-transform duration-200 hover:scale-110 active:scale-90"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-[#101323] group-hover:text-[var(--gslide-accent)] duration-300" />
               </button>
@@ -416,7 +417,7 @@ const PresentationHeader = ({
             <ToolTip content={"Hoàn tác"}>
               <button
                 disabled={!canUndo}
-                className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+                className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group transform-gpu transition-transform duration-200 hover:scale-110 active:scale-90"
                 onClick={() => {
                   onUndo();
                 }}
@@ -428,7 +429,7 @@ const PresentationHeader = ({
             <ToolTip content={"Làm lại"}>
               <button
                 disabled={!canRedo}
-                className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+                className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group transform-gpu transition-transform duration-200 hover:scale-110 active:scale-90"
                 onClick={() => {
                   onRedo();
                 }}
@@ -440,14 +441,16 @@ const PresentationHeader = ({
 
         {
           <ToolTip content={"Phím tắt (?)"}>
-            <button
+            <motion.button
               type="button"
               aria-label={"Phím tắt"}
               aria-haspopup="dialog"
               aria-expanded={shortcutsDialogOpen}
               aria-keyshortcuts="?"
               data-testid="keyboard-shortcuts-btn"
-              className="hidden h-[38px] w-[38px] items-center justify-center rounded-full border border-[#EDECEC] bg-white shadow-sm text-[#101323] transition-colors hover:border-[var(--gslide-border)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2 sm:inline-flex"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="transform-gpu hidden h-[38px] w-[38px] items-center justify-center rounded-full border border-[#EDECEC] bg-white shadow-sm text-[#101323] transition-colors hover:border-[var(--gslide-border)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-2 sm:inline-flex"
               onClick={() => setShortcutsDialogOpen(true)}
             >
               <Keyboard
@@ -455,11 +458,11 @@ const PresentationHeader = ({
                 className="size-4"
                 strokeWidth={1.8}
               />
-            </button>
+            </motion.button>
           </ToolTip>}
 
           <ToolTip content={"Trình chiếu bài thuyết trình"}>
-            <button
+            <motion.button
               type="button"
               onClick={() => {
                 const to = `?id=${presentation_id}&mode=present&slide=${
@@ -472,19 +475,23 @@ const PresentationHeader = ({
                 !presentationData?.slides ||
                 presentationData?.slides.length === 0
               }
-              className="flex h-[38px] items-center gap-2 rounded-full border border-[#EDECEC] bg-white px-3.5 text-sm font-medium text-[#101323] shadow-sm transition-all duration-200 hover:border-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+              whileHover={isStreaming || !presentationData?.slides?.length ? undefined : { scale: 1.03 }}
+              whileTap={isStreaming || !presentationData?.slides?.length ? undefined : { scale: 0.97 }}
+              className="transform-gpu flex h-[38px] items-center gap-2 rounded-full border border-[#EDECEC] bg-white px-3.5 text-sm font-medium text-[#101323] shadow-sm transition-colors duration-200 hover:border-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={"Trình chiếu"}
             >
               <Play className="h-3.5 w-3.5 fill-current" />
               <span className="hidden sm:inline">{"Trình chiếu"}</span>
-            </button>
+            </motion.button>
           </ToolTip>
 
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              <button
-                className="flex h-[38px] items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[var(--gslide-accent-hover)] hover:shadow-[0_4px_12px_rgba(29,111,232,0.24)] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
+              <motion.button
+                className="transform-gpu flex h-[38px] items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 text-sm font-semibold text-white shadow-sm transition-[background-color,box-shadow] duration-200 hover:bg-[var(--gslide-accent-hover)] hover:shadow-[0_4px_12px_rgba(29,111,232,0.24)] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
                 disabled={isExporting || isStreaming === true}
+                whileHover={isExporting || isStreaming ? undefined : { scale: 1.02 }}
+                whileTap={isExporting || isStreaming ? undefined : { scale: 0.98 }}
               >
                 {isExporting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -492,7 +499,7 @@ const PresentationHeader = ({
                   <span className="hidden sm:inline">{"Xuất"}</span>
                 )}{" "}
                 <ArrowRightFromLine className="w-3.5 h-3.5" />
-              </button>
+              </motion.button>
             </PopoverTrigger>
             <PopoverContent
               align="end"

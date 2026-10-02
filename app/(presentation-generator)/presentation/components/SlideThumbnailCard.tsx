@@ -1,4 +1,5 @@
 import React, { forwardRef, memo, useCallback } from "react";
+import { motion } from "motion/react";
 import { Trash2, Copy, MoreVertical, ArrowUp, ArrowDown } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Slide } from "../../types/slide";
@@ -89,8 +90,10 @@ const SlideThumbnailCardComponent = forwardRef<
           {index + 1}
         </p>
 
-        <div
-          className={`relative h-[62px] w-[110px] shrink-0 overflow-hidden rounded-[8px] bg-white transition-[border-color,box-shadow] duration-200 ${
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`transform-gpu relative h-[62px] w-[110px] shrink-0 overflow-hidden rounded-[8px] bg-white transition-[border-color,box-shadow] duration-200 ${
             selected
               ? "border-2 border-[#1D6FE8] shadow-[0_0_0_3px_rgba(29,111,232,0.14),0_4px_12px_rgba(29,111,232,0.08)]"
               : "border border-[#E5E7EB] hover:border-[#BFDBFE] hover:shadow-sm"
@@ -217,7 +220,7 @@ const SlideThumbnailCardComponent = forwardRef<
               />
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     );
   }

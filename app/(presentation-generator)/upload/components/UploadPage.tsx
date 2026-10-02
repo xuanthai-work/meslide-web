@@ -11,6 +11,7 @@
 
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, type Variants } from "motion/react";
 import { useDispatch } from "react-redux";
 import { clearOutlines, setPresentationId } from "@/store/slices/presentationGeneration";
 import { OutlineComposer, type OutlinePhase } from "./OutlineComposer";
@@ -71,6 +72,25 @@ const isStaleDocumentError = (error: unknown): boolean => {
     error.code !== undefined &&
     STALE_DOCUMENT_ERROR_CODES.has(error.code)
   );
+};
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: "easeOut" },
+  },
 };
 
 const UploadPage = () => {
@@ -609,55 +629,67 @@ const UploadPage = () => {
         error={currentPreparingError}
         onRetry={handleRetryPreparing}
       />
-      <div className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[820px] xl:max-w-[940px] 2xl:max-w-[1100px]">
-        <GSlideStudioTitle
-          title={"G-SLIDE"}
-          description={"Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI"}
-          compact
-          className="pt-6 sm:pt-8 2xl:pt-12"
-        />
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="mx-auto flex min-h-[100dvh] max-w-[760px] flex-col px-4 pb-10 lg:max-w-[820px] xl:max-w-[940px] 2xl:max-w-[1100px]"
+      >
+        <motion.div variants={itemVariants}>
+          <GSlideStudioTitle
+            title={"G-SLIDE"}
+            description={"Biến lời nhắc hoặc tài liệu thành bài thuyết trình bằng AI"}
+            compact
+            className="pt-6 sm:pt-8 2xl:pt-12"
+          />
+        </motion.div>
+        <motion.div
+          variants={itemVariants}
+          className="mt-8 flex flex-wrap items-center justify-center gap-2"
+        >
           <ConfigurationSelects
             compact
             config={config}
             onConfigChange={handleConfigChange}
           />
-        </div>
+        </motion.div>
 
         <div className="mt-8 flex flex-col gap-2.5">
-            <OutlineComposer
-              idea={config.instructions}
-              onIdeaChange={(value) =>
-                handleComposerTextChange("instructions", value)
-              }
-              content={config.prompt}
-              onContentChange={(value) =>
-                handleComposerTextChange("prompt", value)
-              }
-              detectedSlidesCount={detectedSlidesCount}
-              actionLabel={rewriteActionLabel}
-              isGenerating={isRewriting}
-              onGenerate={handleGenerateOutline}
-              canGenerate={!!(config.instructions.trim() || files.length > 0)}
-              phase={rewritePhase}
-              error={rewriteError}
-              onRetry={handleGenerateOutline}
-              onSubmit={handleGeneratePresentation}
-              disabled={loadingState.isLoading}
-            >
-              <SupportingDoc
-                files={files}
-                onFilesChange={handleFilesChange}
-                disabled={loadingState.isLoading}
-                usageMode={
-                  files.length === 0
-                    ? "none"
-                    : documentAwareRewrite
-                      ? "doc_aware"
-                      : "presentation_only"
+            <motion.div variants={itemVariants}>
+              <OutlineComposer
+                idea={config.instructions}
+                onIdeaChange={(value) =>
+                  handleComposerTextChange("instructions", value)
                 }
-              />
-            </OutlineComposer>
+                content={config.prompt}
+                onContentChange={(value) =>
+                  handleComposerTextChange("prompt", value)
+                }
+                detectedSlidesCount={detectedSlidesCount}
+                actionLabel={rewriteActionLabel}
+                isGenerating={isRewriting}
+                onGenerate={handleGenerateOutline}
+                canGenerate={!!(config.instructions.trim() || files.length > 0)}
+                phase={rewritePhase}
+                error={rewriteError}
+                onRetry={handleGenerateOutline}
+                onSubmit={handleGeneratePresentation}
+                disabled={loadingState.isLoading}
+              >
+                <SupportingDoc
+                  files={files}
+                  onFilesChange={handleFilesChange}
+                  disabled={loadingState.isLoading}
+                  usageMode={
+                    files.length === 0
+                      ? "none"
+                      : documentAwareRewrite
+                        ? "doc_aware"
+                        : "presentation_only"
+                  }
+                />
+              </OutlineComposer>
+            </motion.div>
             <div className="flex w-full justify-center pt-2">
               <UploadTemplatePicker
                 templates={defaultTemplates}
@@ -674,7 +706,12 @@ const UploadPage = () => {
             </div>
             {/* Explicit, visible Create action below the composer, centered.
                 Ctrl/Cmd+Enter still calls handleGeneratePresentation. */}
-            <div className="flex w-full justify-center">
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex w-full justify-center transform-gpu"
+            >
               <GSlideButton
                 type="button"
                 disabled={isCreateDisabled || loadingState.isLoading}
@@ -686,10 +723,10 @@ const UploadPage = () => {
               >
                 {"Tạo bài thuyết trình"}
               </GSlideButton>
-            </div>
+            </motion.div>
         </div>
 
-      </div>
+      </motion.div>
     </Wrapper>
   );
 };

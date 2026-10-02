@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type TouchEvent } from "react";
+import { motion } from "motion/react";
 import { Check, ChevronDown, Layers3, Sparkles, X } from "lucide-react";
 import {
   Dialog,
@@ -145,12 +146,14 @@ export function UploadTemplatePicker({
 
   return (
     <>
-      <button
+      <motion.button
         type="button"
         data-testid="upload-template-trigger"
         onClick={openPicker}
         disabled={disabled || loading || templates.length === 0}
-        className="group flex w-full max-w-[410px] items-center gap-3 rounded-xl border border-[var(--gslide-border)] bg-white px-3 py-2.5 text-left transition-colors hover:border-[#1D6FE8]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40 disabled:cursor-default disabled:opacity-70"
+        whileHover={disabled || loading || templates.length === 0 ? undefined : { y: -1 }}
+        whileTap={disabled || loading || templates.length === 0 ? undefined : { scale: 0.99 }}
+        className="transform-gpu group flex w-full max-w-[410px] items-center gap-3 rounded-xl border border-[var(--gslide-border)] bg-white px-3 py-2.5 text-left transition-colors hover:border-[#1D6FE8]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/40 disabled:cursor-default disabled:opacity-70"
       >
         <span className="h-12 w-[78px] shrink-0 overflow-hidden rounded-lg bg-[#F8FBFB]">
           {loading ? (
@@ -199,7 +202,7 @@ export function UploadTemplatePicker({
           </span>
         )}
         <ChevronDown aria-hidden="true" size={17} className="shrink-0 text-[#667A98]" />
-      </button>
+      </motion.button>
 
       {!loading && (error || templates.length === 0) && (
         <div className="flex items-center justify-center gap-3 text-xs text-[#67758D]">
