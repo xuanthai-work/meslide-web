@@ -16,6 +16,7 @@ import {
 } from "react-konva";
 import { TRANSFORM_ANCHOR_ATTR } from "@/components/slide-editor/selection/transformSession";
 import { isAdditiveSelectionEvent } from "@/components/slide-editor/selection/selectionKeys";
+import { isComponentLocked } from "@/components/slide-editor/model/template-v2-lock";
 import {
   fontScaleFromResize,
   textListVisualLocalBox,
@@ -474,6 +475,7 @@ export function RawComponentNode({
     () => ({ kind: "component", componentIndex }),
     [componentIndex],
   );
+  const isLocked = isComponentLocked(component);
   const key = keyForSelection(selection);
   const setGroupNodeRef = useCallback(
     (node: Konva.Group | null) => {
@@ -526,6 +528,12 @@ export function RawComponentNode({
   const handleMouseDown = useCallback(
     (event: Konva.KonvaEventObject<MouseEvent>) => {
       if (!isEditMode) return;
+      if (isLocked) {
+        // Locked backgrounds let the event bubble to the Stage so a marquee
+        // drag can start on top of them.
+        event.cancelBubble = false;
+        return;
+      }
       event.cancelBubble = true;
       const isAdditive = isAdditiveSelectionEvent(event.evt);
       if (isMultiSelectedComponent && !isAdditive) return;
@@ -533,6 +541,7 @@ export function RawComponentNode({
     },
     [
       isEditMode,
+      isLocked,
       isMultiSelectedComponent,
       onSelect,
       selection,
@@ -541,12 +550,17 @@ export function RawComponentNode({
   const handleTouchStart = useCallback(
     (event: Konva.KonvaEventObject<TouchEvent>) => {
       if (!isEditMode) return;
+      if (isLocked) {
+        event.cancelBubble = false;
+        return;
+      }
       event.cancelBubble = true;
       if (isMultiSelectedComponent) return;
       onSelect(selection);
     },
     [
       isEditMode,
+      isLocked,
       isMultiSelectedComponent,
       onSelect,
       selection,
@@ -692,7 +706,8 @@ export function RawComponentNode({
       offsetX={frameBox.width / 2}
       offsetY={frameBox.height / 2}
       rotation={readNumber(component.rotation) ?? 0}
-      draggable={isEditMode}
+      draggable={isEditMode && !isLocked}
+      listening={!isLocked}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onDragStart={handleDragStart}
@@ -702,7 +717,7 @@ export function RawComponentNode({
       onTransform={handleTransform}
       onTransformEnd={handleTransformEnd}
     >
-      {isEditMode ? <SelectionBoundsRect width={box.width} height={box.height} /> : null}
+      {isEditMode && !isLocked ? <SelectionBoundsRect width={box.width} height={box.height} /> : null}
       {elements.map((element, elementIndex) => (
         <MemoizedRawElementNode
           key={rawElementKey(element, elementIndex)}

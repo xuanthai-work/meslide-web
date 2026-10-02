@@ -1017,6 +1017,13 @@ export {
   selectionTouchesElement,
   selectionWithComponentToggle,
 } from "@/components/slide-editor/selection/selectionKeys";
+export {
+  boxesIntersect,
+  componentIndexesInMarquee,
+  isBackgroundComponent,
+  isComponentLocked,
+} from "@/components/slide-editor/model/template-v2-lock";
+export type { RectBox } from "@/components/slide-editor/model/template-v2-lock";
 
 export function selectionForInsertedComponent(
   ui: RawUi,

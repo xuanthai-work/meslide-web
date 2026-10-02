@@ -1,6 +1,6 @@
 "use client";
 
-import type { MutableRefObject, RefObject } from "react";
+import { useRef, useState, type MutableRefObject, type RefObject } from "react";
 import type Konva from "konva";
 import { Layer, Line, Rect, Stage } from "react-konva";
 import {
@@ -15,13 +15,17 @@ import {
   STAGE_HEIGHT,
   STAGE_WIDTH,
   backgroundColor,
+  componentBox,
+  componentIndexesInMarquee,
   componentKey,
   rawElementKey,
   readString,
+  selectionForComponentIndexes,
   type ElementSelection,
   type RawComponent,
   type RawElement,
   type RawUi,
+  type RectBox,
   type SelectOptions,
   type Selection,
 } from "@/components/slide-editor/model/model";
@@ -155,18 +159,66 @@ export function TemplateV2KonvaStage({
   onClearEditorUiState,
   onHoverSelectionRectChange,
 }: TemplateV2KonvaStageProps) {
+  const [marqueeBox, setMarqueeBox] = useState<RectBox | null>(null);
+  const marqueeStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const beginMarquee = (pointer: { x: number; y: number } | null) => {
+    if (!pointer) return;
+    marqueeStartRef.current = { x: pointer.x, y: pointer.y };
+    setMarqueeBox(null);
+  };
+
+  const extendMarquee = (pointer: { x: number; y: number } | null) => {
+    const start = marqueeStartRef.current;
+    if (!start || !pointer) return;
+    setMarqueeBox({
+      x: Math.min(start.x, pointer.x),
+      y: Math.min(start.y, pointer.y),
+      width: Math.abs(pointer.x - start.x),
+      height: Math.abs(pointer.y - start.y),
+    });
+  };
+
+  const clearMarquee = () => {
+    marqueeStartRef.current = null;
+    setMarqueeBox(null);
+  };
+
+  const commitMarquee = () => {
+    const box = marqueeBox;
+    clearMarquee();
+    if (!isEditMode || !box || box.width <= 5 || box.height <= 5) return;
+    const indexes = componentIndexesInMarquee(components, box, componentBox);
+    if (indexes.length > 0) {
+      onSelect(selectionForComponentIndexes(indexes));
+    }
+  };
+
   return (
     <Stage
       width={STAGE_WIDTH}
       height={STAGE_HEIGHT}
       onMouseDown={(event) => {
-        if (event.target === event.target.getStage()) {
+        const stage = event.target.getStage();
+        const pointer = stage?.getPointerPosition() ?? null;
+        const targetIsStage = event.target === event.target.getStage();
+        const additive = Boolean(event.evt.ctrlKey || event.evt.metaKey);
+        if (isEditMode && pointer && (targetIsStage || additive)) {
+          beginMarquee(pointer);
+          if (targetIsStage && !additive) {
+            onActivateSurface(null);
+            onClearEditorUiState();
+          }
+          return;
+        }
+        if (targetIsStage) {
           onActivateSurface(null);
           onClearEditorUiState();
           return;
         }
         onActivateSurface();
       }}
+      onMouseUp={() => commitMarquee()}
       onTouchStart={(event) => {
         if (event.target === event.target.getStage()) {
           onActivateSurface(null);
@@ -176,6 +228,11 @@ export function TemplateV2KonvaStage({
         onActivateSurface();
       }}
       onMouseMove={(event) => {
+        const pointer = event.target.getStage()?.getPointerPosition() ?? null;
+        if (marqueeStartRef.current) {
+          extendMarquee(pointer);
+          return;
+        }
         if (!selectorEnabled || !rootElement) return;
         const stage = event.target.getStage();
         const contentLayer = contentLayerRef.current;
@@ -222,6 +279,7 @@ export function TemplateV2KonvaStage({
       onMouseLeave={() => {
         hoveredKonvaNodeRef.current = null;
         onHoverSelectionRectChange(null);
+        clearMarquee();
       }}
     >
       <Layer ref={backgroundLayerRef} listening={false}>
@@ -366,6 +424,21 @@ export function TemplateV2KonvaStage({
             listening={false}
             perfectDrawEnabled={false}
             shadowForStrokeEnabled={false}
+          />
+        </Layer>
+      ) : null}
+      {isEditMode && marqueeBox && marqueeBox.width > 2 && marqueeBox.height > 2 ? (
+        <Layer listening={false}>
+          <Rect
+            x={marqueeBox.x}
+            y={marqueeBox.y}
+            width={marqueeBox.width}
+            height={marqueeBox.height}
+            fill="rgba(124, 58, 237, 0.12)"
+            stroke="#7C3AED"
+            strokeWidth={1.5}
+            dash={[4, 4]}
+            listening={false}
           />
         </Layer>
       ) : null}

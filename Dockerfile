@@ -29,5 +29,8 @@ COPY --from=nextjs-builder /app/.next-build/standalone/ /app/
 COPY --from=nextjs-builder /app/public /app/public
 COPY --from=nextjs-builder /app/.next-build/static /app/.next-build/static
 
+# Tạo sẵn thư mục cache cho Next.js Image Optimization và cấp quyền ghi
+RUN mkdir -p /app/.next-build/cache && chmod -R 777 /app/.next-build/cache
+
 EXPOSE 3000
 CMD ["node", "server.js"]
