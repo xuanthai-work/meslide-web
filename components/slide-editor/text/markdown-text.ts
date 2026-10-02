@@ -6,6 +6,34 @@ type MarkdownStyle = {
   italic?: boolean;
 };
 
+const HTML_TAG_PATTERN = /<\/?(?!latex\b)[a-zA-Z][^>]*>/i;
+
+/**
+ * Strip raw HTML from slide text before markdown parsing.
+ *
+ * LLM output and copy-pasted web content can wrap copy in HTML
+ * (``<ul><li>...</li></ul>``). Structural tags become plain text/bullets and
+ * every remaining tag is dropped, while ``<latex>`` tags are preserved.
+ * Text without any HTML is returned verbatim so significant whitespace between
+ * runs is never collapsed.
+ */
+export function sanitizeMarkdownRawText(text: string): string {
+  if (!text) return "";
+  if (!HTML_TAG_PATTERN.test(text)) return text;
+
+  const clean = text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>|<\/div>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "\n• ")
+    .replace(/<\/?(?!latex\b)[a-zA-Z][^>]*>/gi, "");
+
+  const lines = clean
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines.length > 0 ? lines.join("\n") : clean.trim();
+}
+
 export function renderMarkdownTextRuns(runs: TextRun[]): TextRun[] {
   const rendered: TextRun[] = [];
   for (const run of runs) {
@@ -26,7 +54,8 @@ export function renderMarkdownTextContent(runs: TextRun[]): string {
     .join("");
 }
 
-function parseMarkdownText(text: string): Array<{ text: string; style: MarkdownStyle }> {
+function parseMarkdownText(rawText: string): Array<{ text: string; style: MarkdownStyle }> {
+  const text = sanitizeMarkdownRawText(rawText);
   const parsed: Array<{ text: string; style: MarkdownStyle }> = [];
   let index = 0;
 

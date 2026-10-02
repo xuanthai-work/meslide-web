@@ -80,14 +80,45 @@ export function ungroupTemplateV2ComponentInUi(
 }
 
 /**
- * Ungroups every component that only contains text (a stack of headings, a
- * flex column of copy, ...) into one component per text element. Running this
- * when a slide is loaded into the editor lets the user click and drag each text
- * box independently, instead of selecting the whole group first and pressing
- * "Ungroup". Non-text components (images, charts, mixed content) are left as
- * authored so their grouping is preserved.
+ * A component is auto-ungroupable when loading it into the editor should give
+ * the user one independent box per authored item instead of a single sticky
+ * group. This covers text stacks (headings/paragraphs), flow layouts that hold
+ * repeated items (flex/grid/list-view card grids), and components authored with
+ * several top-level elements. Only one level is split: the contents of each
+ * item stay intact inside its own component.
  */
-export function autoUngroupTextComponents(
+export function isAutoUngroupableComponent(component: RawRecord): boolean {
+  if (!canUngroupTemplateV2Component(component)) return false;
+
+  // 1. Text-only stacks (title + subtitle + paragraph).
+  if (isTextOnlyComponent(component)) return true;
+
+  const elements = readArray(component.elements).filter(isRecord);
+
+  // 2. A single flow layout holding repeated items (card grids, lists).
+  if (elements.length === 1) {
+    const element = elements[0];
+    if (isFlowLayoutType(readString(element.type))) {
+      const childInfo = childArrayInfoFromRecord(element);
+      const children = (childInfo?.items ?? []).filter(isRecord);
+      return children.length > 1;
+    }
+  }
+
+  // 3. Several independent top-level elements.
+  if (elements.length > 1) return true;
+
+  return false;
+}
+
+/**
+ * Ungroups every component that should be split when a slide is loaded into
+ * the editor (see {@link isAutoUngroupableComponent}) into one component per
+ * authored item. Text stacks keep the vertical gap guard so a taller heading
+ * never overlaps the paragraph below it; card/flow layouts keep the exact
+ * coordinates computed by the layout so horizontal gaps stay untouched.
+ */
+export function autoUngroupComponents(
   sourceUi: RawRecord,
   deps: UngroupDeps,
 ): RawRecord {
@@ -95,16 +126,21 @@ export function autoUngroupTextComponents(
   let index = 0;
   while (index < readArray(ui.components).length) {
     const component = asRecord(readArray(ui.components)[index]);
-    if (
-      component &&
-      isTextOnlyComponent(component) &&
-      canUngroupTemplateV2Component(component)
-    ) {
-      const result = ungroupTemplateV2ComponentInUi(ui, index, deps, true);
+    if (component && isAutoUngroupableComponent(component)) {
+      const isTextStack = isTextOnlyComponent(component);
+      const before = readArray(ui.components).length;
+      const result = ungroupTemplateV2ComponentInUi(ui, index, deps, isTextStack);
       if (result) {
+        const created = readArray(result.ui.components).length - before + 1;
         ui = result.ui;
-        // Re-check the components spliced in at this index: a nested text
-        // container is flattened on the following passes.
+        if (isTextStack) {
+          // Re-check the components spliced in at this index: a nested text
+          // container is flattened on the following passes.
+          continue;
+        }
+        // Card/flow items are split one level only. Skip past the new
+        // components so their inner structure is preserved.
+        index += created;
         continue;
       }
     }
@@ -112,6 +148,9 @@ export function autoUngroupTextComponents(
   }
   return ui;
 }
+
+/** @deprecated Use {@link autoUngroupComponents}; kept for compatibility. */
+export const autoUngroupTextComponents = autoUngroupComponents;
 
 function isTextOnlyComponent(component: RawRecord): boolean {
   const elements = readArray(component.elements).filter(isRecord);

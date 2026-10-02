@@ -269,7 +269,7 @@ test("clipboard and side resize keep geometry for the selected component", async
   assert.equal(resized[0].children[0].text, "nested");
 });
 
-test("auto-ungroup splits text-only components and leaves mixed ones grouped", async () => {
+test("auto-ungroup splits text stacks, flow layouts, and multi-element components", async () => {
   const { autoUngroupTextComponents } = await import(
     "../components/slide-editor/model/template-v2-ungroup.ts"
   );
@@ -318,15 +318,19 @@ test("auto-ungroup splits text-only components and leaves mixed ones grouped", a
       "heading_stack_part_2",
       "flex_copy_part_1",
       "flex_copy_part_2",
-      "image_row",
+      "image_row_part_1",
+      "image_row_part_2",
     ],
   );
   // Text-only groups become one text per component...
   assert.equal(result.components[0].elements.length, 1);
   assert.equal(result.components[0].elements[0].text, "Title");
   assert.equal(result.components[3].elements[0].text, "Two");
-  // ...while a mixed image+text component keeps its authored grouping.
-  assert.equal(result.components[4], ui.components[2]);
+  // ...and multi-element components split into one component per element.
+  assert.equal(result.components[4].elements.length, 1);
+  assert.equal(result.components[4].elements[0].type, "image");
+  assert.equal(result.components[5].elements[0].type, "text");
+  assert.equal(result.components[5].elements[0].text, "Caption");
 });
 
 test("flow column clamps a manual child below a taller preceding sibling", async () => {
