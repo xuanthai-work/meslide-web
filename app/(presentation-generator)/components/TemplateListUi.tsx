@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useCallback } from "react";
+import { motion, type Variants } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, Loader2 } from "lucide-react";
@@ -11,6 +12,18 @@ import {
   LayoutsBadge,
 } from "./TemplatePreviewComponents";
 import { templateCardCopy } from "./builtin-template-copy";
+
+const MotionCard = motion.create(Card);
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.25, ease: "easeOut" },
+  },
+};
 
 export function TemplateThumbnailPreview({
   thumbnail,
@@ -37,7 +50,7 @@ export function TemplateThumbnailPreview({
     >
       <div
         aria-label={`Hình thu nhỏ của ${templateName}`}
-        className="h-full w-full rounded-[12px] border border-[#EDEEEF] bg-white bg-contain bg-center bg-no-repeat shadow-sm"
+        className="h-full w-full rounded-[12px] border border-[#EDEEEF] bg-white bg-contain bg-center bg-no-repeat shadow-sm transition-transform duration-300 ease-out group-hover:scale-[1.02]"
         role="img"
         style={{ backgroundImage: `url(${JSON.stringify(resolvedThumbnail)})` }}
       />
@@ -81,13 +94,16 @@ export const TemplateListCard = memo(function TemplateListCard({
       : null;
 
   return (
-    <Card
+    <MotionCard
       role="button"
       tabIndex={0}
+      variants={cardVariants}
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
+      whileTap={{ scale: 0.98 }}
       aria-label={`Mở mẫu ${cardCopy.name}`}
       className={cn(
-        "group relative overflow-hidden rounded-[22px] border bg-white shadow-none outline-none transition-all duration-200",
-        "cursor-pointer hover:-translate-y-1 hover:border-[#1D6FE8] hover:ring-2 hover:ring-[#1D6FE8]/20 hover:shadow-[0_18px_40px_rgba(34,31,54,0.12)] focus-visible:-translate-y-1 focus-visible:border-[#1D6FE8] focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/30 focus-visible:shadow-[0_18px_40px_rgba(34,31,54,0.12)]",
+        "group transform-gpu relative overflow-hidden rounded-[22px] border bg-white shadow-none outline-none transition-[border-color,box-shadow] duration-200",
+        "cursor-pointer hover:border-[#1D6FE8] hover:ring-2 hover:ring-[#1D6FE8]/20 hover:shadow-[0_18px_40px_rgba(34,31,54,0.12)] focus-visible:border-[#1D6FE8] focus-visible:ring-2 focus-visible:ring-[#1D6FE8]/30 focus-visible:shadow-[0_18px_40px_rgba(34,31,54,0.12)]",
         "border-[#E8E9EC]"
       )}
       onClick={onClick}
@@ -122,10 +138,10 @@ export const TemplateListCard = memo(function TemplateListCard({
         <ArrowUpRight
           aria-hidden="true"
           strokeWidth={2}
-          className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-purple-600"
+          className="h-4 w-4 shrink-0 text-gray-400 transition-all duration-200 group-hover:text-purple-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
         />
       </div>
-    </Card>
+    </MotionCard>
   );
 });
 
