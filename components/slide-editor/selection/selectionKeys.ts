@@ -4,6 +4,23 @@ import type {
   Selection,
 } from "@/components/slide-editor/model/core";
 
+type SelectionModifierKeys = {
+  shiftKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+};
+
+/**
+ * True when a pointer event asks to extend the current selection instead of
+ * replacing it. Shift has always been additive; Ctrl (Windows/Linux) and Cmd
+ * (macOS) are accepted too so multi-component selection matches common editors.
+ */
+export function isAdditiveSelectionEvent(
+  event: SelectionModifierKeys | null | undefined,
+): boolean {
+  return Boolean(event?.shiftKey || event?.ctrlKey || event?.metaKey);
+}
+
 export function keyForSelection(selection: Selection) {
   if (!selection) return "";
   if (selection.kind === "component") return `component:${selection.componentIndex}`;

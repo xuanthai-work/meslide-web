@@ -19,7 +19,7 @@ import {
   templateFontOptionsFromMap,
 } from "@/components/slide-editor/text/google-fonts";
 import {
-  autoUngroupTextComponents,
+  autoUngroupComponents,
   canUngroupTemplateV2Component,
   ungroupTemplateV2ComponentInUi,
 } from "@/components/slide-editor/model/template-v2-ungroup";
@@ -177,7 +177,7 @@ import {
 function normalizeEditorUi(ui: RawUi, isEditMode: boolean): RawUi {
   const normalized = normalizeMarkdownTextInUi(cloneJson(ui));
   if (!isEditMode) return normalized;
-  return autoUngroupTextComponents(normalized, {
+  return autoUngroupComponents(normalized, {
     childArrayInfo,
     componentBox,
     elementBox,

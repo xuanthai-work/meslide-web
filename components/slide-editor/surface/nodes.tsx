@@ -15,6 +15,7 @@ import {
   Rect,
 } from "react-konva";
 import { TRANSFORM_ANCHOR_ATTR } from "@/components/slide-editor/selection/transformSession";
+import { isAdditiveSelectionEvent } from "@/components/slide-editor/selection/selectionKeys";
 import {
   fontScaleFromResize,
   textListVisualLocalBox,
@@ -526,8 +527,9 @@ export function RawComponentNode({
     (event: Konva.KonvaEventObject<MouseEvent>) => {
       if (!isEditMode) return;
       event.cancelBubble = true;
-      if (isMultiSelectedComponent && !event.evt.shiftKey) return;
-      onSelect(selection, { additive: event.evt.shiftKey });
+      const isAdditive = isAdditiveSelectionEvent(event.evt);
+      if (isMultiSelectedComponent && !isAdditive) return;
+      onSelect(selection, { additive: isAdditive });
     },
     [
       isEditMode,
@@ -556,7 +558,7 @@ export function RawComponentNode({
       event.cancelBubble = true;
       const node = groupRef.current;
       if (!node) return;
-      if (!isMultiSelectedComponent && !event.evt.shiftKey) {
+      if (!isMultiSelectedComponent && !isAdditiveSelectionEvent(event.evt)) {
         onSelect(selection);
       }
       onComponentDragStart(componentIndex, node);
@@ -1222,7 +1224,7 @@ function RawElementNode({
             return;
           }
           if (
-            event.evt.shiftKey &&
+            isAdditiveSelectionEvent(event.evt) &&
             componentIndex !== ROOT_ELEMENTS_COMPONENT_INDEX
           ) {
             event.cancelBubble = false;
