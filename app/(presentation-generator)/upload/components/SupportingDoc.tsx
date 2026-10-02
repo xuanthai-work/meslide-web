@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, type ChangeEvent, type DragEvent } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { File, Paperclip, X } from "lucide-react";
 
 import { notify } from "@/components/ui/sonner";
@@ -153,29 +154,36 @@ export default function SupportingDoc({
           data-testid="file-list"
           aria-label={"Tệp đính kèm"}
         >
-          {files.map((file, index) => (
-            <li
-              key={`${file.name}-${file.size}-${index}`}
-              className="inline-flex h-[30px] max-w-full items-center gap-2 rounded-lg border border-[var(--gslide-border)] bg-white px-2 font-manrope text-[11px] text-[var(--gslide-ink)]"
-              data-testid="attached-file-item"
-            >
-              <File className="h-3.5 w-3.5 shrink-0 text-[var(--gslide-accent)]" aria-hidden="true" />
-              <span className="max-w-[180px] truncate" title={file.name}>
-                {file.name}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  onFilesChange(files.filter((_, fileIndex) => fileIndex !== index))
-                }
-                aria-label={`Xóa ${file.name}`}
-                data-testid="remove-file-button"
-                className="rounded-full text-[#777777] hover:bg-[#E6E6E9] hover:text-[#191919] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]"
+          <AnimatePresence mode="popLayout">
+            {files.map((file, index) => (
+              <motion.li
+                key={`${file.name}-${file.size}-${index}`}
+                layout="position"
+                initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="transform-gpu inline-flex h-[30px] max-w-full items-center gap-2 rounded-lg border border-[var(--gslide-border)] bg-white px-2 font-manrope text-[11px] text-[var(--gslide-ink)]"
+                data-testid="attached-file-item"
               >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </li>
-          ))}
+                <File className="h-3.5 w-3.5 shrink-0 text-[var(--gslide-accent)]" aria-hidden="true" />
+                <span className="max-w-[180px] truncate" title={file.name}>
+                  {file.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onFilesChange(files.filter((_, fileIndex) => fileIndex !== index))
+                  }
+                  aria-label={`Xóa ${file.name}`}
+                  data-testid="remove-file-button"
+                  className="rounded-full text-[#777777] hover:bg-[#E6E6E9] hover:text-[#191919] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
       )}
 
@@ -189,7 +197,11 @@ export default function SupportingDoc({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <label className="inline-flex h-8 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gslide-border)] bg-white px-2.5 font-manrope text-xs font-medium text-[var(--gslide-muted)] transition hover:border-[color-mix(in_srgb,var(--gslide-accent)_35%,var(--gslide-border))] hover:text-[var(--gslide-ink)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]">
+        <motion.label
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="transform-gpu inline-flex h-8 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gslide-border)] bg-white px-2.5 font-manrope text-xs font-medium text-[var(--gslide-muted)] transition-colors hover:border-[color-mix(in_srgb,var(--gslide-accent)_35%,var(--gslide-border))] hover:text-[var(--gslide-ink)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--gslide-accent)_25%,transparent)]"
+        >
           <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{files.length ? `Đính kèm thêm (${files.length})` : "Đính kèm tệp"}</span>
           <input
@@ -201,7 +213,7 @@ export default function SupportingDoc({
             onChange={handleFilesSelected}
             data-testid="file-upload-input"
           />
-        </label>
+        </motion.label>
       </div>
     </section>
   );

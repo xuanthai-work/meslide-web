@@ -1,4 +1,7 @@
+"use client";
+
 import { memo } from "react";
+import { motion } from "motion/react";
 import Image from "next/image";
 import SlideScale from "../../components/PresentationRender";
 import SlideActionBar from "./SlideActionBar";
@@ -69,9 +72,13 @@ const SlideContent = ({
           fitToContainer && "flex h-full min-h-0 flex-col",
         )}
       >
-        <div
+        <motion.div
+          key={slide?.id ?? index}
+          initial={{ opacity: 0.88 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           className={cn(
-            "relative",
+            "transform-gpu relative",
             isChatEditing && "chat-slide-glow rounded-[14px]",
             fitToContainer
               ? "flex min-h-0 flex-1 items-center justify-center"
@@ -117,7 +124,7 @@ const SlideContent = ({
             showTemplatePromptOverlay={showTemplatePromptOverlay}
             onTemplatePromptOverlayDismiss={onTemplatePromptOverlayDismiss}
           />
-        </div>
+        </motion.div>
         <div
           className={cn(
             "w-full shrink-0",
