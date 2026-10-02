@@ -1,7 +1,7 @@
 'use client'
 import React from "react";
+import { motion, type Variants } from "motion/react";
 
-import { Card } from "@/components/ui/card";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
 import { Archive, AlertTriangle, Copy, EllipsisVertical, Loader2, Play, Trash } from "lucide-react";
 import {
@@ -27,6 +27,16 @@ import {
 } from "@/app/(presentation-generator)/components/TemplateV2HtmlSlidePreview";
 import MarkdownRenderer from "@/components/MarkDownRender";
 import ToolTip from "@/components/ToolTip";
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.25, ease: "easeOut" },
+  },
+};
 
 export const PresentationCard = ({
   id,
@@ -119,12 +129,16 @@ export const PresentationCard = ({
   );
   return (
     <>
-      <Card
+      <motion.div
+        layout="position"
+        variants={cardVariants}
+        exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.2 } }}
+        whileHover={{ y: -3, transition: { duration: 0.2 } }}
         suppressHydrationWarning={true}
         onClick={handlePreview}
         aria-disabled={isUnsupported}
         title={isUnsupported ? "Không được hỗ trợ trong phiên bản GSlide này" : undefined}
-        className={`relative flex flex-col overflow-hidden rounded-xl border-[var(--gslide-border)] bg-white p-0 shadow-none transition-all duration-500 sm:shadow-none presentation-card group slide-theme ${
+        className={`transform-gpu relative flex flex-col overflow-hidden rounded-xl border-[var(--gslide-border)] bg-white p-0 shadow-none transition-shadow duration-200 sm:shadow-none presentation-card group slide-theme ${
           isUnsupported
             ? "cursor-not-allowed border-[#EDEEEF]"
             : "cursor-pointer hover:shadow-md"
@@ -138,8 +152,8 @@ export const PresentationCard = ({
       >
         <img src="/card_bg.svg" alt="" className="absolute top-0 left-0 w-full h-full object-cover" />
         <div className={isUnsupported
-          ? `relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-[#EDEEEF] bg-white/90 ${viewMode === "list" ? "m-3 w-[170px] shrink-0" : "mx-5 mt-4"}`
-          : `relative aspect-video overflow-hidden bg-white ${viewMode === "list" ? "m-3 w-[170px] shrink-0 rounded-lg border border-[#EDEEEF]" : "w-full border-b border-[#EDEEEF]"}`
+          ? `relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-[#EDEEEF] bg-white/90 transition-transform duration-300 ease-out group-hover:scale-[1.02] ${viewMode === "list" ? "m-3 w-[170px] shrink-0" : "mx-5 mt-4"}`
+          : `relative aspect-video overflow-hidden bg-white transition-transform duration-300 ease-out group-hover:scale-[1.02] ${viewMode === "list" ? "m-3 w-[170px] shrink-0 rounded-lg border border-[#EDEEEF]" : "w-full border-b border-[#EDEEEF]"}`
         }>
 
           {isUnsupported ? (
@@ -234,7 +248,7 @@ export const PresentationCard = ({
 
         </div>
       </div>
-      </Card>
+      </motion.div>
 
       <Dialog
         open={showDeleteDialog}
