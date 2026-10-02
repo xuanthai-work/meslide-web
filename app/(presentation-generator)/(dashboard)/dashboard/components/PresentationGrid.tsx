@@ -1,6 +1,19 @@
+"use client";
+
+import { AnimatePresence, motion } from "motion/react";
 import { PresentationCard } from "./PresentationCard";
 import { PresentationResponse } from "@/app/(presentation-generator)/services/api/dashboard";
 import { EmptyState } from "./EmptyState";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+    },
+  },
+};
 
 interface PresentationGridProps {
   presentations: PresentationResponse[];
@@ -68,29 +81,41 @@ export const PresentationGrid = ({
   }
 
   if (!presentations || presentations.length === 0) {
-    return <EmptyState />;
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <EmptyState />
+      </motion.div>
+    );
   }
 
   return (
-    <div
-      className={
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className={`relative ${
         viewMode === "grid"
           ? "grid grid-cols-1 md:grid-cols-2 min-[1200px]:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 2xl:gap-6"
           : "grid grid-cols-1 gap-4"
-      }
+      }`}
     >
-      {presentations.map((presentation) => (
-
-        <PresentationCard
-          key={presentation.id}
-          id={presentation.id}
-          title={presentation.title ?? "Bài thuyết trình không tiêu đề"}
-          presentation={presentation}
-          viewMode={viewMode}
-          onDeleted={onPresentationDeleted}
-          onDuplicated={onPresentationDuplicated}
-        />
-      ))}
-    </div>
+      <AnimatePresence mode="popLayout">
+        {presentations.map((presentation) => (
+          <PresentationCard
+            key={presentation.id}
+            id={presentation.id}
+            title={presentation.title ?? "Bài thuyết trình không tiêu đề"}
+            presentation={presentation}
+            viewMode={viewMode}
+            onDeleted={onPresentationDeleted}
+            onDuplicated={onPresentationDuplicated}
+          />
+        ))}
+      </AnimatePresence>
+    </motion.div>
   );
 };

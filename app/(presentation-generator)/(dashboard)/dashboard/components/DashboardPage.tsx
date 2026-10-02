@@ -21,13 +21,16 @@ import { LegacyPresentationsTable } from "@/app/(presentation-generator)/(dashbo
 import { PresentationGenerationApi } from "@/app/(presentation-generator)/services/api/presentation-generation";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { notify } from "@/components/ui/sonner";
 import { GSlideHeader } from "@/components/gslide";
 
+const MotionLink = motion.create(Link);
+
 const actionCardBase =
-  "absolute aspect-[16/9] h-[46.238px] w-[82.201px] rounded-[4.474px] border border-white/50 bg-cover bg-center bg-no-repeat shadow-[0_8px_18px_rgba(16,24,40,0.18)] transition-all duration-500 ease-out opacity-100 translate-y-0 scale-100";
+  "absolute aspect-[16/9] h-[46.238px] w-[82.201px] rounded-[4.474px] border border-white/50 bg-cover bg-center bg-no-repeat shadow-[0_8px_18px_rgba(16,24,40,0.18)] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] opacity-100 translate-y-0 scale-100";
 
 const dashboardBodyAsset = (name: string) => `/dashboard-body/${name}`;
 
@@ -78,7 +81,7 @@ const DashboardActionCard = ({
   mediaClassName = "w-[96px]",
 }: DashboardActionCardProps) => {
   const className =
-    "group/action relative isolate flex h-[90px] w-full min-w-0 overflow-visible rounded-[12px] border border-[var(--gslide-border)] bg-white text-[var(--gslide-ink)] outline-none transition-all duration-300 hover:border-[#D7D8DE] hover:shadow-[0_10px_28px_rgba(16,24,40,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-4 disabled:cursor-wait disabled:opacity-70 disabled:hover:border-[var(--gslide-border)] disabled:hover:shadow-none";
+    "group/action transform-gpu relative isolate flex h-[90px] w-full min-w-0 overflow-visible rounded-[12px] border border-[var(--gslide-border)] bg-white text-[var(--gslide-ink)] outline-none transition-[border-color,box-shadow] duration-300 hover:border-[#D7D8DE] hover:shadow-[0_10px_28px_rgba(16,24,40,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)] focus-visible:ring-offset-4 disabled:cursor-wait disabled:opacity-70 disabled:hover:border-[var(--gslide-border)] disabled:hover:shadow-none";
   const content = (
     <>
       {children}
@@ -99,28 +102,32 @@ const DashboardActionCard = ({
 
   if (href) {
     return (
-      <Link
+      <MotionLink
         href={href}
         onClick={onClick}
         aria-label={ariaLabel}
+        whileHover={{ y: -2 }}
+        whileTap={{ scale: 0.98 }}
         className={className}
       >
         {content}
-      </Link>
+      </MotionLink>
     );
   }
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
       aria-busy={isLoading}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
       className={className}
     >
       {content}
-    </button>
+    </motion.button>
   );
 };
 
