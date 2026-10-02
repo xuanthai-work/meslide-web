@@ -12,7 +12,7 @@ import {
 } from "react";
 import type Konva from "konva";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock, Unlock } from "lucide-react";
 import { notify } from "@/components/ui/sonner";
 import type { TemplateV2Layout } from "@/components/slide-editor/importing/template-v2-import";
 import {
@@ -127,6 +127,7 @@ import {
   eventTargetsThisSlide,
   getElementAtSelection,
   syncComponentHeightToElement,
+  isBackgroundComponent,
   isEditableTarget,
   isManualPositioned,
   isRecord,
@@ -1017,6 +1018,33 @@ function TemplateV2KonvaSlideComponent({
     },
     [commitUi],
   );
+
+  const backgroundComponentIndexes = useMemo(
+    () =>
+      components.reduce<number[]>((indexes, component, index) => {
+        if (isBackgroundComponent(component)) indexes.push(index);
+        return indexes;
+      }, []),
+    [components],
+  );
+  const backgroundUnlocked =
+    backgroundComponentIndexes.length > 0 &&
+    backgroundComponentIndexes.every(
+      (index) => components[index]?.locked === false,
+    );
+  const toggleBackgroundLock = useCallback(() => {
+    const nextLocked = backgroundUnlocked;
+    backgroundComponentIndexes.forEach((index) => {
+      updateComponent(
+        index,
+        (component) => ({ ...component, locked: nextLocked }),
+        false,
+      );
+    });
+    if (nextLocked) {
+      setSelection(null);
+    }
+  }, [backgroundComponentIndexes, backgroundUnlocked, updateComponent]);
 
   const {
     alignmentGuideLayerRef,
@@ -1984,6 +2012,23 @@ function TemplateV2KonvaSlideComponent({
         onIconEditorClose={() => setIconEditorSelection(null)}
         onIconChange={handleIconChange}
       />
+      {isEditMode && backgroundComponentIndexes.length > 0 ? (
+        <button
+          type="button"
+          data-testid="template-v2-background-lock-toggle"
+          aria-pressed={backgroundUnlocked}
+          title={backgroundUnlocked ? "Khóa nền" : "Mở khóa nền"}
+          onClick={toggleBackgroundLock}
+          className="absolute right-2 top-2 z-[70] inline-flex h-7 items-center gap-1.5 rounded-[6px] border border-[#E5E7EB] bg-white/95 px-2 text-xs font-medium text-[#191919] shadow-[0_2px_8px_rgba(16,24,40,0.12)] hover:bg-[#F8F8FA]"
+        >
+          {backgroundUnlocked ? (
+            <Lock className="h-3.5 w-3.5" aria-hidden />
+          ) : (
+            <Unlock className="h-3.5 w-3.5" aria-hidden />
+          )}
+          <span>{backgroundUnlocked ? "Khóa nền" : "Mở khóa nền"}</span>
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -5,17 +5,12 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Slide } from "../../types/slide";
 import { useNearViewport } from "@/app/hooks/useNearViewport";
 import { V1ContentRender } from "../../components/V1ContentRender";
-import {
-  shouldRenderTemplateV2HtmlPreview,
-  TemplateV2HtmlSlidePreview,
-} from "../../components/TemplateV2HtmlSlidePreview";
 
 interface SlideThumbnailCardProps extends React.HTMLAttributes<HTMLDivElement> {
   slide: Slide;
   index: number;
   selected: boolean;
   fonts?: unknown;
-  presentationVersion?: unknown;
   slideCount?: number;
   onDelete?: (index: number) => void;
   onDuplicate?: (index: number) => void;
@@ -36,7 +31,6 @@ const SlideThumbnailCardComponent = forwardRef<
       index,
       selected,
       fonts,
-      presentationVersion,
       slideCount,
       onDelete,
       onDuplicate,
@@ -64,10 +58,6 @@ const SlideThumbnailCardComponent = forwardRef<
         }
       },
       [ref, setViewportRoot],
-    );
-    const useTemplateV2HtmlPreview = shouldRenderTemplateV2HtmlPreview(
-      slide,
-      presentationVersion
     );
 
     return (
@@ -186,23 +176,6 @@ const SlideThumbnailCardComponent = forwardRef<
               className="absolute inset-0 bg-white"
               aria-hidden="true"
             />
-          ) : useTemplateV2HtmlPreview ? (
-            <div
-              className="pointer-events-none absolute left-0 top-0"
-              style={{
-                width: 1280,
-                height: 720,
-                transformOrigin: "top left",
-                transform: `scale(${SCALE})`,
-              }}
-            >
-              <TemplateV2HtmlSlidePreview
-                slide={slide}
-                fonts={fonts}
-                fixedSize
-                className="pointer-events-none"
-              />
-            </div>
           ) : (
             <div
               className="pointer-events-none absolute left-0 top-0 overflow-hidden"
@@ -235,7 +208,6 @@ export const SlideThumbnailCard = memo(
     previous.index === next.index &&
     previous.selected === next.selected &&
     previous.fonts === next.fonts &&
-    previous.presentationVersion === next.presentationVersion &&
     previous.slideCount === next.slideCount &&
     previous.onDelete === next.onDelete &&
     previous.onDuplicate === next.onDuplicate &&

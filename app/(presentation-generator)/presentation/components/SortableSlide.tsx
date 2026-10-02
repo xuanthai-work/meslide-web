@@ -9,7 +9,6 @@ interface SortableSlideProps {
     selectedSlide: number;
     onSlideClick: (index: any) => void;
     fonts?: unknown;
-    presentationVersion?: unknown;
     slideCount?: number;
     onDeleteSlide?: (index: number) => void;
     onDuplicateSlide?: (index: number) => void;
@@ -23,7 +22,6 @@ export const SortableSlide = memo(function SortableSlide({
     selectedSlide,
     onSlideClick,
     fonts,
-    presentationVersion,
     slideCount,
     onDeleteSlide,
     onDuplicateSlide,
@@ -68,7 +66,6 @@ export const SortableSlide = memo(function SortableSlide({
             index={index}
             selected={selectedSlide === index}
             fonts={fonts}
-            presentationVersion={presentationVersion}
             style={style}
             {...attributes}
             {...listeners}
@@ -85,7 +82,6 @@ export const SortableSlide = memo(function SortableSlide({
     previous.index === next.index &&
     previous.onSlideClick === next.onSlideClick &&
     previous.fonts === next.fonts &&
-    previous.presentationVersion === next.presentationVersion &&
     previous.slideCount === next.slideCount &&
     previous.onDeleteSlide === next.onDeleteSlide &&
     previous.onDuplicateSlide === next.onDuplicateSlide &&
