@@ -66,6 +66,7 @@ type AdaptedRequiredBaseElement = AdaptedBaseElement & {
 export type TemplateV2Layout = {
   id?: unknown;
   description?: unknown;
+  background?: unknown;
   elements?: unknown;
   components?: unknown;
 };
