@@ -784,21 +784,74 @@ function useBlockPreviewScale() {
   };
 }
 
-function blockPreviewLayout(block: TemplateBlock): TemplateV2Layout {
+function isLightHexColor(colorStr: string): boolean {
+  if (!colorStr || typeof colorStr !== "string") return false;
+  const hex = colorStr.trim().replace(/^#/, "");
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    return 0.299 * r + 0.587 * g + 0.114 * b > 160;
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return 0.299 * r + 0.587 * g + 0.114 * b > 160;
+  }
+  return false;
+}
+
+function collectBlockColors(obj: unknown, colors: string[] = []): string[] {
+  if (!obj || typeof obj !== "object") return colors;
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if ((k === "color" || k === "fill" || k === "stroke") && typeof v === "string") {
+      colors.push(v);
+    } else if (typeof v === "object") {
+      collectBlockColors(v, colors);
+    }
+  }
+  return colors;
+}
+
+/** Chọn nền preview tương phản: block ưu thế màu sáng (chữ trắng) → nền tối. */
+function resolveBlockPreviewBackground(raw: unknown): string {
+  const colors = collectBlockColors(raw);
+  const lightColors = colors.filter(isLightHexColor);
+  const darkColors = colors.filter((c) => !isLightHexColor(c));
+  if (lightColors.length > darkColors.length && lightColors.length > 0) {
+    return "#18181B";
+  }
+  return "#FFFFFF";
+}
+
+function blockPreviewLayout(
+  block: TemplateBlock,
+  background = "#FFFFFF",
+): TemplateV2Layout {
   return {
     id: `block-preview-${block.key}`,
+    background,
     components: [block.raw],
   };
 }
 
 function BlockThumbnail({ block }: { block: TemplateBlock }) {
   const { previewRef, scale } = useBlockPreviewScale();
-  const layout = useMemo(() => blockPreviewLayout(block), [block]);
+  const previewBg = useMemo(
+    () => resolveBlockPreviewBackground(block.raw),
+    [block.raw],
+  );
+  const layout = useMemo(
+    () => blockPreviewLayout(block, previewBg),
+    [block, previewBg],
+  );
 
   return (
     <div
       ref={previewRef}
-      className="template-block-preview relative aspect-video w-full overflow-hidden rounded-[6px] bg-white transition-colors"
+      className="template-block-preview relative aspect-video w-full overflow-hidden rounded-[6px] transition-colors"
+      style={{ backgroundColor: previewBg }}
     >
       <div
         className={cn(
@@ -811,12 +864,6 @@ function BlockThumbnail({ block }: { block: TemplateBlock }) {
           transform: `scale(${scale || 1})`,
         }}
       >
-        {/* <TemplateV2KonvaSlide
-          layout={layout}
-          isEditMode={false}
-          slideId={null}
-          slideIndex={block.index}
-        /> */}
         <TemplateV2HtmlSlidePreview
           slide={{
             ui: layout,
@@ -825,7 +872,6 @@ function BlockThumbnail({ block }: { block: TemplateBlock }) {
           className="template-block-preview-surface pointer-events-none rounded-[10px]"
           contentClassName="template-block-preview-content"
         />
-
       </div>
     </div>
   );
@@ -879,13 +925,31 @@ function BlockGroupCard({
   const additionalVariants = group.variants.slice(1);
   const variantCount = group.variants.length;
 
+  const cardRef = useRef<HTMLElement | null>(null);
+  const wasExpandedRef = useRef(false);
+
+  // Thu gọn một thẻ mở rất cao để lại thanh cuộn ở dưới sâu; tự cuộn đỉnh
+  // thẻ trở lại tầm nhìn để người dùng không phải lăn chuột ngược lên.
+  useEffect(() => {
+    if (wasExpandedRef.current && !expanded) {
+      cardRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+    wasExpandedRef.current = expanded;
+  }, [expanded]);
+
   const toggleExpanded = () => {
     if (!expanded) setHasExpanded(true);
     setExpanded((current) => !current);
   };
 
   return (
-    <section className="rounded-[14px] border border-[#E5E7EB] bg-white p-3 transition-shadow hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)]">
+    <section
+      ref={cardRef}
+      className="scroll-mt-4 rounded-[14px] border border-[#E5E7EB] bg-white p-3 transition-shadow hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)]"
+    >
       <h4 className="mb-4 truncate text-center text-[clamp(14px,1vw,16px)] font-medium leading-5 text-[#171717]">
         {group.title}
       </h4>
@@ -1020,14 +1084,12 @@ export const BlocksPanel = ({
         .template-block-preview-content > div {
           transition:
             background 180ms ease,
-            background-color 180ms ease;
+            background-color 180ms ease,
+            opacity 180ms ease;
         }
 
-        .template-block-variant:hover .template-block-preview,
-        .template-block-variant:hover .template-block-preview-surface,
-        .template-block-variant:hover .template-block-preview-content,
-        .template-block-variant:hover .template-block-preview-content > div {
-          background: #a2a2a3 !important;
+        .template-block-variant:hover .template-block-preview {
+          filter: brightness(1.08);
         }
       `}</style>
       <h3 className="mb-3 text-[clamp(13px,0.95vw,15px)] font-semibold leading-5 text-[#101323]">
