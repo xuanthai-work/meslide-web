@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { BadgeCheck, Loader2, ShieldAlert, TriangleAlert } from "lucide-react"
+import { Bell, Check, Loader2, X } from "lucide-react"
 import { Toaster as Sonner, toast as sonnerToast, type ExternalToast } from "sonner"
 
 type NotifyOptions = Pick<
@@ -16,6 +16,7 @@ type NotifyOptions = Pick<
   | "onDismiss"
   | "onAutoClose"
   | "className"
+  | "icon"
 >
 
 function toastOptions(
@@ -27,19 +28,89 @@ function toastOptions(
   return Object.keys(merged).length > 0 ? merged : undefined
 }
 
-/** Blue circle for neutral / informational toasts (matches web `servers/nextjs` Toaster). */
-function NeutralToastIcon() {
-
+/** Flat colored circle badge with a white glyph, per the toast design spec. */
+function ToastBadge({
+  background,
+  children,
+}: {
+  background: string
+  children: React.ReactNode
+}) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19" fill="none">
-      <path d="M9.12333 17.4567C13.7257 17.4567 17.4567 13.7257 17.4567 9.12337C17.4567 4.521 13.7257 0.790039 9.12333 0.790039C4.52096 0.790039 0.790001 4.521 0.790001 9.12337C0.790001 13.7257 4.52096 17.4567 9.12333 17.4567Z" fill="url(#paint0_linear_4686_451)" stroke="#2863A3" strokeWidth="1.58" strokeLinecap="round" strokeLinejoin="round" />
-      <defs>
-        <linearGradient id="paint0_linear_4686_451" x1="9.12333" y1="0.790039" x2="9.12333" y2="17.4567" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#1880F6" />
-          <stop offset="1" stopColor="#75B5FF" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <span
+      aria-hidden="true"
+      className="flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full"
+      style={{ backgroundColor: background }}
+    >
+      {children}
+    </span>
+  )
+}
+
+/** Success: flat green circle with a white tick. */
+function SuccessToastIcon() {
+  return (
+    <ToastBadge background="#10B981">
+      <Check
+        aria-hidden="true"
+        className="h-3 w-3 text-white"
+        strokeWidth={3.5}
+      />
+    </ToastBadge>
+  )
+}
+
+/** Error: flat red circle with a white x. */
+function ErrorToastIcon() {
+  return (
+    <ToastBadge background="#EF4444">
+      <X
+        aria-hidden="true"
+        className="h-3 w-3 text-white"
+        strokeWidth={3.5}
+      />
+    </ToastBadge>
+  )
+}
+
+/** Info: flat blue circle with a white "i". */
+function InfoToastIcon() {
+  return (
+    <ToastBadge background="#3B82F6">
+      <span
+        aria-hidden="true"
+        className="font-sans text-[11px] font-bold leading-none text-white"
+      >
+        {"i"}
+      </span>
+    </ToastBadge>
+  )
+}
+
+/** Warning: flat orange circle with a white "!". */
+function WarningToastIcon() {
+  return (
+    <ToastBadge background="#F97316">
+      <span
+        aria-hidden="true"
+        className="font-sans text-[11px] font-bold leading-none text-white"
+      >
+        {"!"}
+      </span>
+    </ToastBadge>
+  )
+}
+
+/** Reminder: flat purple circle with a white bell (pass via the `icon` option). */
+export function ReminderToastIcon() {
+  return (
+    <ToastBadge background="#8B5CF6">
+      <Bell
+        aria-hidden="true"
+        className="h-3 w-3 text-white"
+        fill="white"
+      />
+    </ToastBadge>
   )
 }
 
@@ -62,12 +133,17 @@ type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ icons, ...props }: ToasterProps) => {
   const defaultIcons: NonNullable<ToasterProps["icons"]> = {
-    success: <BadgeCheck aria-hidden="true" />,
-    error: <ShieldAlert aria-hidden="true" />,
-    info: <NeutralToastIcon />,
-    warning: <TriangleAlert aria-hidden="true" />,
-    loading: <Loader2 aria-hidden="true" className="animate-spin" />,
-    close: <span aria-hidden="true">Got it!</span>,
+    success: <SuccessToastIcon />,
+    error: <ErrorToastIcon />,
+    info: <InfoToastIcon />,
+    warning: <WarningToastIcon />,
+    loading: (
+      <Loader2
+        aria-hidden="true"
+        className="h-5 w-5 animate-spin text-[#1D6FE8]"
+      />
+    ),
+    close: <X aria-hidden="true" className="h-4 w-4" />,
   }
 
   return (
@@ -89,13 +165,15 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           --width: min(100dvw - 2rem, 48rem) !important;
         }
 
-        /* Neutral "card" toast container — design tokens */
+        /* Neutral "card" toast container — soft rounded pastel card */
         [data-sonner-toast][data-styled="true"] {
-          border-radius: 10px !important;
+          border-radius: 14px !important;
 
-          border: 1px solid var(--Base-Gray-700, #e1e1e5) !important;
+          border: 1px solid #E5E7EB !important;
           background: rgba(255, 255, 255, 0.94) !important;
-          box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.06) !important;
+          box-shadow:
+            0 8px 24px -4px rgba(16, 24, 40, 0.08),
+            0 2px 6px -1px rgba(16, 24, 40, 0.04) !important;
           padding: clamp(9px, 0.5rem + 0.35vw, 12px) clamp(11px, 0.65rem + 0.5vw, 14px) !important;
           gap: clamp(8px, 0.5rem + 0.35vw, 11px) !important;
           backdrop-filter: blur(6px) !important;
@@ -141,51 +219,63 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           align-items: center !important;
           justify-content: center !important;
           margin: 0 !important;
-          color: rgb(51 65 85) !important; /* slate-700 */
         }
 
-        [data-sonner-toast][data-styled="true"] [data-icon] svg {
+        /* Only size a bare svg icon; badge-wrapped glyphs keep their own size */
+        [data-sonner-toast][data-styled="true"] [data-icon] > svg {
           width: clamp(20px, 1.15rem + 0.35vw, 22px) !important;
           height: clamp(20px, 1.15rem + 0.35vw, 22px) !important;
         }
 
-        /* Per-type icon colors */
-        [data-sonner-toast][data-type="success"] [data-icon] {
-          color: rgb(22, 163, 74) !important;
+        /* Pastel gradient + subtle diagonal stripes per toast type */
+        [data-sonner-toast][data-type="success"] {
+          background:
+            linear-gradient(to right, #FFFFFF 20%, rgba(236, 253, 245, 0.7) 100%),
+            repeating-linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0, rgba(16, 185, 129, 0.09) 8px, transparent 8px, transparent 16px) !important;
+          border-color: #A7F3D0 !important;
         }
 
-        [data-sonner-toast][data-type="error"] [data-icon] {
-          color: rgb(220, 38, 38) !important;
+        [data-sonner-toast][data-type="info"] {
+          background:
+            linear-gradient(to right, #FFFFFF 20%, rgba(239, 246, 255, 0.7) 100%),
+            repeating-linear-gradient(135deg, rgba(59, 130, 246, 0.09) 0, rgba(59, 130, 246, 0.09) 8px, transparent 8px, transparent 16px) !important;
+          border-color: #BFDBFE !important;
         }
 
-        [data-sonner-toast][data-type="info"] [data-icon] {
-          color: rgb(37, 99, 235) !important;
+        [data-sonner-toast][data-type="warning"] {
+          background:
+            linear-gradient(to right, #FFFFFF 20%, rgba(255, 247, 237, 0.7) 100%),
+            repeating-linear-gradient(135deg, rgba(249, 115, 22, 0.09) 0, rgba(249, 115, 22, 0.09) 8px, transparent 8px, transparent 16px) !important;
+          border-color: #FED7AA !important;
         }
 
-        [data-sonner-toast][data-type="warning"] [data-icon] {
-          color: rgb(217, 119, 6) !important;
+        [data-sonner-toast][data-type="error"] {
+          background:
+            linear-gradient(to right, #FFFFFF 20%, rgba(255, 241, 242, 0.7) 100%),
+            repeating-linear-gradient(135deg, rgba(239, 68, 68, 0.09) 0, rgba(239, 68, 68, 0.09) 8px, transparent 8px, transparent 16px) !important;
+          border-color: #FECDD3 !important;
         }
 
-        [data-sonner-toast][data-type="loading"] [data-icon] {
-          color: rgb(124, 58, 237) !important;
-        }
-
-        /* Outline buttons like the mock ("Got it!") */
+        /* Rounded white pill action button */
         [data-sonner-toast][data-styled="true"] [data-button] {
           height: auto !important;
-          padding: clamp(4px, 0.3rem + 0.2vw, 7px)
-            clamp(7px, 0.5rem + 0.25vw, 10px) !important;
-          border-radius: 6px !important;
+          padding: 5px 12px !important;
+          border-radius: 8px !important;
           font-family: var(--gslide-font-ui) !important;
-          font-size: clamp(0.625rem, 0.62rem + 0.08vw, 0.75rem) !important;
-          font-weight: 400 !important;
-          background: rgb(255 255 255) !important;
-          color: #3F3F3F !important;
-          border: 1px solid #EDEEEF !important;
+          font-size: 13px !important;
+          font-weight: 500 !important;
+          line-height: 1.3 !important;
+          background: #FFFFFF !important;
+          color: #0F172A !important;
+          border: 1px solid #E2E8F0 !important;
           box-shadow: none !important;
         }
 
-        /* Always-present "Got it!" button (styled close button) */
+        [data-sonner-toast][data-styled="true"] [data-button]:hover {
+          background: #F8FAFC !important;
+        }
+
+        /* Round icon-only close (X) button */
         [data-sonner-toast][data-styled="true"] [data-close-button] {
           position: static !important;
           inset: auto !important;
@@ -193,64 +283,33 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           order: 9999 !important;
           flex: 0 0 auto !important;
           flex-shrink: 0 !important;
-          white-space: nowrap !important;
-          width: auto !important;
-          height: auto !important;
-          padding: clamp(4px, 0.3rem + 0.2vw, 7px)
-            clamp(7px, 0.5rem + 0.25vw, 10px) !important;
-          border-radius: 6px !important;
+          width: 24px !important;
+          height: 24px !important;
+          padding: 4px !important;
+          border-radius: 9999px !important;
           margin-left: auto !important;
           margin-right: 0 !important;
           align-self: center !important;
-          background: rgb(255 255 255) !important;
-          color: #3f3f3f !important;
-          border: 1px solid #edeeef !important;
+          background: transparent !important;
+          border: none !important;
+          color: #64748B !important;
           box-shadow: none !important;
           font-family: var(--gslide-font-ui) !important;
-          font-size: clamp(0.625rem, 0.62rem + 0.08vw, 0.75rem) !important;
-          font-weight: 400 !important;
-          line-height: 1.3 !important;
-          letter-spacing: 0.02em !important;
+        }
+
+        [data-sonner-toast][data-styled="true"] [data-close-button] svg {
+          width: 16px !important;
+          height: 16px !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
-          background: rgb(248 250 252) !important; /* slate-50 */
+          background: rgba(0, 0, 0, 0.05) !important;
+          color: #0F172A !important;
         }
 
-        [data-sonner-toast][data-styled="true"] [data-button]:hover {
-          background: rgb(248 250 252) !important; /* slate-50 */
-        }
-
-        [data-sonner-toast][data-styled="true"].generation-status-toast {
-          cursor: default !important;
-          background: rgba(255, 255, 255, 0.94) !important;
-          box-shadow: 0 8px 24px 0 rgba(16, 24, 40, 0.12) !important;
-        }
-
-        [data-sonner-toast][data-styled="true"] .generation-toast-actions {
-          display: flex !important;
-          flex: 0 0 auto !important;
-          flex-wrap: wrap !important;
-          align-items: center !important;
-          justify-content: flex-end !important;
-          gap: 6px !important;
-          margin-left: auto !important;
-        }
-
-        [data-sonner-toast][data-styled="true"] .generation-toast-actions [data-button] {
-          margin-left: 0 !important;
-        }
-
-        @media (max-width: 640px) {
-          [data-sonner-toast][data-styled="true"].generation-status-toast {
-            flex-wrap: wrap !important;
-          }
-
-          [data-sonner-toast][data-styled="true"] .generation-toast-actions {
-            flex-basis: 100% !important;
-            justify-content: flex-start !important;
-            margin-left: 31px !important;
-          }
+        /* When the toast has an Action Button, hide the Close (X) button */
+        [data-sonner-toast]:has([data-button]) [data-close-button] {
+          display: none !important;
         }
 
         [data-sonner-toast][data-styled="true"].template-v2-model-warning-toast {
@@ -287,11 +346,6 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           white-space: nowrap !important;
         }
 
-        [data-sonner-toast][data-styled="true"].template-v2-model-warning-toast [data-close-button] {
-          margin-left: 0 !important;
-          white-space: nowrap !important;
-        }
-
         @media (max-width: 640px) {
           [data-sonner-toast][data-styled="true"].template-v2-model-warning-toast {
             flex-wrap: wrap !important;
@@ -309,10 +363,12 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
 
         /* Dark mode — same radius, border weight, shadow; frosted dark surface */
         .dark [data-sonner-toast][data-styled="true"] {
-          border-radius: 10px !important;
+          border-radius: 14px !important;
           border: 1px solid rgba(148, 163, 184, 0.22) !important;
           background: rgba(2, 6, 23, 0.94) !important;
-          box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.06) !important;
+          box-shadow:
+            0 8px 24px -4px rgba(0, 0, 0, 0.08),
+            0 2px 6px -1px rgba(0, 0, 0, 0.04) !important;
           backdrop-filter: blur(6px) !important;
           -webkit-backdrop-filter: blur(6px) !important;
         }
@@ -331,23 +387,19 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           border: 1px solid rgba(148, 163, 184, 0.26) !important;
         }
 
-        .dark [data-sonner-toast][data-styled="true"] [data-close-button] {
-          background: rgb(2 6 23) !important;
-          color: rgb(248 250 252) !important;
-          border: 1px solid rgba(148, 163, 184, 0.26) !important;
-        }
-
-        .dark [data-sonner-toast][data-styled="true"].generation-status-toast {
-          background: rgba(2, 6, 23, 0.94) !important;
-          box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.35) !important;
-        }
-
         .dark [data-sonner-toast][data-styled="true"] [data-button]:hover {
           background: rgb(15 23 42) !important; /* slate-900 */
         }
 
+        .dark [data-sonner-toast][data-styled="true"] [data-close-button] {
+          background: transparent !important;
+          color: rgb(148 163 184) !important;
+          border: none !important;
+        }
+
         .dark [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
-          background: rgb(15 23 42) !important; /* slate-900 */
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: rgb(248 250 252) !important;
         }
       `}</style>
       <Sonner

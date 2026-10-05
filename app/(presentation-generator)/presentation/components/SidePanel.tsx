@@ -207,7 +207,10 @@ const SidePanel = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Delete" && e.key !== "Backspace") return;
+      if (e.defaultPrevented) return;
       const target = e.target as HTMLElement | null;
+
+      // 1. Không xóa slide nếu đang gõ văn bản
       if (
         target &&
         (target.tagName === "INPUT" ||
@@ -216,6 +219,24 @@ const SidePanel = ({
       ) {
         return;
       }
+
+      // 2. Không xóa slide nếu sự kiện xuất phát từ vùng Canvas soạn thảo
+      const isInEditorStage = Boolean(
+        target?.closest?.("[data-presentation-slides-scroll-container]") ||
+          target?.closest?.(".konvajs-content") ||
+          target?.closest?.("[data-testid='slide-content']") ||
+          target?.closest?.(".slide-edit-stage") ||
+          target?.closest?.("[data-template-v2-selection-overlay]")
+      );
+      if (isInEditorStage) return;
+
+      // 3. Xóa slide chỉ khi người dùng đang tương tác với danh sách thumbnail
+      const isThumbnailListFocused = Boolean(
+        target?.closest?.("[data-slide-thumbnail-scroll-container]") ||
+          target?.closest?.("aside[aria-label='Các slide của bài thuyết trình']")
+      );
+      if (!isThumbnailListFocused) return;
+
       if (!presentationData?.slides?.length || isStreaming) return;
       e.preventDefault();
       handleDeleteSlide(selectedSlide);

@@ -128,10 +128,14 @@ export function useTemplateV2Keyboard({
       }
       if (!selection) return;
       event.preventDefault();
+      event.stopPropagation();
       deleteSelection();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    // Capture Phase: khi có selection trên canvas, phím Delete/Backspace được
+    // xử lý và triệt tiêu ngay lập tức, không lọt tới listener window khác
+    // (ví dụ listener xóa slide trong SidePanel).
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [deleteSelection, enabled, selection]);
 
   useEffect(() => {

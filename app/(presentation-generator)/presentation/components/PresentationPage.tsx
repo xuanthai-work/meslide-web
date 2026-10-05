@@ -852,6 +852,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             ref={presentationCanvasRef}
             className="relative h-full min-w-0 flex-1 px-3 pb-6 pt-[18px] md:px-0 max-md:ml-3"
           >
+            <div className="absolute right-4 top-4 z-30 pointer-events-none">
+              {generationStatusToast}
+            </div>
             {showNavigationHint ? (
               <div
                 className="pointer-events-none fixed top-[76px] z-[95] hidden items-center gap-3 rounded-full border border-[#E2E4E9] bg-white/95 px-4 py-2 font-syne text-[13px] text-[#344054] shadow-[0_10px_25px_rgba(16,24,40,0.10)] backdrop-blur md:flex"
@@ -1028,7 +1031,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   return (
     <>
       {preparingModal}
-      {generationStatusToast}
       {pageContent}
     </>
   );
