@@ -11,6 +11,7 @@ import {
   Pencil,
   Check,
   Keyboard,
+  Layout,
   X,
   AlertTriangle,
 } from "lucide-react";
@@ -46,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GSlideWordmark } from "@/components/gslide";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
+import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { buildSafeExportFileName } from "@/utils/exportFilename";
 
 function formatDisplayTitle(rawTitle?: string | null): string {
@@ -110,6 +112,7 @@ const PresentationHeader = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
   const router = useRouter();
   const [isExporting, setIsExporting] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -461,6 +464,21 @@ const PresentationHeader = ({
             </motion.button>
           </ToolTip>}
 
+          <ToolTip content={"Chọn mẫu thiết kế"}>
+            <motion.button
+              type="button"
+              onClick={() => setIsTemplatePickerOpen(true)}
+              disabled={isStreaming === true}
+              whileHover={isStreaming ? undefined : { scale: 1.03 }}
+              whileTap={isStreaming ? undefined : { scale: 0.97 }}
+              className="transform-gpu flex h-[38px] items-center gap-1.5 rounded-full border border-[#EDECEC] bg-white px-3.5 text-sm font-medium text-[#101323] shadow-sm transition-colors duration-200 hover:border-[var(--gslide-accent)] hover:bg-[var(--gslide-accent-soft)] hover:text-[var(--gslide-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={"Chọn mẫu"}
+            >
+              <Layout className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{"Mẫu"}</span>
+            </motion.button>
+          </ToolTip>
+
           <ToolTip content={"Trình chiếu bài thuyết trình"}>
             <motion.button
               type="button"
@@ -560,6 +578,10 @@ const PresentationHeader = ({
       <KeyboardShortcutsDialog
         open={shortcutsDialogOpen}
         onOpenChange={setShortcutsDialogOpen}
+      />
+      <TemplatePickerDialog
+        open={isTemplatePickerOpen}
+        onOpenChange={setIsTemplatePickerOpen}
       />
     </>
   );
