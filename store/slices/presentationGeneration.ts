@@ -404,6 +404,41 @@ const presentationGenerationSlice = createSlice({
         state.presentationData['theme'] = action.payload;
       }
     },
+    applyTemplateToPresentation: (
+      state,
+      action: PayloadAction<{
+        templateId: string;
+        layout: Record<string, unknown> | null;
+        fonts?: unknown;
+        theme?: Theme | null;
+      }>
+    ) => {
+      if (!state.presentationData) return;
+      state.presentationData.layout = action.payload.layout;
+      if (action.payload.fonts !== undefined) {
+        state.presentationData.fonts = action.payload.fonts;
+      }
+      if (action.payload.theme !== undefined) {
+        state.presentationData.theme = action.payload.theme;
+      }
+      if (Array.isArray(state.presentationData.slides)) {
+        state.presentationData.slides = state.presentationData.slides.map(
+          (slide) => {
+            if (
+              slide.layout_group === "blank" ||
+              !slide.layout_group ||
+              slide.layout_group === ""
+            ) {
+              return {
+                ...slide,
+                layout_group: action.payload.templateId,
+              };
+            }
+            return slide;
+          }
+        );
+      }
+    },
   },
 
 });
@@ -438,6 +473,7 @@ export const {
   updateSlideIcon,
   addNewSlide,
   updateTheme,
+  applyTemplateToPresentation,
 } = presentationGenerationSlice.actions;
 
 export default presentationGenerationSlice.reducer;

@@ -29,6 +29,7 @@ import {
   Hexagon,
   Home,
   Image,
+  Layers,
   LineChart,
   List,
   ListOrdered,
@@ -88,6 +89,7 @@ import {
   type TemplateV2SurfaceSelectedDetail,
 } from "@/components/slide-editor/events/events";
 import Chat from "./Chat";
+import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import TemplateService from "../../services/api/template";
 import { TemplateV2HtmlSlidePreview } from "../../components/TemplateV2HtmlSlidePreview";
 import { isTemplateFreePresentation } from "../../_shared/blank-slide";
@@ -1200,11 +1202,9 @@ function PrimaryActionButton({
 
 function ActionsSidebar({
   activeAction,
-  blocksUnavailable = false,
   onActionSelect,
 }: {
   activeAction: ActionId;
-  blocksUnavailable?: boolean;
   onActionSelect: (action: ActionId) => void;
 }) {
   const localizedActionLabel = (id: ActionId) => {
@@ -1239,8 +1239,6 @@ function ActionsSidebar({
             <div className="h-0 w-[30px] border-t border-[#EDEEEF]" />
             <PrimaryActionButton
               active={activeAction === "blocks"}
-              disabled={blocksUnavailable}
-              disabledReason={"Khối yêu cầu bài thuyết trình có mẫu"}
               iconSrc={actionIconSrc.blocks}
               label={"Khối"}
               onClick={() => onActionSelect("blocks")}
@@ -1276,6 +1274,7 @@ function ActionsPanel({
   onChartItemSelect,
   onElementItemSelect,
   onImageItemSelect,
+  onOpenTemplatePicker,
   onTableItemSelect,
   onTextItemSelect,
   panelOpen = true,
@@ -1296,6 +1295,7 @@ function ActionsPanel({
   onChartItemSelect: (item: PaletteItem) => void;
   onElementItemSelect: (item: PaletteItem) => void;
   onImageItemSelect: (item: PaletteItem) => void;
+  onOpenTemplatePicker?: () => void;
   onTableItemSelect: (item: PaletteItem) => void;
   onTextItemSelect: (item: PaletteItem) => void;
   panelOpen?: boolean;
@@ -1314,14 +1314,36 @@ function ActionsPanel({
         />
       </div>
 
-      {!blocksUnavailable && activeAction === "blocks" && (
-        <BlocksPanel
-          disabled={editingDisabled}
-          presentationId={presentationId}
-          presentationData={presentationData}
-          onInsertBlock={onBlockSelect}
-        />
-      )}
+      {activeAction === "blocks" &&
+        (blocksUnavailable ? (
+          <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F0F5FF] text-[#1D6FE8]">
+              <Layers className="h-7 w-7" />
+            </div>
+            <h3 className="mb-1 text-base font-semibold text-gray-900">
+              {"Chưa chọn mẫu cho bài thuyết trình"}
+            </h3>
+            <p className="mb-5 max-w-[260px] text-xs leading-5 text-gray-500">
+              {
+                "Thư viện khối bố cục yêu cầu một mẫu thiết kế. Hãy chọn một mẫu để mở khóa hàng chục khối bố cục đẹp mắt."
+              }
+            </p>
+            <button
+              type="button"
+              onClick={() => onOpenTemplatePicker?.()}
+              className="inline-flex items-center justify-center rounded-full bg-[#1D6FE8] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#1557B0]"
+            >
+              {"Chọn mẫu ngay"}
+            </button>
+          </div>
+        ) : (
+          <BlocksPanel
+            disabled={editingDisabled}
+            presentationId={presentationId}
+            presentationData={presentationData}
+            onInsertBlock={onBlockSelect}
+          />
+        ))}
       {activeAction === "texts" && (
         <InsertPanel
           disabled={editingDisabled}
@@ -1434,13 +1456,7 @@ const PresentationActions = (props: PresentationActionsProps) => {
       ? undefined
       : chatProps.currentSlide;
 
-  useEffect(() => {
-    if (
-      blocksUnavailable && activeAction === "blocks"
-    ) {
-      dispatchUiState({ type: "selectAction", activeAction: "ai" });
-    }
-  }, [activeAction, blocksUnavailable]);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
 
   useEffect(() => {
     setHiddenSlideReference(null);
@@ -1587,10 +1603,6 @@ const PresentationActions = (props: PresentationActionsProps) => {
   };
 
   const handleActionSelect = (nextAction: ActionId) => {
-    if (blocksUnavailable && nextAction === "blocks") {
-      return;
-    }
-
     if (panelOpen && nextAction === activeAction) {
       onPanelOpenChange(false);
       return;
@@ -1633,6 +1645,7 @@ const PresentationActions = (props: PresentationActionsProps) => {
         onChartItemSelect={handleChartItemSelect}
         onElementItemSelect={handleElementItemSelect}
         onImageItemSelect={handleImageItemSelect}
+        onOpenTemplatePicker={() => setTemplatePickerOpen(true)}
         onTableItemSelect={handleTableItemSelect}
         onTextItemSelect={handleTextItemSelect}
         panelOpen={panelOpen}
@@ -1641,8 +1654,11 @@ const PresentationActions = (props: PresentationActionsProps) => {
       />
       <ActionsSidebar
         activeAction={activeAction}
-        blocksUnavailable={blocksUnavailable}
         onActionSelect={handleActionSelect}
+      />
+      <TemplatePickerDialog
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
       />
     </div>
   );
