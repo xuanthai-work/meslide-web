@@ -18,7 +18,11 @@ import { TRANSFORM_ANCHOR_ATTR } from "@/components/slide-editor/selection/trans
 import { isAdditiveSelectionEvent } from "@/components/slide-editor/selection/selectionKeys";
 import { isComponentLocked } from "@/components/slide-editor/model/template-v2-lock";
 import {
+  fitRenderTextListToBox,
+  fitRenderTextToBox,
   fontScaleFromResize,
+  rawRenderTextRuns,
+  rawTextListRenderItems,
   textListVisualLocalBox,
   textVisualLocalBox,
 } from "@/components/slide-editor/text/template-v2-text";
@@ -766,6 +770,29 @@ export function RawComponentNode({
   );
 }
 
+/**
+ * Height the copy occupies once it is wrapped into ``width``.
+ *
+ * The fitter is handed an unbounded box on purpose. With a finite height it
+ * shrinks the font until the copy fits the frame, which is the opposite of what
+ * a side resize wants: the frame is supposed to follow the copy. Given no
+ * height to fit, it reports the height the copy really needs at the size it
+ * was resized to, which is what the new frame has to be.
+ */
+function wrappedTextHeight(element: RawElement, width: number): number {
+  if (!(width > 0)) return 0;
+  const box = { width, height: Number.MAX_SAFE_INTEGER };
+  const type = readString(element.type);
+  const fitted =
+    type === "text-list"
+      ? fitRenderTextListToBox(rawTextListRenderItems(element), box)
+      : type === "text"
+        ? fitRenderTextToBox(rawRenderTextRuns(element), box)
+        : null;
+  const height = Number(fitted?.height);
+  return Number.isFinite(height) && height > 0 ? height : 0;
+}
+
 function constrainedWrappedTextVisualBox(
   element: RawElement,
   box: Box,
@@ -1133,17 +1160,28 @@ function RawElementNode({
       };
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
+      const fontScale = fontScaleFromResize(scaleX, scaleY);
       const nextSize = {
         width: Math.max(1, sourceBox.width * scaleX),
         height: Math.max(1, sourceBox.height * scaleY),
       };
+      // A side handle moves the width alone, so narrowing a text box wraps the
+      // copy onto more lines than the frame is tall -- and a frame pinned to the
+      // old height slices the last line through its glyphs. Let the frame follow
+      // the copy here; corner handles still resize the frame freely.
+      if (anchor != null && HORIZONTAL_RESIZE_ANCHORS.has(anchor)) {
+        const contentHeight = wrappedTextHeight(
+          scaleRawElementTextMetrics(element, fontScale),
+          nextSize.width,
+        );
+        if (contentHeight > nextSize.height) nextSize.height = contentHeight;
+      }
       const canOverflowParent =
         isVector &&
         allowVectorResizeBeyondParent &&
         (anchor?.includes("left") || anchor?.includes("top"));
       node.scaleX(1);
       node.scaleY(1);
-      const fontScale = fontScaleFromResize(scaleX, scaleY);
       const measuredPosition = canOverflowParent
         ? unclampedPositionFromNodeInParent(node, parentBox, {
             ...sourceBox,
@@ -1203,6 +1241,7 @@ function RawElementNode({
       boxX,
       boxY,
       centerOrigin,
+      element,
       isEditMode,
       isVector,
       layoutManaged,

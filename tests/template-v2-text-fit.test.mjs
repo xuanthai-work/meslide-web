@@ -6,6 +6,8 @@ import {
   CJK_EM,
   ELLIPSIS,
   LATIN_EM,
+  PAINT_SAFETY,
+  UNICODE_PAINT_SAFETY,
   VIETNAMESE_BOLD_MULTIPLIER,
   VIETNAMESE_EM,
   characterUnit,
@@ -434,9 +436,70 @@ test("a designed one-line box is distinguished from a multi-line paragraph box",
   assert.equal(singleLineMinScale(64) <= 0.45, true);
 });
 
-test("wide glyphs take a wider paint safety margin than latin copy", () => {
+test("wide glyphs take a paint margin without starving the box", () => {
   assert.equal(hasWideGlyphs("AI in daily life"), false);
   assert.equal(hasWideGlyphs("AI trong Đời sống hàng ngày"), true);
+  // 1.14 handed the fitter 87.7% of the box. The unit table already models
+  // Vietnamese at 0.72em, so the margin only absorbs rendering drift now.
+  assert.equal(UNICODE_PAINT_SAFETY, 1.03);
+  assert.ok(PAINT_SAFETY > 0);
+  assert.ok(UNICODE_PAINT_SAFETY < 1.14);
+});
+
+test("the unicode paint margin keeps copy that fits the box on one line", () => {
+  const runFont = { ...font, size: 20, bold: false, letterSpacing: 0 };
+  const text = "Kinh nghiệm Đời sống hàng ngày";
+  const natural = measureTextByUnits(text, runFont);
+  const width = natural * 1.05;
+  // The copy sits in the band between the two margins: 1.14 wrapped it a line
+  // early and left the right edge of the box empty.
+  assert.ok(natural > width / 1.14);
+
+  const fitted = fitTextToBox([{ text, font: runFont }], { width, height: 200 }, {
+    measure: measureTextByUnits,
+  });
+
+  assert.equal(fitted.lines.length, 1);
+  assert.equal(fitted.fontScale, 1);
+  assert.equal(fitted.lines[0].map((segment) => segment.text).join(""), text);
+});
+
+test("an unbounded box reports the height the wrapped copy needs", () => {
+  const runFont = { ...font, size: 20, bold: false, lineHeight: 1.25 };
+  const text = "Kinh nghiệm Đời sống hàng ngày và nhiều chữ hơn nữa";
+  const box = { width: 200, height: 30 };
+
+  // A finite box shrinks the font to fit the frame.
+  const cramped = fitTextToBox([{ text, font: runFont }], box, {
+    measure: measureTextByUnits,
+  });
+  assert.ok(cramped.fontScale < 1);
+
+  // With no height to fit, the same box reports the copy's own height -- what a
+  // side resize grows the frame to.
+  const natural = fitTextToBox(
+    [{ text, font: runFont }],
+    { width: box.width, height: Number.MAX_SAFE_INTEGER },
+    { measure: measureTextByUnits },
+  );
+  assert.equal(natural.fontScale, 1);
+  assert.ok(natural.height > box.height);
+});
+
+test("konva clip windows follow the copy instead of the frame", async () => {
+  const source = await read("components/slide-editor/surface/nodes-text.tsx");
+
+  assert.match(source, /Math\.max\(height,\s*totalHeight,\s*fitHeight\)/);
+  assert.match(source, /Math\.max\(height,\s*contentHeight,\s*fitHeight\)/);
+  assert.doesNotMatch(source, /verticalGlyphClipBounds\(lines,\s*height\)/);
+});
+
+test("a side resize lets a text frame follow its wrapped copy", async () => {
+  const source = await read("components/slide-editor/surface/nodes.tsx");
+
+  assert.match(source, /HORIZONTAL_RESIZE_ANCHORS\.has\(anchor\)/);
+  assert.match(source, /wrappedTextHeight\(/);
+  assert.match(source, /if \(contentHeight > nextSize\.height\) nextSize\.height/);
 });
 
 test("a long Vietnamese title stays on one line instead of overlapping the box below", () => {
@@ -604,7 +667,7 @@ test("large display titles get a deeper tiered shrink floor", () => {
   assert.ok(floorFontPx(71.11) >= 20, `px ${floorFontPx(71.11)}`);
 });
 
-test("an oversized renderer title collapses to two lines inside its box", () => {
+test("an oversized renderer title fits its box without an extra line", () => {
   const box = { width: 390.22, height: 190.8 };
   const result = fitTextToBox(
     [{ text: "Tầng 3: Renderer — Render Tree", font: novaTitleFont }],
@@ -613,7 +676,9 @@ test("an oversized renderer title collapses to two lines inside its box", () => 
   );
 
   assert.equal(result.ellipsis, false);
-  assert.equal(result.lines.length, 2);
+  // At the tiered floor the copy fits the box's real width on one line. The old
+  // 1.14 margin hid 12% of that width and split the title in two.
+  assert.equal(result.lines.length, 1);
   assert.ok(result.height <= 95, `height ${result.height}`);
   assert.ok(result.height <= box.height);
 });
