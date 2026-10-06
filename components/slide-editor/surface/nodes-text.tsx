@@ -85,7 +85,11 @@ export function RawRichTextElement({
     (sum, metric) => sum + metric.height,
     0,
   );
-  const clip = verticalGlyphClipBounds(lines, height);
+  // Narrowing the box mid-resize wraps the copy onto more lines than the box is
+  // tall. Clipping to the box would slice the last line through its glyphs, so
+  // the window follows the copy whenever it outgrows the box.
+  const effectiveClipHeight = Math.max(height, totalHeight, fitHeight);
+  const clip = verticalGlyphClipBounds(lines, effectiveClipHeight);
   const startY =
     verticalAlign === "middle"
       ? Math.max(0, (height - totalHeight) / 2)
@@ -241,7 +245,9 @@ export function RawTextListElement({
     (sum, metric) => sum + metric.height,
     0,
   );
-  const clip = verticalGlyphClipBounds(lines, height);
+  // Same as the rich-text box: the window covers the copy, not just the frame.
+  const effectiveClipHeight = Math.max(height, contentHeight, fitHeight);
+  const clip = verticalGlyphClipBounds(lines, effectiveClipHeight);
   let y =
     verticalAlign === "middle"
       ? Math.max(0, (height - contentHeight) / 2)

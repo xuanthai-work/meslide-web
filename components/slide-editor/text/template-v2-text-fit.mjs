@@ -11,7 +11,15 @@ export const TITLE_SIZE_THRESHOLD = 24;
 export const ELLIPSIS = "…";
 export const FIT_SCALE_EPSILON = 0.001;
 export const PAINT_SAFETY = 1.1;
-export const UNICODE_PAINT_SAFETY = 1.14;
+/**
+ * Paint margin for copy carrying non-ASCII glyphs.
+ *
+ * It used to be 1.14, which handed the fitter only 87.7% of the box and made
+ * Vietnamese copy wrap a line early, leaving a dead strip down the right edge.
+ * The unit table already models Vietnamese at 0.72em against latin 0.5em, so
+ * the margin only has to absorb font-rendering drift between environments.
+ */
+export const UNICODE_PAINT_SAFETY = 1.03;
 export const DESIGN_LINE_HEIGHT = 1.25;
 export const SINGLE_LINE_TOLERANCE = 1.6;
 export const SINGLE_LINE_MIN_SCALE = 0.55;

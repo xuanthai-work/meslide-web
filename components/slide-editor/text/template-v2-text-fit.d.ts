@@ -11,7 +11,7 @@ export declare const TITLE_SIZE_THRESHOLD: 24;
 export declare const ELLIPSIS: "…";
 export declare const FIT_SCALE_EPSILON: 0.001;
 export declare const PAINT_SAFETY: 1.1;
-export declare const UNICODE_PAINT_SAFETY: 1.14;
+export declare const UNICODE_PAINT_SAFETY: 1.03;
 export declare const DESIGN_LINE_HEIGHT: 1.25;
 export declare const SINGLE_LINE_TOLERANCE: 1.6;
 export declare const SINGLE_LINE_MIN_SCALE: 0.55;
