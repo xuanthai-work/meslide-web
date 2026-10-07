@@ -283,6 +283,7 @@ export function TemplateV2KonvaOverlays({
           box={inlineEditBox}
           runs={inlineEdit.runs}
           style={inlineEdit.style}
+          fontScale={inlineEdit.fontScale}
           onChange={onInlineDraftChange}
           onSelectionChange={(textSelectionRange) =>
             onInlineSelectionChange(

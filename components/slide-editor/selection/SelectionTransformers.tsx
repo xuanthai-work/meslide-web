@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type Konva from "konva";
 import { Transformer } from "react-konva";
 import { TRANSFORM_ANCHOR_ATTR } from "@/components/slide-editor/selection/transformSession";
+import { isBoxOverflowingSlide } from "@/components/slide-editor/model/model";
+
+const SELECTION_BORDER_STROKE = "#1D6FE8";
+const OVERFLOW_BORDER_STROKE = "#F59E0B";
+const OVERFLOW_EVENT_NAMESPACE = ".presentonOverflowWarning";
 
 const CORNER_HANDLE_SIZE = 14;
 const EDGE_HANDLE_LENGTH = 28;
@@ -370,6 +375,7 @@ export function TemplateV2SelectionTransformers({
 }: TemplateV2SelectionTransformersProps) {
   const selectedTransformerRef = useRef<Konva.Transformer | null>(null);
   const contextTransformerRef = useRef<Konva.Transformer | null>(null);
+  const [selectionOverflows, setSelectionOverflows] = useState(false);
   const isTransformableElementSelection =
     selectionKind === "element" &&
     (horizontalResizeOnly || fullElementTransform);
@@ -499,9 +505,49 @@ export function TemplateV2SelectionTransformers({
       refreshBottomCenterRotationAnchor,
     );
 
+    // Warn when the selected box crosses the slide safe bounds so the user can
+    // widen the frame or trim the copy before the slide silently breaks.
+    const overflowNode =
+      canTransformSelection && selectedNodes.length === 1
+        ? selectedNodes[0]
+        : null;
+    const overflowStage = overflowNode?.getStage() ?? null;
+    const updateOverflow = () => {
+      if (!overflowNode || !overflowStage) {
+        setSelectionOverflows(false);
+        return;
+      }
+      const rect = overflowNode.getClientRect({
+        relativeTo: overflowStage,
+        skipShadow: true,
+      });
+      setSelectionOverflows(
+        isBoxOverflowingSlide({
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        }),
+      );
+    };
+    updateOverflow();
+    overflowNode?.on(
+      `dragmove${OVERFLOW_EVENT_NAMESPACE}`,
+      updateOverflow,
+    );
+    overflowNode?.on(
+      `transform${OVERFLOW_EVENT_NAMESPACE}`,
+      updateOverflow,
+    );
+    overflowNode?.on(
+      `absoluteTransformChange${OVERFLOW_EVENT_NAMESPACE}`,
+      updateOverflow,
+    );
+
     return () => {
       dragNodes.forEach((node) => node.off(SHADOW_EVENT_NAMESPACE));
       selectedRotationNode?.off(BOTTOM_CENTER_ROTATION_ANCHOR_EVENT_NAMESPACE);
+      overflowNode?.off(OVERFLOW_EVENT_NAMESPACE);
       enableShadows();
     };
   }, [
@@ -550,7 +596,13 @@ export function TemplateV2SelectionTransformers({
           isMultiComponentSelection ? MULTI_SELECTION_GROUP_DASH : undefined
         }
         borderEnabled
-        borderStroke={isMultiComponentSelection ? "#D9D9DE" : "#1D6FE8"}
+        borderStroke={
+          isMultiComponentSelection
+            ? "#D9D9DE"
+            : selectionOverflows
+              ? OVERFLOW_BORDER_STROKE
+              : SELECTION_BORDER_STROKE
+        }
         borderStrokeWidth={1}
         boundBoxFunc={boundTransformBox}
         enabledAnchors={

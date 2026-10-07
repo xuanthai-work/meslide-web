@@ -227,6 +227,39 @@ function enforceVerticalStackGap(entries: UngroupEntry[]): UngroupEntry[] {
   });
 }
 
+/**
+ * Vertical-push physics for an edited stack.
+ *
+ * ``anchorIndex`` is the box that grew (or shrank) by ``deltaHeight``. Every
+ * horizontally-overlapping box at or below it is pushed by the same delta so
+ * the authored gaps survive and the anchor never overlaps the copy below it.
+ * When the anchor grows, the first pushed box is additionally clamped to at
+ * least ``minGap`` below the anchor's new bottom.
+ */
+export function pushStackedBoxes(
+  boxes: Array<TemplateV2UngroupBox | null | undefined>,
+  anchorIndex: number,
+  deltaHeight: number,
+  minGap = MIN_STACK_GAP,
+): Array<TemplateV2UngroupBox | null | undefined> {
+  const anchor = boxes[anchorIndex];
+  if (!anchor || !Number.isFinite(deltaHeight) || Math.abs(deltaHeight) < 0.01) {
+    return boxes;
+  }
+  const anchorBottom = anchor.y + anchor.height;
+  return boxes.map((box, index) => {
+    if (index === anchorIndex || !box) return box;
+    const overlapsX =
+      anchor.x < box.x + box.width && box.x < anchor.x + anchor.width;
+    if (!overlapsX || box.y < anchor.y) return box;
+    const shiftedY = box.y + deltaHeight;
+    const y =
+      deltaHeight > 0 ? Math.max(shiftedY, anchorBottom + minGap) : shiftedY;
+    if (Math.abs(y - box.y) < 0.01) return box;
+    return { ...box, y };
+  });
+}
+
 function absoluteElementEntry(
   element: RawRecord,
   componentBoxValue: TemplateV2UngroupBox,

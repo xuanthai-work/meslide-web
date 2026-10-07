@@ -11,6 +11,7 @@ import { TemplateV2SelectionTransformers } from "@/components/slide-editor/selec
 import type { TableCellSelection } from "@/components/slide-editor/state/state";
 import {
   ROOT_ELEMENTS_COMPONENT_INDEX,
+  SELECTION_NODE_ATTR,
   STAGE_BOX,
   STAGE_HEIGHT,
   STAGE_WIDTH,
@@ -199,6 +200,10 @@ export function TemplateV2KonvaStage({
       width={STAGE_WIDTH}
       height={STAGE_HEIGHT}
       onMouseDown={(event) => {
+        // Any press starts a select or drag; drop the hover frame immediately so
+        // it can never be left stranded at the pre-interaction coordinates.
+        hoveredKonvaNodeRef.current = null;
+        onHoverSelectionRectChange(null);
         const stage = event.target.getStage();
         const pointer = stage?.getPointerPosition() ?? null;
         const targetIsStage = event.target === event.target.getStage();
@@ -228,13 +233,28 @@ export function TemplateV2KonvaStage({
         onActivateSurface();
       }}
       onMouseMove={(event) => {
-        const pointer = event.target.getStage()?.getPointerPosition() ?? null;
+        const stage = event.target.getStage();
+        const pointer = stage?.getPointerPosition() ?? null;
+        // While a button is held (marquee, component/element drag) no hover frame
+        // may be computed: it would otherwise track the drag or stick at the
+        // press origin.
+        const isInteractingOrDragging =
+          Boolean(event.evt.buttons !== 0) || Boolean(stage?.isDragging());
+        if (isInteractingOrDragging) {
+          if (hoveredKonvaNodeRef.current !== null) {
+            hoveredKonvaNodeRef.current = null;
+            onHoverSelectionRectChange(null);
+          }
+          if (marqueeStartRef.current) {
+            extendMarquee(pointer);
+          }
+          return;
+        }
         if (marqueeStartRef.current) {
           extendMarquee(pointer);
           return;
         }
         if (!selectorEnabled || !rootElement) return;
-        const stage = event.target.getStage();
         const contentLayer = contentLayerRef.current;
         if (
           !stage ||
@@ -248,13 +268,38 @@ export function TemplateV2KonvaStage({
           return;
         }
 
-        let hoverTarget = event.target as Konva.Node;
+        // Stop at the nearest selectable node (element before component) so the
+        // dashed hover frame hugs the hovered element instead of the whole
+        // component frame with its empty padding.
+        let hoverTarget: Konva.Node | null = event.target as Konva.Node;
         while (
-          hoverTarget.getParent() &&
-          hoverTarget.getParent() !== contentLayer
+          hoverTarget &&
+          hoverTarget !== contentLayer &&
+          !hoverTarget.getAttr(SELECTION_NODE_ATTR)
         ) {
-          hoverTarget = hoverTarget.getParent() as Konva.Node;
+          hoverTarget = hoverTarget.getParent() as Konva.Node | null;
         }
+        if (!hoverTarget || hoverTarget === contentLayer) {
+          hoveredKonvaNodeRef.current = null;
+          onHoverSelectionRectChange(null);
+          return;
+        }
+
+        // No hover frame over an object that is already selected (or is the
+        // selected component's parent boundary) so the hover box and the
+        // transformer never stack on top of each other.
+        const hoverKey = hoverTarget.getAttr(SELECTION_NODE_ATTR) as string | undefined;
+        if (
+          hoverKey &&
+          (hoverKey === selectedKey ||
+            selectedKeys.includes(hoverKey) ||
+            (transformerParentComponentKey && hoverKey === transformerParentComponentKey))
+        ) {
+          hoveredKonvaNodeRef.current = null;
+          onHoverSelectionRectChange(null);
+          return;
+        }
+
         if (hoveredKonvaNodeRef.current === hoverTarget) return;
         hoveredKonvaNodeRef.current = hoverTarget;
 

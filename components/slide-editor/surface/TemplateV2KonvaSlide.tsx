@@ -29,8 +29,12 @@ import {
 import { textRunsContent } from "@/components/slide-editor/text/text-runs";
 
 import {
+  fitRenderTextListToBox,
+  fitRenderTextToBox,
   normalizeRawTextMarkdownElement,
+  rawRenderTextRuns,
   rawTextContent,
+  rawTextListRenderItems,
   rawTextListRunsForEditor,
   rawTextRunsForEditor,
   rawTextStyle,
@@ -49,9 +53,8 @@ import {
   type TableSlideElement,
 } from "@/components/slide-editor/state/state";
 import {
-  measureWordWrappedTextRunsHeight,
+  autoSizeInlineTextFrame,
   type TemplateV2InlineEditBox,
-  type TemplateV2TextEditStyle,
   wordWrappedTextRuns,
 } from "@/components/slide-editor/text/template-v2-text-editing";
 
@@ -106,6 +109,7 @@ import {
   MAX_HISTORY_ENTRIES,
   ROOT_ELEMENTS_COMPONENT_INDEX,
   SCROLL_DISMISS_THRESHOLD_PX,
+  SELECTION_NODE_ATTR,
   STAGE_HEIGHT,
   STAGE_WIDTH,
   absoluteBoxForSelection,
@@ -125,7 +129,9 @@ import {
   elementWithInlineDraft,
   elementWithNormalizedLayoutChildren,
   eventTargetsThisSlide,
+  equalizeRowComponentHeights,
   getElementAtSelection,
+  pushStackedComponentsBelow,
   syncComponentHeightToElement,
   isBackgroundComponent,
   isEditableTarget,
@@ -186,21 +192,42 @@ function normalizeEditorUi(ui: RawUi, isEditMode: boolean): RawUi {
   }) as RawUi;
 }
 
-function autoSizeInlineTextFrame(
+/**
+ * The font scale the canvas fitter applies to make the copy fit its box. The
+ * inline editor reuses it so the HTML overlay paints at the same size and wraps
+ * at the same width, instead of jumping to the authored (larger) size on click.
+ */
+function fittedInlineTextScale(
+  element: RawElement,
   frame: TemplateV2InlineEditBox | null | undefined,
-  runs: TextRun[],
-  style: TemplateV2TextEditStyle,
-) {
-  if (!frame) return frame;
-  const contentHeight = measureWordWrappedTextRunsHeight(
-    runs,
-    frame.width,
-    style,
-  );
-  return {
-    ...frame,
-    height: Math.max(1, contentHeight),
+): number {
+  if (!frame) return 1;
+  const rawWidth = Number(element.size?.width);
+  const rawHeight = Number(element.size?.height);
+  const box = {
+    width: rawWidth > 0 ? rawWidth : frame.width,
+    // The frame is the box the canvas actually painted into. When a stale card
+    // height outlives an ungroup, prefer the smaller (rendered) height so the
+    // measured scale matches the on-canvas glyphs.
+    height:
+      frame.height > 0
+        ? Math.min(rawHeight > 0 ? rawHeight : frame.height, frame.height)
+        : rawHeight,
   };
+  if (!(box.width > 0) || !(box.height > 0)) return 1;
+  const type = readString(element.type);
+  try {
+    if (type === "text") {
+      return fitRenderTextToBox(rawRenderTextRuns(element), box).fontScale;
+    }
+    if (type === "text-list") {
+      return fitRenderTextListToBox(rawTextListRenderItems(element), box)
+        .fontScale;
+    }
+  } catch {
+    return 1;
+  }
+  return 1;
 }
 
 function canEditVectorPointsForSelection(ui: RawUi, selection: ElementSelection) {
@@ -377,8 +404,12 @@ function TemplateV2KonvaSlideComponent({
   );
   const setSelectionNodeRef = useCallback(
     (key: string, node: Konva.Node | null) => {
-      if (node) nodeRefs.current.set(key, node);
-      else nodeRefs.current.delete(key);
+      if (node) {
+        node.setAttr(SELECTION_NODE_ATTR, key);
+        nodeRefs.current.set(key, node);
+      } else {
+        nodeRefs.current.delete(key);
+      }
     },
     [],
   );
@@ -956,6 +987,10 @@ function TemplateV2KonvaSlideComponent({
 
   const select = useCallback(
     (nextSelection: Selection, options?: SelectOptions) => {
+      // A selection supersedes any hover frame; clear it so the hover box never
+      // stacks on the transformer or lingers after the click.
+      hoveredKonvaNodeRef.current = null;
+      setHoverSelectionRect(null);
       clearTableCellSelection();
       const resolvedSelection = selectionWithComponentToggle(
         selectionRef.current,
@@ -1067,6 +1102,24 @@ function TemplateV2KonvaSlideComponent({
     commitUi,
     updateComponent,
   });
+
+  const handleComponentDragStartWithHoverClear = useCallback(
+    (componentIndex: number, node: Konva.Node) => {
+      hoveredKonvaNodeRef.current = null;
+      setHoverSelectionRect(null);
+      handleComponentDragStart(componentIndex, node);
+    },
+    [handleComponentDragStart],
+  );
+
+  const handleElementDragStartWithHoverClear = useCallback(
+    (elementSelection: ElementSelection, node: Konva.Node) => {
+      hoveredKonvaNodeRef.current = null;
+      setHoverSelectionRect(null);
+      handleElementAlignmentDragStart(elementSelection, node);
+    },
+    [handleElementAlignmentDragStart],
+  );
 
   useEffect(() => {
     resetDragStateRef.current = resetDragState;
@@ -1247,13 +1300,15 @@ function TemplateV2KonvaSlideComponent({
         }
         const style = rawTextStyle(normalized.element);
         const runs = wordWrappedTextRuns(normalized.runs);
+        const fontScale = fittedInlineTextScale(normalized.element, frame);
         startInlineEdit({
           kind: "text",
           selection: elementSelection,
           draft: textRunsContent(runs),
           runs,
-          frame: autoSizeInlineTextFrame(frame, runs, style),
+          frame: autoSizeInlineTextFrame(frame, runs, style, fontScale),
           style,
+          fontScale,
         });
       } else if (type === "text-list") {
         const runs = wordWrappedTextRuns(rawTextListRunsForEditor(element));
@@ -1261,14 +1316,16 @@ function TemplateV2KonvaSlideComponent({
         const marker = readString(element.marker);
         const listMarker: Marker =
           marker === "number" || marker === "none" ? marker : "bullet";
+        const fontScale = fittedInlineTextScale(element, frame);
         startInlineEdit({
           kind: "text-list",
           selection: elementSelection,
           draft: textRunsContent(runs),
           runs,
           listMarker,
-          frame: autoSizeInlineTextFrame(frame, runs, style),
+          frame: autoSizeInlineTextFrame(frame, runs, style, fontScale),
           style,
+          fontScale,
         });
       }
     },
@@ -1293,26 +1350,49 @@ function TemplateV2KonvaSlideComponent({
           (current.kind === "text" || current.kind === "text-list") &&
           style &&
           runs
-            ? autoSizeInlineTextFrame(current.frame, runs, style)
+            ? autoSizeInlineTextFrame(
+                current.frame,
+                runs,
+                style,
+                current.fontScale ?? 1,
+              )
             : current.frame;
-        commitUi(
-          syncComponentHeightToElement(
-            updateElementInUi(
-              currentUiRef.current,
-              current.selection,
-              (element) =>
-                elementWithInlineDraft(
-                  element,
-                  current.kind,
-                  runsOverride
-                    ? textRunsContent(runsOverride)
-                    : current.draft,
-                  style,
-                  frame,
-                  runs,
-                ),
-            ),
+        const previousUi = currentUiRef.current;
+        const previousComponent = asRecord(
+          readArray(previousUi.components)[current.selection.componentIndex],
+        );
+        const previousHeight = previousComponent
+          ? componentBox(previousComponent).height
+          : 0;
+        const editedUi = syncComponentHeightToElement(
+          updateElementInUi(
+            previousUi,
             current.selection,
+            (element) =>
+              elementWithInlineDraft(
+                element,
+                current.kind,
+                runsOverride
+                  ? textRunsContent(runsOverride)
+                  : current.draft,
+                style,
+                frame,
+                runs,
+              ),
+          ),
+          current.selection,
+        );
+        // Reflow the block below the edited one, then keep any card row in the
+        // same band equal-height so a taller heading never overlaps its stack.
+        const equalizedUi = equalizeRowComponentHeights(
+          editedUi,
+          current.selection.componentIndex,
+        );
+        commitUi(
+          pushStackedComponentsBelow(
+            equalizedUi,
+            current.selection.componentIndex,
+            previousHeight,
           ),
         );
       }
@@ -1340,7 +1420,12 @@ function TemplateV2KonvaSlideComponent({
           style,
           frame:
             style != null
-              ? autoSizeInlineTextFrame(active.frame, nextRuns, style)
+              ? autoSizeInlineTextFrame(
+                  active.frame,
+                  nextRuns,
+                  style,
+                  active.fontScale ?? 1,
+                )
               : active.frame,
         };
       });
@@ -1371,7 +1456,12 @@ function TemplateV2KonvaSlideComponent({
             draft: rawTextContent(next),
             runs,
             style,
-            frame: autoSizeInlineTextFrame(active.frame, runs, style),
+            frame: autoSizeInlineTextFrame(
+              active.frame,
+              runs,
+              style,
+              active.fontScale ?? 1,
+            ),
           };
         }
         if (active.kind === "text-list") {
@@ -1382,7 +1472,12 @@ function TemplateV2KonvaSlideComponent({
             draft: textRunsContent(runs),
             runs,
             style,
-            frame: autoSizeInlineTextFrame(active.frame, runs, style),
+            frame: autoSizeInlineTextFrame(
+              active.frame,
+              runs,
+              style,
+              active.fontScale ?? 1,
+            ),
           };
         }
         return { ...active, style: rawTextStyle(next) };
@@ -1926,10 +2021,10 @@ function TemplateV2KonvaSlideComponent({
           onOpenEditor={handleElementDoubleClick}
           onElementChange={updateElement}
           onComponentChange={updateComponent}
-          onElementDragStart={handleElementAlignmentDragStart}
+          onElementDragStart={handleElementDragStartWithHoverClear}
           onElementDragMove={handleElementAlignmentDragMove}
           onElementDragComplete={handleElementAlignmentDragComplete}
-          onComponentDragStart={handleComponentDragStart}
+          onComponentDragStart={handleComponentDragStartWithHoverClear}
           onComponentDragMove={handleComponentDragMove}
           onComponentDragEnd={handleComponentDragEnd}
           onActivateSurface={activateSurface}

@@ -32,11 +32,17 @@ import {
   textVisualLocalBox,
 } from "@/components/slide-editor/text/template-v2-text";
 import {
+  ROW_ALIGN_TOLERANCE,
   intrinsicFlowSize,
   isFlowLayoutElement,
   layoutFlowChildren,
+  rowPeerIndexes,
 } from "@/components/slide-editor/layout/flowLayout";
 import { deleteLayoutChildFromArray } from "@/components/slide-editor/layout/layoutResize";
+import {
+  MIN_STACK_GAP,
+  pushStackedBoxes,
+} from "@/components/slide-editor/model/template-v2-ungroup";
 export {
   resizeComponentElementBounds,
   resizeRawElementBounds,
@@ -270,6 +276,109 @@ export function syncComponentHeightToElement(
     ),
   };
   return { ...sourceUi, components };
+}
+
+/**
+ * Push the components stacked below an edited component by the height it just
+ * gained (or lost). Called right after a text edit commits so a heading that
+ * wraps to a new line never overlaps the paragraph underneath it.
+ */
+export function pushStackedComponentsBelow(
+  sourceUi: RawUi,
+  componentIndex: number,
+  previousHeight: number,
+  minGap = MIN_STACK_GAP,
+): RawUi {
+  if (componentIndex < 0) return sourceUi;
+  const components = readArray(sourceUi.components);
+  const anchor = asRecord(components[componentIndex]);
+  if (!anchor || !(previousHeight > 0)) return sourceUi;
+
+  const boxes = components.map((value) => {
+    const record = asRecord(value);
+    return record ? componentBox(record) : null;
+  });
+  const delta = (boxes[componentIndex]?.height ?? 0) - previousHeight;
+  if (Math.abs(delta) < 0.01) return sourceUi;
+
+  const pushed = pushStackedBoxes(boxes, componentIndex, delta, minGap);
+  let changed = false;
+  const next = components.map((value, index) => {
+    const record = asRecord(value);
+    const before = boxes[index];
+    const after = pushed[index];
+    if (!record || !before || !after || Math.abs(before.y - after.y) < 0.01) {
+      return value;
+    }
+    changed = true;
+    return {
+      ...record,
+      position: { ...readPoint(record.position), y: after.y },
+    };
+  });
+  return changed ? { ...sourceUi, components: next } : sourceUi;
+}
+
+/**
+ * Stretch a row of card components to the tallest card in that row so the row
+ * shares one top and bottom edge (Canva/Figma equal-height cards). Cards are
+ * matched by their top edge and separated horizontally from the anchor.
+ */
+export function equalizeRowComponentHeights(
+  sourceUi: RawUi,
+  anchorIndex: number,
+  tolerance = ROW_ALIGN_TOLERANCE,
+): RawUi {
+  if (anchorIndex < 0) return sourceUi;
+  const components = readArray(sourceUi.components);
+  const anchor = asRecord(components[anchorIndex]);
+  if (!anchor) return sourceUi;
+
+  const boxes = components.map((value) => {
+    const record = asRecord(value);
+    return record ? componentBox(record) : null;
+  });
+  const peers = rowPeerIndexes(boxes, anchorIndex, tolerance);
+  if (peers.length === 0) return sourceUi;
+
+  const rowHeights = [boxes[anchorIndex], ...peers.map((index) => boxes[index])]
+    .filter((box): box is Box => Boolean(box))
+    .map((box) => box.height);
+  const maxHeight = Math.max(...rowHeights);
+
+  let changed = false;
+  const members = new Set([anchorIndex, ...peers]);
+  const next = components.map((value, index) => {
+    if (!members.has(index)) return value;
+    const record = asRecord(value);
+    if (!record) return value;
+    const stretched = stretchCardComponentToHeight(record, maxHeight);
+    if (stretched !== record) changed = true;
+    return stretched;
+  });
+  return changed ? { ...sourceUi, components: next } : sourceUi;
+}
+
+function stretchCardComponentToHeight(
+  component: RawComponent,
+  height: number,
+): RawComponent {
+  const elements = readArray(component.elements);
+  if (elements.length !== 1) return component;
+  const element = asRecord(elements[0]);
+  if (!element || !isStretchableCardElement(element)) return component;
+  const size = readOptionalSize(element.size);
+  if (!size || size.height >= height - 0.01) return component;
+  return {
+    ...component,
+    elements: [{ ...element, size: { ...size, height } }],
+  };
+}
+
+function isStretchableCardElement(element: RawElement): boolean {
+  const type = readString(element.type);
+  if (type === "container") return true;
+  return isBoxVisualType(type);
 }
 
 export function normalizeSingleChartWrapperComponent(
@@ -772,7 +881,9 @@ export function absoluteBoxForSelection(ui: RawUi, selection: Selection): Box | 
       const component = asRecord(components[componentIndex]);
       return component ? [componentBox(component)] : [];
     });
-    return boxes.length > 0 ? boxContainingBoxes(boxes) : null;
+    return boxes.length > 0
+      ? clampBoxToSlideBounds(boxContainingBoxes(boxes))
+      : null;
   }
   if (
     selection.kind === "element" &&
@@ -784,7 +895,9 @@ export function absoluteBoxForSelection(ui: RawUi, selection: Selection): Box | 
   const component = asRecord(readArray(ui.components)[selection.componentIndex]);
   if (!component) return null;
   const componentOrigin = readPoint(component.position);
-  if (selection.kind === "component") return componentBox(component);
+  if (selection.kind === "component") {
+    return clampBoxToSlideBounds(componentBox(component));
+  }
   const elementBoxValue = absoluteElementBox(component, selection.elementPath);
   if (!elementBoxValue) return null;
   return {
@@ -1250,6 +1363,59 @@ export function componentKey(component: RawComponent, index: number) {
   return `${readString(component.id) ?? "component"}:${index}`;
 }
 
+/**
+ * Konva attribute stamped on every node that is registered under a selection
+ * key. It lets the surface find the nearest selectable node under the cursor
+ * (element before component) without climbing all the way to the layer.
+ */
+export const SELECTION_NODE_ATTR = "gslideSelectionKey";
+
+/** Inset from the stage edge that content should keep clear of. */
+export const SLIDE_SAFE_MARGIN = 20;
+export const SLIDE_SAFE_BOUNDS = {
+  minX: SLIDE_SAFE_MARGIN,
+  minY: SLIDE_SAFE_MARGIN,
+  maxX: STAGE_WIDTH - SLIDE_SAFE_MARGIN,
+  maxY: STAGE_HEIGHT - SLIDE_SAFE_MARGIN,
+};
+
+/**
+ * True when a stage-space box crosses the slide safe bounds on any side.
+ * Drives the orange overflow warning stroke on the selection transformer.
+ */
+export function isBoxOverflowingSlide(box: Box): boolean {
+  return (
+    box.x < SLIDE_SAFE_BOUNDS.minX ||
+    box.y < SLIDE_SAFE_BOUNDS.minY ||
+    box.x + box.width > SLIDE_SAFE_BOUNDS.maxX ||
+    box.y + box.height > SLIDE_SAFE_BOUNDS.maxY
+  );
+}
+
+/**
+ * Pull a box back inside the slide's right edge.
+ *
+ * When the box still has room for a usable width, shrink its width in place;
+ * when it starts too far right, slide it left so its right edge lands on the
+ * safe bound. Used to keep parallel columns from running off the slide.
+ */
+export function clampBoxToSlideBounds(box: Box): Box {
+  let x = box.x;
+  let width = box.width;
+  if (x + width > SLIDE_SAFE_BOUNDS.maxX) {
+    if (x < SLIDE_SAFE_BOUNDS.maxX - 100) {
+      width = Math.max(100, SLIDE_SAFE_BOUNDS.maxX - x);
+    } else {
+      width = Math.max(
+        100,
+        Math.min(width, SLIDE_SAFE_BOUNDS.maxX - SLIDE_SAFE_BOUNDS.minX),
+      );
+      x = SLIDE_SAFE_BOUNDS.maxX - width;
+    }
+  }
+  return { ...box, x, width };
+}
+
 export function rawElementKey(element: RawElement, index: number) {
   return `${readString(element.id) ?? readString(element.name) ?? readString(element.type) ?? "element"}:${index}`;
 }
@@ -1266,9 +1432,39 @@ export function componentBox(component: RawComponent): Box {
 }
 
 export function componentContentSize(component: RawComponent): Size {
-  const elements = readArray(component.elements);
-  if (elements.length > 0) return childrenBounds(elements);
-  return { width: STAGE_WIDTH, height: STAGE_HEIGHT };
+  const elements = readArray(component.elements).filter(isRecord) as RawElement[];
+  if (elements.length === 0) return { width: STAGE_WIDTH, height: STAGE_HEIGHT };
+  if (elements.length === 1 && hugsContentHeight(elements[0])) {
+    return singleTextElementContentSize(elements[0]);
+  }
+  return childrenBounds(elements);
+}
+
+/**
+ * Single text / text-list components (including ungrouped component elements)
+ * should hug the wrapped copy instead of keeping the stale card height they
+ * inherited before the ungroup. Width stays at the declared slot width so the
+ * copy keeps wrapping at the authored column width.
+ */
+function hugsContentHeight(element: RawElement): boolean {
+  const type = readString(element.type);
+  return type === "text" || type === "text-list";
+}
+
+function singleTextElementContentSize(element: RawElement): Size {
+  const declared = declaredElementBox(element);
+  const visual = elementBox(element);
+  const fontSize = readNumber(element.font?.size) ?? 20;
+  const isSingleLine = visual.height <= Math.max(48, fontSize * 1.5);
+  const hugsWidth =
+    isSingleLine && visual.width > 0 && visual.width < declared.width;
+  return {
+    width: Math.max(
+      1,
+      hugsWidth ? visual.x + visual.width : declared.x + declared.width,
+    ),
+    height: Math.max(1, visual.y + visual.height),
+  };
 }
 
 export function lineStrokeWidth(element: RawElement): number {

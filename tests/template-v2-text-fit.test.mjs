@@ -54,7 +54,7 @@ test("latin letters use 0.5em and combining marks are free", () => {
   assert.equal(textUnits("Hi"), 2 * LATIN_EM);
 });
 
-test("vietnamese letters are 0.72em and 1.16× when bold", () => {
+test("vietnamese letters are 0.55em and 1.05× when bold", () => {
   assert.equal(characterUnit("ư"), VIETNAMESE_EM);
   assert.equal(characterUnit("Đ", true), VIETNAMESE_EM * VIETNAMESE_BOLD_MULTIPLIER);
   assert.ok(textUnits("Phủ") > textUnits("Phu"));
@@ -85,7 +85,8 @@ test("visual capacity treats maxLength as latin 0.5em budget", () => {
   assert.equal(exceedsVisualCapacity("AAAAAAAAAA", 10), true);
   assert.equal(exceedsVisualCapacity("AAAAAAAA", 10), false);
   assert.equal(exceedsVisualCapacity("Hello", 40), false);
-  assert.equal(exceedsVisualCapacity("ư".repeat(8), 10), true);
+  // Vietnamese glyphs are 0.55em, so ten of them overflow a ten-latin budget.
+  assert.equal(exceedsVisualCapacity("ư".repeat(10), 10), true);
 });
 
 test("short copy in a wide box does not shrink", () => {
@@ -439,11 +440,15 @@ test("a designed one-line box is distinguished from a multi-line paragraph box",
 test("wide glyphs take a paint margin without starving the box", () => {
   assert.equal(hasWideGlyphs("AI in daily life"), false);
   assert.equal(hasWideGlyphs("AI trong Đời sống hàng ngày"), true);
-  // 1.14 handed the fitter 87.7% of the box. The unit table already models
-  // Vietnamese at 0.72em, so the margin only absorbs rendering drift now.
-  assert.equal(UNICODE_PAINT_SAFETY, 1.03);
+  // The unit table already models Vietnamese at 0.55em, so the margin no longer
+  // needs to steal any box width; canvas and Tiptap fit the same 100% width.
+  assert.equal(UNICODE_PAINT_SAFETY, 1.0);
   assert.ok(PAINT_SAFETY > 0);
-  assert.ok(UNICODE_PAINT_SAFETY < 1.14);
+  assert.ok(UNICODE_PAINT_SAFETY <= 1.03);
+  // ASCII copy once lost ~10% of the box to the paint margin, so the canvas
+  // wrapped a word earlier than the Tiptap editor. Keep both margins equal so
+  // the two environments break lines at the same point.
+  assert.equal(PAINT_SAFETY, UNICODE_PAINT_SAFETY);
 });
 
 test("the unicode paint margin keeps copy that fits the box on one line", () => {
@@ -462,6 +467,55 @@ test("the unicode paint margin keeps copy that fits the box on one line", () => 
   assert.equal(fitted.lines.length, 1);
   assert.equal(fitted.fontScale, 1);
   assert.equal(fitted.lines[0].map((segment) => segment.text).join(""), text);
+});
+
+test("a vietnamese paragraph keeps the full-width wrap the tiptap editor uses", () => {
+  const runFont = {
+    family: "Arial",
+    size: 20,
+    bold: false,
+    lineHeight: 1.5,
+    letterSpacing: 0,
+  };
+  // The paragraph from the user's screenshot: the canvas used to drop "của"
+  // and "nhất," early because the 1.03 margin hid 3% of the frame width.
+  const paragraph =
+    "Trí tuệ nhân tạo đang thay đổi cách chúng ta làm việc và học tập mỗi ngày, mở ra cơ hội mới nhưng cũng đặt ra thách thức lớn nhất,";
+  const box = { width: 320, height: 400 };
+
+  assert.ok(
+    measureTextByUnits(paragraph, runFont) > box.width,
+    "sample paragraph must wrap for this test to be meaningful",
+  );
+
+  const fitted = fitTextToBox([{ text: paragraph, font: runFont }], box, {
+    measure: measureTextByUnits,
+  });
+
+  // No forced shrink: full-width safety keeps the copy at its designed size.
+  assert.equal(fitted.fontScale, 1);
+  assert.equal(fitted.ellipsis, false);
+  const lineTexts = fitted.lines.map((line) =>
+    line.map((segment) => segment.text).join(""),
+  );
+  assert.equal(lineTexts.join(""), paragraph);
+
+  // Every line fits the frame, and no line could have pulled the first word of
+  // the next line up -- exactly the greedy break the Tiptap DOM editor uses at
+  // 100% of the frame width.
+  for (let index = 0; index < lineTexts.length; index += 1) {
+    const width = fitted.lines[index].reduce(
+      (sum, segment) => sum + segment.width,
+      0,
+    );
+    assert.ok(width <= box.width + 0.5, `line ${index} width ${width}`);
+    if (index === lineTexts.length - 1) continue;
+    const nextWord = lineTexts[index + 1].replace(/^\s+/, "").split(/\s+/)[0];
+    assert.ok(
+      measureTextByUnits(lineTexts[index] + nextWord, runFont) > box.width,
+      `line ${index} should have pulled "${nextWord}" up to stay synced`,
+    );
+  }
 });
 
 test("an unbounded box reports the height the wrapped copy needs", () => {
@@ -778,6 +832,62 @@ test("the replay card label fits in full on one line without ellipsis", () => {
     text,
   );
   const size = result.lines[0][0].font.size;
-  assert.ok(size >= 20 && size <= 30, `font ${size}`);
+  assert.ok(size >= 20 && size <= 36, `font ${size}`);
   assert.ok(result.height <= box.height);
+});
+
+test("hover stops at the nearest selectable node instead of the component frame", async () => {
+  const stage = await read(
+    "components/slide-editor/surface/TemplateV2KonvaStage.tsx",
+  );
+
+  assert.match(stage, /SELECTION_NODE_ATTR/);
+  assert.match(stage, /!hoverTarget\.getAttr\(SELECTION_NODE_ATTR\)/);
+  assert.doesNotMatch(stage, /hoverTarget\.getParent\(\) !== contentLayer/);
+});
+
+test("hover frame is cleared on press, drag, and select", async () => {
+  const stage = await read(
+    "components/slide-editor/surface/TemplateV2KonvaStage.tsx",
+  );
+  const slide = await read(
+    "components/slide-editor/surface/TemplateV2KonvaSlide.tsx",
+  );
+
+  // A press clears the hover frame before it can be left stranded.
+  assert.match(
+    stage,
+    /onMouseDown=\{\(event\) => \{[\s\S]*?hoveredKonvaNodeRef\.current = null;[\s\S]*?onHoverSelectionRectChange\(null\);/,
+  );
+  // A held button or live drag short-circuits hover computation.
+  assert.match(stage, /Boolean\(event\.evt\.buttons !== 0\)/);
+  assert.match(stage, /Boolean\(stage\?\.isDragging\(\)\)/);
+  assert.match(stage, /isInteractingOrDragging/);
+  // Selecting clears hover before the transformer appears.
+  assert.match(
+    slide,
+    /const select = useCallback\([\s\S]*?hoveredKonvaNodeRef\.current = null;[\s\S]*?setHoverSelectionRect\(null\);/,
+  );
+  // Drag-start handlers are wrapped to clear hover, and wired to the stage.
+  assert.match(slide, /handleComponentDragStartWithHoverClear = useCallback/);
+  assert.match(slide, /handleElementDragStartWithHoverClear = useCallback/);
+  assert.match(
+    slide,
+    /onComponentDragStart=\{handleComponentDragStartWithHoverClear\}/,
+  );
+  assert.match(
+    slide,
+    /onElementDragStart=\{handleElementDragStartWithHoverClear\}/,
+  );
+});
+
+test("the inline editor mirrors the fitted canvas font scale", async () => {
+  const editor = await read(
+    "components/slide-editor/text/TemplateV2InlineEditor.tsx",
+  );
+
+  assert.match(editor, /fontScale/);
+  assert.match(editor, /displayScale/);
+  assert.match(editor, /scaleInlineTextRuns/);
+  assert.match(editor, /fontSize = isCode \? 12 : textStyle\.size \* displayScale/);
 });
