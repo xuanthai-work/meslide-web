@@ -44,6 +44,12 @@ export type TemplateV2InlineEdit<Selection> =
       runs?: TextRun[];
       listMarker?: Marker | null;
       textSelectionRange?: TextSelectionRange | null;
+      /**
+       * Font scale the canvas applied to make the copy fit its box. The inline
+       * editor re-applies it for display only, so editing shows exactly the
+       * size and wrapping the user sees on the canvas.
+       */
+      fontScale?: number;
     }
   | null;
 
@@ -102,6 +108,67 @@ export function wordWrappedTextRuns(runs: TextRun[]): TextRun[] {
     ...run,
     font: stripRunFontWrap(run.font),
   }));
+}
+
+/**
+ * Scale a font's size/letter-spacing. Used to keep the inline editor's font
+ * metrics aligned 1:1 with the fitted copy painted on the canvas. Passing the
+ * reciprocal scale restores the authored metrics before committing.
+ */
+export function scaleInlineTextFont(
+  font: TextRun["font"] | null | undefined,
+  scale: number,
+): TextRun["font"] | null | undefined {
+  if (!font || !(scale > 0) || Math.abs(scale - 1) < 1e-6) return font;
+  const size = Number(font.size);
+  const letterSpacing = Number(font.letter_spacing);
+  return {
+    ...font,
+    ...(Number.isFinite(size) ? { size: size * scale } : {}),
+    ...(Number.isFinite(letterSpacing)
+      ? { letter_spacing: letterSpacing * scale }
+      : {}),
+  };
+}
+
+export function scaleInlineTextRuns(runs: TextRun[], scale: number): TextRun[] {
+  if (!(scale > 0) || Math.abs(scale - 1) < 1e-6) return runs;
+  return runs.map((run) => ({
+    ...run,
+    font: scaleInlineTextFont(run.font, scale),
+  }));
+}
+
+/**
+ * Height the inline editor frame must have for its copy.
+ *
+ * ``fontScale`` mirrors the shrink the canvas fitter applied, so the frame is
+ * measured against the font size the user actually sees (``style.size *
+ * fontScale``). Measuring the authored size would inflate the frame and let the
+ * editor wrap onto a line the canvas never showed.
+ */
+export function autoSizeInlineTextFrame(
+  frame: TemplateV2InlineEditBox | null | undefined,
+  runs: TextRun[],
+  style: TemplateV2TextEditStyle,
+  fontScale = 1,
+): TemplateV2InlineEditBox | null | undefined {
+  if (!frame) return frame;
+  const scale = Number.isFinite(fontScale) && fontScale > 0 ? fontScale : 1;
+  const scaledStyle: TemplateV2TextEditStyle = {
+    ...style,
+    size: style.size * scale,
+  };
+  const scaledRuns = scaleInlineTextRuns(runs, scale);
+  const contentHeight = measureWordWrappedTextRunsHeight(
+    scaledRuns,
+    frame.width,
+    scaledStyle,
+  );
+  return {
+    ...frame,
+    height: Math.max(1, contentHeight),
+  };
 }
 
 function stripRunFontWrap(font: TextRun["font"] | null | undefined) {

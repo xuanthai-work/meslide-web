@@ -1,6 +1,6 @@
 export const LATIN_EM = 0.5;
-export const VIETNAMESE_EM = 0.72;
-export const VIETNAMESE_BOLD_MULTIPLIER = 1.16;
+export const VIETNAMESE_EM = 0.55;
+export const VIETNAMESE_BOLD_MULTIPLIER = 1.05;
 export const CJK_EM = 1;
 export const FIT_CAPACITY_RATIO = 0.95;
 export const FIT_TARGET_RATIO = 0.8;
@@ -10,16 +10,24 @@ export const BODY_MIN_PX = 12;
 export const TITLE_SIZE_THRESHOLD = 24;
 export const ELLIPSIS = "…";
 export const FIT_SCALE_EPSILON = 0.001;
-export const PAINT_SAFETY = 1.1;
+/**
+ * Paint margin for copy carrying ASCII-only glyphs.
+ *
+ * It used to be 1.1, which handed the fitter only ~91% of the box and made the
+ * canvas wrap a word earlier than the Tiptap inline editor (which wraps at the
+ * full frame width). Keeping both environments on the same wrap width is what
+ * stops the copy from re-flowing when the user clicks to edit.
+ */
+export const PAINT_SAFETY = 1.0;
 /**
  * Paint margin for copy carrying non-ASCII glyphs.
  *
  * It used to be 1.14, which handed the fitter only 87.7% of the box and made
  * Vietnamese copy wrap a line early, leaving a dead strip down the right edge.
- * The unit table already models Vietnamese at 0.72em against latin 0.5em, so
+ * The unit table already models Vietnamese at 0.55em against latin 0.5em, so
  * the margin only has to absorb font-rendering drift between environments.
  */
-export const UNICODE_PAINT_SAFETY = 1.03;
+export const UNICODE_PAINT_SAFETY = 1.0;
 export const DESIGN_LINE_HEIGHT = 1.25;
 export const SINGLE_LINE_TOLERANCE = 1.6;
 export const SINGLE_LINE_MIN_SCALE = 0.55;

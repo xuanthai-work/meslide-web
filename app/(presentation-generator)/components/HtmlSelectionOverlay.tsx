@@ -20,15 +20,10 @@ export default function HtmlSelectionOverlay({
         <div
           aria-hidden="true"
           data-html-selection-overlay="hover"
-          className="pointer-events-none fixed z-[80] rounded-[8px] border-2 border-dotted border-[#1D6FE8]"
+          className="pointer-events-none fixed z-[80] rounded-[4px] border border-[#1D6FE8]"
           style={{
             ...hoverRect,
-            backgroundColor: "rgba(122, 90, 248, 0.07)",
-            backgroundImage:
-              "radial-gradient(rgba(122, 90, 248, 0.38) 1px, transparent 1px)",
-            backgroundSize: "8px 8px",
-            boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.9), 0 0 0 5px rgba(29,111,232,0.12)",
+            boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.4)",
           }}
         />
       )}

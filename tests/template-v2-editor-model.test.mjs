@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import path from "node:path";
 import test from "node:test";
@@ -240,7 +240,15 @@ test("clipboard and side resize keep geometry for the selected component", async
     ],
   };
   const copied = model.componentForClipboardSelection(ui, { kind: "component", componentIndex: 0 });
-  assert.deepEqual(copied.box, { x: 10, y: 20, width: 100, height: 40 });
+  // A single-line text component hugs its measured copy on both axes, so the
+  // copied frame is the tight text box instead of the stale declared card.
+  const elementVisual = model.elementBox(ui.components[0].elements[0]);
+  assert.deepEqual(copied.box, {
+    x: 10,
+    y: 20,
+    width: elementVisual.x + elementVisual.width,
+    height: elementVisual.y + elementVisual.height,
+  });
   assert.equal(copied.components[0].component.elements[0].text, "A");
 
   assert.deepEqual(
@@ -267,6 +275,100 @@ test("clipboard and side resize keep geometry for the selected component", async
   assert.deepEqual(resized[0].size, { width: 20, height: 24 });
   assert.deepEqual(resized[0].children[0].position, { x: 2, y: 3 });
   assert.equal(resized[0].children[0].text, "nested");
+});
+
+test("a single-line text component hugs its text width and drops the dead space", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const component = {
+    id: "title",
+    position: { x: 40, y: 60 },
+    elements: [
+      {
+        type: "text",
+        text: "Hug",
+        position: { x: 0, y: 0 },
+        size: { width: 300, height: 200 },
+      },
+    ],
+  };
+
+  const size = model.componentContentSize(component);
+  const visual = model.elementBox(component.elements[0]);
+  assert.equal(size.width, visual.x + visual.width);
+  assert.ok(size.width < 300, `width ${size.width} must hug the text`);
+  assert.equal(size.height, visual.y + visual.height);
+  assert.ok(size.height < 200, `height ${size.height} must drop the dead space`);
+});
+
+test("a single-line text hugs its own width instead of the wide slot", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const component = {
+    id: "streaming",
+    position: { x: 0, y: 0 },
+    elements: [
+      {
+        type: "text",
+        text: "Streaming SSE",
+        position: { x: 0, y: 0 },
+        size: { width: 450, height: 120 },
+        font: { size: 24 },
+      },
+    ],
+  };
+
+  const size = model.componentContentSize(component);
+  const visual = model.elementBox(component.elements[0]);
+  assert.ok(visual.width < 450, `visual width ${visual.width} must fit the copy`);
+  assert.ok(
+    visual.height <= Math.max(48, 24 * 1.5),
+    `visual height ${visual.height} must read as a single line`,
+  );
+  assert.equal(size.width, visual.x + visual.width);
+  assert.ok(size.width < 450, `width ${size.width} must hug the copy`);
+  assert.equal(size.height, visual.y + visual.height);
+});
+
+test("a multi-line text keeps the declared width so the copy keeps wrapping", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const component = {
+    id: "paragraph",
+    position: { x: 0, y: 0 },
+    elements: [
+      {
+        type: "text",
+        text: "Một đoạn văn dài nhiều dòng\nrơi xuống hàng thứ hai rõ ràng",
+        position: { x: 0, y: 0 },
+        size: { width: 450, height: 200 },
+        font: { size: 24 },
+      },
+    ],
+  };
+
+  const size = model.componentContentSize(component);
+  const visual = model.elementBox(component.elements[0]);
+  assert.ok(
+    visual.height > Math.max(48, 24 * 1.5),
+    `visual height ${visual.height} must read as multi-line`,
+  );
+  assert.equal(size.width, 450);
+  assert.equal(size.height, visual.y + visual.height);
+});
+
+test("a multi-element component keeps its declared union bounds", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const component = {
+    id: "stack",
+    position: { x: 0, y: 0 },
+    elements: [
+      { type: "text", text: "A", position: { x: 0, y: 0 }, size: { width: 200, height: 40 } },
+      { type: "text", text: "B", position: { x: 0, y: 90 }, size: { width: 200, height: 40 } },
+    ],
+  };
+
+  assert.deepEqual(model.componentContentSize(component), {
+    width: 200,
+    height: 130,
+  });
 });
 
 test("auto-ungroup splits text stacks, flow layouts, and multi-element components", async () => {
@@ -375,4 +477,247 @@ test("flow column clamps a manual child below a taller preceding sibling", async
     laidOut[1].box.y >= 150 + 5.36,
     `subtitle y ${laidOut[1].box.y} must clear the two-line heading`,
   );
+});
+
+
+test("vertical push moves the stack below a grown text block by delta H", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+
+  const card = (id, x, y, height) => ({
+    id,
+    position: { x, y },
+    elements: [
+      {
+        type: "container",
+        fill: { color: "#FFFFFF" },
+        position: { x: 0, y: 0 },
+        size: { width: 200, height },
+        child: { type: "text", text: id },
+      },
+    ],
+  });
+
+  const ui = {
+    components: [
+      card("top", 0, 0, 160),
+      card("below", 0, 250, 50),
+      card("side", 400, 250, 50),
+    ],
+  };
+
+  // "top" used to be 100px tall and now measures 160px (+60).
+  const pushed = model.pushStackedComponentsBelow(ui, 0, 100);
+
+  assert.equal(pushed.components[0].position.y, 0);
+  // Same-column stack keeps its authored 250px offset plus the 60px delta.
+  assert.equal(pushed.components[1].position.y, 310);
+  // The side card shares no X range, so it stays put.
+  assert.equal(pushed.components[2].position.y, 250);
+});
+
+test("vertical push clamps to the minimum stack gap", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const { MIN_STACK_GAP } = await import(
+    "../components/slide-editor/model/template-v2-ungroup.ts"
+  );
+
+  const ui = {
+    components: [
+      {
+        id: "top",
+        position: { x: 0, y: 0 },
+        elements: [
+          {
+            type: "container",
+            fill: { color: "#FFFFFF" },
+            position: { x: 0, y: 0 },
+            size: { width: 200, height: 300 },
+            child: { type: "text", text: "heading" },
+          },
+        ],
+      },
+      {
+        id: "below",
+        position: { x: 0, y: 40 },
+        elements: [
+          {
+            type: "text",
+            text: "paragraph",
+            position: { x: 0, y: 0 },
+            size: { width: 200, height: 40 },
+          },
+        ],
+      },
+    ],
+  };
+
+  const pushed = model.pushStackedComponentsBelow(ui, 0, 100);
+  assert.equal(pushed.components[1].position.y, 300 + MIN_STACK_GAP);
+});
+
+test("row peers stretch to the tallest card in the row", async () => {
+  const flow = await import(
+    "../components/slide-editor/layout/flowLayout.ts"
+  );
+  const boxes = [
+    { x: 0, y: 0, width: 100, height: 100 },
+    { x: 120, y: 4, width: 100, height: 140 },
+    { x: 240, y: 0, width: 100, height: 80 },
+    { x: 0, y: 200, width: 100, height: 50 },
+  ];
+
+  assert.deepEqual(flow.rowPeerIndexes(boxes, 0), [1, 2]);
+  const equalized = flow.equalizedRowHeights(boxes, 0);
+  assert.equal(equalized.get(0), 140);
+  assert.equal(equalized.get(2), 140);
+  assert.equal(equalized.get(1), undefined);
+  // The stacked box below is not part of the row.
+  assert.equal(equalized.get(3), undefined);
+});
+
+test("equalizeRowComponentHeights stretches sibling cards to the tallest", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+
+  const card = (id, x, height) => ({
+    id,
+    position: { x, y: 0 },
+    elements: [
+      {
+        type: "container",
+        fill: { color: "#FFFFFF" },
+        position: { x: 0, y: 0 },
+        size: { width: 100, height },
+        child: { type: "text", text: id },
+      },
+    ],
+  });
+
+  const ui = {
+    components: [card("c1", 0, 100), card("c2", 120, 140), card("c3", 240, 80)],
+  };
+
+  const equalized = model.equalizeRowComponentHeights(ui, 0);
+  assert.deepEqual(
+    equalized.components.map((component) => component.elements[0].size.height),
+    [140, 140, 140],
+  );
+  assert.deepEqual(
+    equalized.components.map((component) => component.position.x),
+    [0, 120, 240],
+  );
+});
+
+test("isBoxOverflowingSlide flags boxes that cross the safe bounds", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const safe = model.SLIDE_SAFE_BOUNDS;
+  assert.equal(safe.maxX, 1260);
+  assert.equal(safe.maxY, 700);
+
+  // Exactly touching the safe bounds is still inside.
+  assert.equal(
+    model.isBoxOverflowingSlide({ x: 20, y: 20, width: 1240, height: 680 }),
+    false,
+  );
+  assert.equal(
+    model.isBoxOverflowingSlide({ x: 10, y: 20, width: 100, height: 100 }),
+    true,
+  );
+  assert.equal(
+    model.isBoxOverflowingSlide({ x: 20, y: 10, width: 100, height: 100 }),
+    true,
+  );
+  assert.equal(
+    model.isBoxOverflowingSlide({ x: 1200, y: 100, width: 100, height: 100 }),
+    true,
+  );
+  assert.equal(
+    model.isBoxOverflowingSlide({ x: 100, y: 650, width: 100, height: 100 }),
+    true,
+  );
+});
+
+test("clampBoxToSlideBounds keeps boxes inside the right safe bound", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+
+  const inside = model.clampBoxToSlideBounds({
+    x: 100,
+    y: 100,
+    width: 200,
+    height: 100,
+  });
+  assert.deepEqual(inside, { x: 100, y: 100, width: 200, height: 100 });
+
+  // Room to shrink in place: keep x, trim width to the safe bound.
+  const shrunk = model.clampBoxToSlideBounds({
+    x: 1000,
+    y: 0,
+    width: 400,
+    height: 100,
+  });
+  assert.equal(shrunk.x, 1000);
+  assert.equal(shrunk.x + shrunk.width, 1260);
+
+  // Too far right to shrink: slide left so the right edge lands on the bound.
+  const slid = model.clampBoxToSlideBounds({
+    x: 1200,
+    y: 0,
+    width: 200,
+    height: 100,
+  });
+  assert.equal(slid.x + slid.width, 1260);
+  assert.ok(slid.x < 1200);
+  assert.ok(slid.x >= model.SLIDE_SAFE_BOUNDS.minX);
+});
+
+test("hover overlay uses a slim Canva/Figma border with no purple dotted fill", () => {
+  const source = readFileSync(
+    path.join(root, "app/(presentation-generator)/components/HtmlSelectionOverlay.tsx"),
+    "utf8",
+  );
+
+  const hoverBlock = source.slice(
+    source.indexOf('data-html-selection-overlay="hover"'),
+    source.indexOf('data-html-selection-overlay="selected"'),
+  );
+
+  assert.match(hoverBlock, /border border-\[#1D6FE8\]/);
+  assert.doesNotMatch(hoverBlock, /backgroundImage/);
+  assert.doesNotMatch(hoverBlock, /radial-gradient/);
+  assert.doesNotMatch(hoverBlock, /border-dotted/);
+});
+
+test("autoSizeInlineTextFrame measures with the fitted font scale", async () => {
+  const { autoSizeInlineTextFrame } = await import(
+    "../components/slide-editor/text/template-v2-text-editing.ts"
+  );
+  const style = {
+    family: "Arial",
+    size: 40,
+    color: "#111827",
+    bold: false,
+    italic: false,
+    underline: false,
+    lineHeight: 1.2,
+    letterSpacing: 0,
+    opacity: 1,
+    horizontal: "left",
+    vertical: "top",
+  };
+  const runs = [
+    {
+      text: "Một tiêu đề khá dài cần được đo chiều cao đúng theo cỡ chữ hiển thị",
+      font: { size: 40 },
+    },
+  ];
+  const frame = { x: 0, y: 0, width: 200, height: 120 };
+
+  const full = autoSizeInlineTextFrame(frame, runs, style, 1);
+  const scaled = autoSizeInlineTextFrame(frame, runs, style, 0.5);
+
+  assert.ok(scaled.height < full.height, `${scaled.height} < ${full.height}`);
+  assert.ok(scaled.height >= 1);
+  // The authored font size is only measured to fill the frame, never to inflate
+  // the editor box beyond what the canvas painted.
+  assert.equal(full.width, frame.width);
+  assert.equal(scaled.width, frame.width);
 });

@@ -65,6 +65,60 @@ export function isFlowLayoutElement(element: FlowLayoutElement) {
   return flowLayoutKind(element) != null;
 }
 
+/** Top edges within this tolerance are treated as the same horizontal row. */
+export const ROW_ALIGN_TOLERANCE = 25;
+
+/**
+ * Indexes of the boxes that share a horizontal row with ``anchorIndex``.
+ *
+ * Peers line up on their top edge within ``tolerance`` and sit beside the
+ * anchor rather than under it: a vertically stacked sibling overlaps the
+ * anchor's X range, while a card in the same row is separated horizontally.
+ * Used to stretch a row of cards to their tallest sibling.
+ */
+export function rowPeerIndexes(
+  boxes: Array<FlowLayoutBox | null | undefined>,
+  anchorIndex: number,
+  tolerance = ROW_ALIGN_TOLERANCE,
+): number[] {
+  const anchor = boxes[anchorIndex];
+  if (!anchor) return [];
+  const peers: number[] = [];
+  boxes.forEach((box, index) => {
+    if (index === anchorIndex || !box) return;
+    if (Math.abs(box.y - anchor.y) > tolerance) return;
+    const overlapsX =
+      anchor.x < box.x + box.width && box.x < anchor.x + anchor.width;
+    if (overlapsX) return;
+    peers.push(index);
+  });
+  return peers;
+}
+
+/**
+ * Row members (anchor + peers) mapped to the height they should stretch to.
+ * Only entries shorter than the tallest member are returned so the result is
+ * idempotent once the row is equal-height.
+ */
+export function equalizedRowHeights(
+  boxes: Array<FlowLayoutBox | null | undefined>,
+  anchorIndex: number,
+  tolerance = ROW_ALIGN_TOLERANCE,
+): Map<number, number> {
+  const result = new Map<number, number>();
+  const anchor = boxes[anchorIndex];
+  if (!anchor) return result;
+  const members = [anchorIndex, ...rowPeerIndexes(boxes, anchorIndex, tolerance)];
+  const maxHeight = Math.max(
+    ...members.map((index) => boxes[index]?.height ?? 0),
+  );
+  members.forEach((index) => {
+    const box = boxes[index];
+    if (box && box.height < maxHeight - 0.01) result.set(index, maxHeight);
+  });
+  return result;
+}
+
 export function layoutFlowChildren(
   parent: FlowLayoutElement,
   children: FlowLayoutElement[],

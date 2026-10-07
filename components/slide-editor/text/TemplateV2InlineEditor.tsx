@@ -14,6 +14,8 @@ import {
   type TemplateV2InlineEditBox,
   type TemplateV2InlineEditKind,
   type TemplateV2TextEditStyle,
+  scaleInlineTextFont,
+  scaleInlineTextRuns,
   wordWrappedTextRuns,
 } from "@/components/slide-editor/text/template-v2-text-editing";
 import { effectiveLineHeight } from "@/components/slide-editor/text/text-line-height";
@@ -44,6 +46,7 @@ export function TemplateV2InlineEditor({
   listMarker,
   runs,
   style,
+  fontScale,
   onChange,
   onClose,
   onRunsChange,
@@ -55,6 +58,7 @@ export function TemplateV2InlineEditor({
   listMarker?: Marker | null;
   runs?: TextRun[];
   style?: TemplateV2TextEditStyle;
+  fontScale?: number;
   onChange: (draft: string) => void;
   onClose: (commit: boolean, runs?: TextRun[]) => void;
   onRunsChange?: (runs: TextRun[]) => void;
@@ -65,7 +69,13 @@ export function TemplateV2InlineEditor({
   const isCode = kind === "svg";
   const isRichText = kind === "text" || kind === "text-list";
   const textStyle = font;
-  const fontSize = isCode ? 12 : textStyle.size;
+  // Match the fitted copy painted on the canvas: the editor shows the same
+  // shrink the fitter applied, while the authored size is restored on commit.
+  const displayScale =
+    Number.isFinite(fontScale) && (fontScale ?? 0) > 0
+      ? (fontScale as number)
+      : 1;
+  const fontSize = isCode ? 12 : textStyle.size * displayScale;
   const editorLineHeight = effectiveLineHeight({
     text: draft,
     width: box.width,
@@ -116,17 +126,24 @@ export function TemplateV2InlineEditor({
     fontWeight: textStyle.bold ? 700 : 400,
     fontStyle: textStyle.italic ? "italic" : "normal",
     lineHeight: editorLineHeight,
-    letterSpacing: textStyle.letterSpacing,
+    letterSpacing: textStyle.letterSpacing * displayScale,
     textAlign: textStyle.horizontal as CSSProperties["textAlign"],
     overflow: isCode ? "auto" : "visible",
   };
-  const baseTextFont = useMemo(() => textEditStyleToFont(textStyle), [textStyle]);
+  const baseTextFont = useMemo(() => {
+    const authored = textEditStyleToFont(textStyle);
+    return scaleInlineTextFont(authored, displayScale) ?? authored;
+  }, [textStyle, displayScale]);
   const [initialTextEditorRuns] = useState<TextRun[]>(() =>
-    wordWrappedTextRuns(runs ?? [{ text: draft || " ", font: baseTextFont }]),
+    wordWrappedTextRuns(runs ?? [{ text: draft || " ", font: textEditStyleToFont(textStyle) }]),
   );
   const textEditorRuns = useMemo(
     () => wordWrappedTextRuns(runs ?? initialTextEditorRuns),
     [initialTextEditorRuns, runs],
+  );
+  const displayTextEditorRuns = useMemo(
+    () => scaleInlineTextRuns(textEditorRuns, displayScale),
+    [textEditorRuns, displayScale],
   );
   const latestRunsRef = useRef<TextRun[]>(initialTextEditorRuns);
 
@@ -160,13 +177,17 @@ export function TemplateV2InlineEditor({
           baseFont={baseTextFont}
           editorStyle={editorStyle}
           listMarker={kind === "text-list" ? listMarker : null}
-          runs={textEditorRuns}
+          runs={displayTextEditorRuns}
           onBlurOutside={() => closeTextEditor(true)}
           onCommitShortcut={() => closeTextEditor(true)}
           onEscape={() => closeTextEditor(false)}
           onRunsChange={(nextRuns) => {
-            latestRunsRef.current = nextRuns;
-            onRunsChange?.(nextRuns);
+            const authoredRuns = scaleInlineTextRuns(
+              nextRuns,
+              displayScale > 0 ? 1 / displayScale : 1,
+            );
+            latestRunsRef.current = authoredRuns;
+            onRunsChange?.(authoredRuns);
           }}
           onSelectionChange={onSelectionChange ?? (() => undefined)}
         />
