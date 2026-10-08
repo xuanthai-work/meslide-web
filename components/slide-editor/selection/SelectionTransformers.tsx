@@ -31,6 +31,12 @@ const BOTTOM_CENTER_ROTATION_ANCHOR_EVENT_NAMESPACE =
 const MULTI_SELECTION_GROUP_DASH = [5, 5];
 const MULTI_SELECTION_MEMBER_DASH = [7, 4];
 const HORIZONTAL_ONLY_ANCHORS = ["middle-left", "middle-right"];
+const CORNER_ONLY_ANCHORS: string[] = [
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+];
 let refreshCwIconPaths: Path2D[] | null = null;
 
 type SelectionKind = "component" | "multi-component" | "element" | null;
@@ -63,6 +69,7 @@ type TemplateV2SelectionTransformersProps = {
   horizontalResizeOnly?: boolean;
   fullElementTransform?: boolean;
   suppressSelectedOutline?: boolean;
+  cornerResizeOnly?: boolean;
 };
 
 function drawRotationHandle(context: Konva.Context, shape: Konva.Shape) {
@@ -372,6 +379,7 @@ export function TemplateV2SelectionTransformers({
   horizontalResizeOnly = false,
   fullElementTransform = false,
   suppressSelectedOutline = false,
+  cornerResizeOnly = false,
 }: TemplateV2SelectionTransformersProps) {
   const selectedTransformerRef = useRef<Konva.Transformer | null>(null);
   const contextTransformerRef = useRef<Konva.Transformer | null>(null);
@@ -607,13 +615,16 @@ export function TemplateV2SelectionTransformers({
         boundBoxFunc={boundTransformBox}
         enabledAnchors={
           canTransformSelection
-            ? horizontalResizeOnly && !fullElementTransform
-              ? HORIZONTAL_ONLY_ANCHORS
-              : undefined
+            ? cornerResizeOnly
+              ? CORNER_ONLY_ANCHORS
+              : horizontalResizeOnly && !fullElementTransform
+                ? HORIZONTAL_ONLY_ANCHORS
+                : undefined
             : []
         }
         flipEnabled={false}
         ignoreStroke
+        keepRatio={cornerResizeOnly || undefined}
         resizeEnabled={canTransformSelection}
         rotateAnchorAngle={bottomCenterRotationAnchorAngle}
         rotateAnchorOffset={BOTTOM_CENTER_ROTATION_ANCHOR_OFFSET}

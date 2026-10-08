@@ -103,6 +103,7 @@ import {
 } from "@/components/slide-editor/surface/pixelRatio";
 import { TemplateV2KonvaOverlays } from "@/components/slide-editor/surface/TemplateV2KonvaOverlays";
 import { TemplateV2KonvaStage } from "@/components/slide-editor/surface/TemplateV2KonvaStage";
+import { loadKonvaImage } from "@/components/slide-editor/surface/exportAssets";
 import { useTemplateV2AlignmentDrag } from "@/components/slide-editor/surface/useTemplateV2AlignmentDrag";
 import { useTemplateV2Keyboard } from "@/components/slide-editor/surface/useTemplateV2Keyboard";
 import {
@@ -164,6 +165,7 @@ import {
   type RawUi,
   type SelectOptions,
   type Selection,
+  type Size,
   type UnknownRecord,
 } from "@/components/slide-editor/model/model";
 import {
@@ -236,6 +238,21 @@ function canEditVectorPointsForSelection(ui: RawUi, selection: ElementSelection)
   const component = asRecord(readArray(ui.components)[selection.componentIndex]);
   const elements = readArray(component?.elements).filter(isRecord);
   return elements.length === 1;
+}
+
+function sizeForNaturalRatio(
+  width: number,
+  height: number,
+  naturalWidth: number,
+  naturalHeight: number,
+): Size | null {
+  const ratio = naturalWidth / naturalHeight;
+  const area = Math.abs(width) * Math.abs(height);
+  if (!Number.isFinite(ratio) || ratio <= 0 || area <= 0) return null;
+  const nextWidth = Math.sqrt(area * ratio);
+  const nextHeight = nextWidth / ratio;
+  if (!Number.isFinite(nextWidth) || !Number.isFinite(nextHeight)) return null;
+  return { width: nextWidth, height: nextHeight };
 }
 
 function syncScenePixelRatio(
@@ -1801,14 +1818,27 @@ function TemplateV2KonvaSlideComponent({
         const uploaded = await ImagesApi.uploadImage(file);
         const imageUrl = resolveBackendAssetSource(uploaded);
         if (!imageUrl) throw new Error("Không thể tải ảnh lên.");
-        updateElement(target, (element) => ({
-          ...element,
-          data: imageUrl,
-          name: file.name,
-          focus_x: 50,
-          focus_y: 50,
-          crop_scale: null,
-        }));
+        const loadedImage = await loadKonvaImage(imageUrl);
+        const naturalWidth = loadedImage?.naturalWidth ?? 0;
+        const naturalHeight = loadedImage?.naturalHeight ?? 0;
+        updateElement(target, (element) => {
+          const box = elementBox(element);
+          const nextSize = sizeForNaturalRatio(
+            box.width,
+            box.height,
+            naturalWidth,
+            naturalHeight,
+          );
+          return {
+            ...element,
+            data: imageUrl,
+            name: file.name,
+            focus_x: 50,
+            focus_y: 50,
+            crop_scale: null,
+            ...(nextSize ? { size: nextSize } : {}),
+          };
+        });
         notify.success("Đã cập nhật ảnh", "Ảnh đã chọn đã được thay thế.");
       } catch (error) {
         notify.error(
