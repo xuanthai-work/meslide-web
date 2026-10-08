@@ -41,6 +41,7 @@ import {
 import { OpacitySwatchIcon } from "@/components/slide-editor/toolbar/OpacitySwatchIcon";
 import { ImagePickerModal } from "@/components/slide-editor/images/ImagePickerModal";
 import { resolveBackendAssetSource } from "@/utils/api";
+import { loadKonvaImage } from "@/components/slide-editor/surface/exportAssets";
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import { notify } from "@/components/ui/sonner";
 
@@ -146,6 +147,32 @@ function cropActionsPosition(frame: CropFrame) {
 
 function imageNaturalRatio(size: { width: number; height: number } | null) {
   return size && size.width > 0 && size.height > 0 ? size.width / size.height : 1;
+}
+
+function sizeForNaturalRatio(
+  width: number,
+  height: number,
+  naturalWidth: number,
+  naturalHeight: number,
+): { width: number; height: number } | null {
+  const ratio = naturalWidth / naturalHeight;
+  const area = Math.abs(width) * Math.abs(height);
+  if (!Number.isFinite(ratio) || ratio <= 0 || area <= 0) return null;
+  const nextWidth = Math.sqrt(area * ratio);
+  const nextHeight = nextWidth / ratio;
+  if (!Number.isFinite(nextWidth) || !Number.isFinite(nextHeight)) return null;
+  return { width: nextWidth, height: nextHeight };
+}
+
+async function imageSizeMatchingNaturalRatio(
+  box: { w: number; h: number },
+  src: string,
+): Promise<{ width: number; height: number } | null> {
+  const loaded = await loadKonvaImage(src);
+  const naturalWidth = loaded?.naturalWidth ?? 0;
+  const naturalHeight = loaded?.naturalHeight ?? 0;
+  if (!naturalWidth || !naturalHeight) return null;
+  return sizeForNaturalRatio(box.w, box.h, naturalWidth, naturalHeight);
 }
 
 function baseCoverImageSize(
@@ -520,12 +547,14 @@ export function ImageToolbar({
       const asset = await ImagesApi.uploadImage(file);
       const url = resolveBackendAssetSource(asset);
       if (!url) throw new Error("Không thể tải ảnh lên.");
+      const nextSize = await imageSizeMatchingNaturalRatio(box, url);
       update({
         data: url,
         name: file.name,
         focus_x: 50,
         focus_y: 50,
         crop_scale: null,
+        ...(nextSize ? { size: nextSize } : {}),
       });
       notify.success("Đã tải ảnh lên", "Ảnh đã chọn đã được thay thế.");
     } catch (uploadError: unknown) {
