@@ -204,6 +204,9 @@ function fittedInlineTextScale(
   frame: TemplateV2InlineEditBox | null | undefined,
 ): number {
   if (!frame) return 1;
+  // A box the user has resized keeps the authored font size while editing; only
+  // authored/auto boxes mirror the fitter shrink so the editor stays in sync.
+  if (element.__gslide_manual_size === true) return 1;
   const rawWidth = Number(element.size?.width);
   const rawHeight = Number(element.size?.height);
   const box = {

@@ -2107,6 +2107,7 @@ export function preserveInlineEditFrame(element: RawElement, frame?: Box | null)
       height: frame.height,
     },
     __gslide_manual_position: true,
+    __gslide_manual_size: true,
   };
 }
 
