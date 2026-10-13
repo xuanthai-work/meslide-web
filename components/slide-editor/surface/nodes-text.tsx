@@ -73,7 +73,15 @@ export function RawRichTextElement({
   const declaredHeight = Number(element.size?.height);
   const fitWidth = declaredWidth > 0 ? declaredWidth : width;
   const fitHeight = declaredHeight > 0 ? declaredHeight : height;
-  const fitted = fitTextToBox(layoutRuns, { width: fitWidth, height: fitHeight });
+  // Manually sized text boxes follow their copy (auto height) and keep the
+  // authored font size, so they must never shrink the font to fit the frame.
+  const manualSize = element.__gslide_manual_size === true;
+  const fitted = fitTextToBox(
+    layoutRuns,
+    manualSize
+      ? { width: fitWidth, height: Number.MAX_SAFE_INTEGER }
+      : { width: fitWidth, height: fitHeight },
+  );
   const lines = fitted.lines as Array<
     Array<RenderTextRun & { width: number }>
   >;

@@ -277,6 +277,21 @@ function positionFromComponentTransform(
   };
 }
 
+function markManualTextSize(component: RawComponent): RawComponent {
+  const elements = readArray(component.elements);
+  if (elements.length === 0) return component;
+  let changed = false;
+  const nextElements = elements.map((value) => {
+    if (!isRecord(value)) return value;
+    const type = readString(value.type);
+    if (type !== "text" && type !== "text-list") return value;
+    if (value.__gslide_manual_size === true) return value;
+    changed = true;
+    return { ...value, __gslide_manual_size: true };
+  });
+  return changed ? { ...component, elements: nextElements } : component;
+}
+
 function componentFromNodeTransform(
   component: RawComponent,
   node: Konva.Group,
@@ -301,17 +316,21 @@ function componentFromNodeTransform(
     return resizeComponentFrame(component, nextComponentBox);
   }
   if (resizeMode === "resize-element-bounds") {
-    return resizeComponentElementBounds(component, {
+    return markManualTextSize(
+      resizeComponentElementBounds(component, {
+        ...nextComponentBox,
+        scaleX: nextBox.scaleX,
+        scaleY: nextBox.scaleY,
+      }),
+    );
+  }
+  return markManualTextSize(
+    resizeComponent(component, {
       ...nextComponentBox,
       scaleX: nextBox.scaleX,
       scaleY: nextBox.scaleY,
-    });
-  }
-  return resizeComponent(component, {
-    ...nextComponentBox,
-    scaleX: nextBox.scaleX,
-    scaleY: nextBox.scaleY,
-  });
+    }),
+  );
 }
 
 function syncComponentNodeBox(node: Konva.Group, box: Box) {
@@ -354,14 +373,16 @@ function componentFromSideTransformPreview({
   sourceBox,
   target,
 }: ComponentSideTransformPreview) {
-  return resizeComponentFromSideTransform(
-    source,
-    sourceBox,
-    { width: target.box.width, height: target.box.height },
-    target.anchor,
-    STAGE_BOX,
-    target.rotation,
-  ).component;
+  return markManualTextSize(
+    resizeComponentFromSideTransform(
+      source,
+      sourceBox,
+      { width: target.box.width, height: target.box.height },
+      target.anchor,
+      STAGE_BOX,
+      target.rotation,
+    ).component,
+  );
 }
 
 export function RawComponentNode({
@@ -1160,7 +1181,17 @@ function RawElementNode({
       };
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
-      const fontScale = fontScaleFromResize(scaleX, scaleY);
+      const elementType = readString(element.type);
+      const isTextResize =
+        elementType === "text" || elementType === "text-list";
+      const sideResize =
+        anchor != null &&
+        (HORIZONTAL_RESIZE_ANCHORS.has(anchor) ||
+          VERTICAL_RESIZE_ANCHORS.has(anchor));
+      // Canva behavior: side handles reflow the copy at the new width and keep
+      // the authored font size; corner handles scale the font proportionally.
+      const fontScale =
+        isTextResize && sideResize ? 1 : fontScaleFromResize(scaleX, scaleY);
       const nextSize = {
         width: Math.max(1, sourceBox.width * scaleX),
         height: Math.max(1, sourceBox.height * scaleY),
@@ -1217,6 +1248,7 @@ function RawElementNode({
       onElementChange(selection, (current) => {
         const scaled = scaleRawElementTextMetrics(current, fontScale);
         const type = readString(current.type);
+        const isText = type === "text" || type === "text-list";
         const geometry =
           isVectorType(type)
             ? polygonElementFromFrame(scaled, nextPosition, scaleX, scaleY)
@@ -1227,6 +1259,7 @@ function RawElementNode({
               };
         return {
           ...geometry,
+          ...(isText ? { __gslide_manual_size: true } : {}),
           rotation: node.rotation(),
           ...(layoutManaged || isManualPositioned(current)
             ? { __gslide_manual_position: true }

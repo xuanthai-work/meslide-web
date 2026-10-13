@@ -766,6 +766,8 @@ export function textVisualLocalBox(
 
   const textNodeRuns =
     renderRuns.length > 0 ? renderRuns : [{ text: displayContent, font }];
+  const manualWidth =
+    element.__gslide_manual_size === true && Number(element.size?.width) > 0;
   const measuredLines = layoutRenderTextRuns(
     textNodeRuns,
     box.width,
@@ -790,6 +792,10 @@ export function textVisualLocalBox(
   const contentHeight = Math.max(1, measuredHeight);
   const shouldFitHeight =
     displayContent.trim().length > 0 && contentHeight < box.height;
+  const shouldGrowHeight =
+    manualWidth &&
+    displayContent.trim().length > 0 &&
+    contentHeight > box.height;
 
   let nextY = box.y;
   let nextHeight = box.height;
@@ -800,12 +806,13 @@ export function textVisualLocalBox(
     } else if (verticalAlign === "bottom") {
       nextY = box.y + (box.height - contentHeight);
     }
-  } else if (!(box.height > 0)) {
+  } else if (!(box.height > 0) || shouldGrowHeight) {
     nextHeight = contentHeight;
   }
 
   // Auto-fit width: tiêu đề 1 dòng co khung theo bề rộng chữ thực tế và bù
-  // toạ độ theo align để giữ nguyên tâm/cạnh trực quan.
+  // toạ độ theo align để giữ nguyên tâm/cạnh trực quan. Khung do người dùng tự
+  // kéo dãn (__gslide_manual_size) giữ nguyên độ rộng đã chọn, không co giật.
   const isSingleLine =
     !displayContent.includes("\n") &&
     textNodeRuns.length <= 1 &&
@@ -813,7 +820,13 @@ export function textVisualLocalBox(
   const fitWidth = Math.ceil(lineWidth) + 12;
   let nextX = box.x;
   let nextWidth = box.width;
-  if (isSingleLine && lineWidth > 0 && fitWidth > 0 && fitWidth < box.width) {
+  if (
+    !manualWidth &&
+    isSingleLine &&
+    lineWidth > 0 &&
+    fitWidth > 0 &&
+    fitWidth < box.width
+  ) {
     nextWidth = fitWidth;
     if (align === "center") {
       nextX = box.x + (box.width - fitWidth) / 2;

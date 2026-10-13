@@ -354,6 +354,70 @@ test("a multi-line text keeps the declared width so the copy keeps wrapping", as
   assert.equal(size.height, visual.y + visual.height);
 });
 
+test("a manually sized text box keeps its declared width instead of hugging the copy", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const component = {
+    id: "manual",
+    position: { x: 0, y: 0 },
+    elements: [
+      {
+        type: "text",
+        text: "Hug",
+        position: { x: 0, y: 0 },
+        size: { width: 300, height: 200 },
+        font: { size: 24 },
+        __gslide_manual_size: true,
+      },
+    ],
+  };
+
+  const visual = model.elementBox(component.elements[0]);
+  assert.equal(visual.width, 300, "manual width must be preserved");
+
+  const size = model.componentContentSize(component);
+  assert.equal(size.width, 300);
+});
+
+test("a manually sized text box grows its height with the wrapped copy", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const element = {
+    type: "text",
+    text: "Một đoạn văn dài nhiều dòng rơi xuống hàng thứ hai rồi hàng thứ ba rõ ràng",
+    position: { x: 0, y: 0 },
+    size: { width: 160, height: 24 },
+    font: { size: 24 },
+    __gslide_manual_size: true,
+  };
+
+  const visual = model.elementBox(element);
+  assert.equal(visual.width, 160);
+  assert.ok(
+    visual.height > 24,
+    `manual box height ${visual.height} must grow with the copy`,
+  );
+});
+
+test("inline text edits mark the element as manually sized", async () => {
+  const model = await import("../components/slide-editor/model/model.ts");
+  const element = {
+    type: "text",
+    text: "Old",
+    position: { x: 0, y: 0 },
+    size: { width: 200, height: 40 },
+  };
+  const next = model.elementWithInlineDraft(
+    element,
+    "text",
+    "Old and longer copy",
+    undefined,
+    { x: 0, y: 0, width: 200, height: 80 },
+  );
+
+  assert.equal(next.__gslide_manual_size, true);
+  assert.equal(next.size.width, 200);
+  assert.equal(next.size.height, 80);
+});
+
 test("a multi-element component keeps its declared union bounds", async () => {
   const model = await import("../components/slide-editor/model/model.ts");
   const component = {
