@@ -118,6 +118,7 @@ export function createBlankPresentationSlide({
     id,
     index,
     content: {},
+    speaker_note: "",
     ...(shouldUseTemplateV2 ? { ui: cloneBlankTemplateV2Layout() } : {}),
     layout_group: resolvedTemplateId,
     layout: BLANK_SLIDE_LAYOUT_ID,
