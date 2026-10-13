@@ -398,7 +398,7 @@ export function TemplateV2KonvaStage({
               selectedIsImageElement ||
               (selectedIsVectorElement && selectedCanEditVectorPoints)
             }
-            cornerResizeOnly={selectedIsImageElement}
+            cornerResizeOnly={false}
             suppressSelectedOutline={Boolean(
               selectedTableCell ||
                 inlineEdit ||

@@ -161,6 +161,45 @@ test("addSlide stops at the slide limit", async () => {
   assert.equal(state.presentationData.slides[0].id, "s0");
 });
 
+test("updateSlideSpeakerNote writes the note onto the target slide", async () => {
+  const {
+    default: reducer,
+    setPresentationData,
+    updateSlideSpeakerNote,
+  } = await import("../store/slices/presentationGeneration.ts");
+  const slides = [slide("s0"), slide("s1")];
+  let state = reducer(undefined, setPresentationData(deck(slides)));
+
+  state = reducer(
+    state,
+    updateSlideSpeakerNote({ index: 0, speakerNote: "Ghi chú mới" }),
+  );
+  assert.equal(state.presentationData.slides[0].speaker_note, "Ghi chú mới");
+  assert.equal(state.presentationData.slides[1].speaker_note, undefined);
+
+  state = reducer(
+    state,
+    updateSlideSpeakerNote({ index: 1, speakerNote: "Slide hai" }),
+  );
+  assert.equal(state.presentationData.slides[1].speaker_note, "Slide hai");
+  assert.equal(state.presentationData.slides[0].speaker_note, "Ghi chú mới");
+});
+
+test("updateSlideSpeakerNote ignores an out-of-range slide index", async () => {
+  const {
+    default: reducer,
+    setPresentationData,
+    updateSlideSpeakerNote,
+  } = await import("../store/slices/presentationGeneration.ts");
+  let state = reducer(undefined, setPresentationData(deck([slide("s0")])));
+  const before = JSON.stringify(state.presentationData);
+  state = reducer(
+    state,
+    updateSlideSpeakerNote({ index: 9, speakerNote: "x" }),
+  );
+  assert.equal(JSON.stringify(state.presentationData), before);
+});
+
 test("upload state keeps the other field when only one is sent", async () => {
   const { default: reducer, setPptGenUploadState } = await import(
     "../store/slices/presentationGenUpload.ts"

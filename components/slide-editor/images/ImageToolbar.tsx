@@ -6,6 +6,7 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   Loader2,
+  Proportions,
   RotateCcw,
   Scan,
   Upload,
@@ -42,11 +43,22 @@ import { OpacitySwatchIcon } from "@/components/slide-editor/toolbar/OpacitySwat
 import { ImagePickerModal } from "@/components/slide-editor/images/ImagePickerModal";
 import { resolveBackendAssetSource } from "@/utils/api";
 import { loadKonvaImage } from "@/components/slide-editor/surface/exportAssets";
+import {
+  imageNaturalRatio,
+  sizeForAspectRatio,
+  sizeForNaturalRatio,
+} from "@/components/slide-editor/images/image-fit";
 import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import { notify } from "@/components/ui/sonner";
 
-type ImagePanel = "fit" | "crop" | "radius" | "opacity" | null;
+type ImagePanel = "fit" | "crop" | "radius" | "opacity" | "aspect" | null;
 type ImageFit = "contain" | "cover" | "fill";
+type AspectRatioPresetValue = "original" | "1:1" | "16:9" | "4:3" | "3:4" | "9:16";
+type AspectRatioPreset = {
+  value: AspectRatioPresetValue;
+  label: string;
+  ratio: number | null;
+};
 type CropPoint = { x: number; y: number };
 type CropFrame = { left: number; top: number; width: number; height: number };
 type CropDraft = CropPoint & { scale: number };
@@ -73,6 +85,15 @@ type CropDragState =
 
 const FIT_OPTIONS: Array<{ value: ImageFit }> = [
   { value: "cover" }, { value: "contain" }, { value: "fill" },
+];
+
+const ASPECT_RATIO_PRESETS: AspectRatioPreset[] = [
+  { value: "original", label: "Ảnh gốc", ratio: null },
+  { value: "1:1", label: "1:1", ratio: 1 },
+  { value: "16:9", label: "16:9", ratio: 16 / 9 },
+  { value: "4:3", label: "4:3", ratio: 4 / 3 },
+  { value: "3:4", label: "3:4", ratio: 3 / 4 },
+  { value: "9:16", label: "9:16", ratio: 9 / 16 },
 ];
 
 const clampPercent = (value: number | null | undefined) =>
@@ -143,25 +164,6 @@ function cropActionsPosition(frame: CropFrame) {
       );
 
   return { left, top, width };
-}
-
-function imageNaturalRatio(size: { width: number; height: number } | null) {
-  return size && size.width > 0 && size.height > 0 ? size.width / size.height : 1;
-}
-
-function sizeForNaturalRatio(
-  width: number,
-  height: number,
-  naturalWidth: number,
-  naturalHeight: number,
-): { width: number; height: number } | null {
-  const ratio = naturalWidth / naturalHeight;
-  const area = Math.abs(width) * Math.abs(height);
-  if (!Number.isFinite(ratio) || ratio <= 0 || area <= 0) return null;
-  const nextWidth = Math.sqrt(area * ratio);
-  const nextHeight = nextWidth / ratio;
-  if (!Number.isFinite(nextWidth) || !Number.isFinite(nextHeight)) return null;
-  return { width: nextWidth, height: nextHeight };
 }
 
 async function imageSizeMatchingNaturalRatio(
@@ -420,6 +422,29 @@ export function ImageToolbar({
     onChange(index, { ...element, ...changes });
   };
 
+  const applyAspectRatio = async (preset: AspectRatioPreset) => {
+    let nextSize: { width: number; height: number } | null = null;
+    if (preset.value === "original") {
+      nextSize = imageNaturalSize
+        ? sizeForAspectRatio(box.w, box.h, imageNaturalRatio(imageNaturalSize))
+        : await imageSizeMatchingNaturalRatio(box, element.data ?? "");
+    } else {
+      nextSize = sizeForAspectRatio(box.w, box.h, preset.ratio ?? 0);
+    }
+    if (!nextSize) {
+      notify.error("Không đổi được tỷ lệ khung", "Không xác định được tỷ lệ ảnh.");
+      return;
+    }
+    update({
+      size: nextSize,
+      ...(preset.value === "original"
+        ? { focus_x: 50, focus_y: 50, crop_scale: null }
+        : {}),
+    });
+    setOpenPanel(null);
+    notify.success("Đã đổi tỷ lệ khung ảnh");
+  };
+
   const commitCrop = (next = cropDraft) => {
     const draft = normalizeCropDraft(next);
     const committed = committedCropRef.current;
@@ -620,6 +645,39 @@ export function ImageToolbar({
                   )}
                 >
                   {fitLabels[option.value]}
+                </button>
+              ))}
+            </Panel>
+          ) : null}
+        </div>
+
+        <Divider />
+
+        <div className="relative">
+          <button
+            type="button"
+            title={"Tỷ lệ khung"}
+            aria-label={"Tỷ lệ khung"}
+            aria-expanded={openPanel === "aspect"}
+            aria-pressed={openPanel === "aspect"}
+            onClick={() => togglePanel("aspect")}
+            className={cn(
+              "rounded-[2px] border-0 bg-transparent p-1 text-[#05070A] hover:bg-[var(--gslide-accent-soft)]",
+              openPanel === "aspect" && "bg-[var(--gslide-accent-soft)] text-[var(--gslide-accent)]",
+            )}
+          >
+            <Proportions size={16} strokeWidth={1.7} aria-hidden="true" />
+          </button>
+          {openPanel === "aspect" ? (
+            <Panel className="flex min-w-[170px] flex-col gap-1 rounded-[12px] p-2.5">
+              {ASPECT_RATIO_PRESETS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => void applyAspectRatio(option)}
+                  className="flex w-full items-center rounded-[8px] px-3 py-2 text-left text-[13px] text-[#191919] hover:bg-[var(--gslide-accent-soft)]"
+                >
+                  {option.label}
                 </button>
               ))}
             </Panel>
@@ -868,12 +926,14 @@ export function ImageToolbar({
         currentImage={element.data}
         initialPrompt={element.prompt}
         onClose={() => setImagePickerOpen(false)}
-        onSelect={(url, prompt) => {
+        onSelect={async (url, prompt) => {
+          const nextSize = await imageSizeMatchingNaturalRatio(box, url);
           update({
             data: url,
             focus_x: 50,
             focus_y: 50,
             crop_scale: null,
+            ...(nextSize ? { size: nextSize } : {}),
             ...(prompt ? { prompt } : {}),
           });
         }}
