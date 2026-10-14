@@ -40,6 +40,35 @@ function nestedMessage(value: unknown): string | null {
   return null;
 }
 
+function formatVietnameseNumber(value: number): string {
+  return Number.isFinite(value) ? value.toLocaleString("vi-VN") : String(value);
+}
+
+function translateStringTooLong(item: Record<string, unknown>): string | null {
+  const type = typeof item.type === "string" ? item.type : "";
+  const msg = typeof item.msg === "string" ? item.msg : "";
+  const isTooLong =
+    type === "string_too_long" ||
+    /string should have at most \d+ characters/i.test(msg);
+  if (!isTooLong) return null;
+
+  const limitMatch = msg.match(/at most (\d+) characters/i);
+  const limit = limitMatch ? Number(limitMatch[1]) : null;
+  const loc = Array.isArray(item.loc) ? item.loc : [];
+  const isMessageField = loc.some(
+    (value) => typeof value === "string" && value.toLowerCase() === "message"
+  );
+
+  if (isMessageField) {
+    return limit != null
+      ? `Tin nhắn không được vượt quá ${formatVietnameseNumber(limit)} ký tự.`
+      : "Tin nhắn không được vượt quá 16.000 ký tự.";
+  }
+  return limit != null
+    ? `Nội dung không được vượt quá ${formatVietnameseNumber(limit)} ký tự.`
+    : "Nội dung quá dài. Vui lòng rút ngắn nội dung.";
+}
+
 export function normalizeApiErrorDetail(detail: unknown): string | null {
   if (!detail) return null;
 
@@ -52,6 +81,8 @@ export function normalizeApiErrorDetail(detail: unknown): string | null {
       .map((item) => {
         if (typeof item === "string") return item;
         if (isRecord(item)) {
+          const translated = translateStringTooLong(item);
+          if (translated) return translated;
           const maybeMsg = item.msg;
           const maybeLoc = item.loc;
           const locPath = Array.isArray(maybeLoc)
@@ -75,7 +106,7 @@ export function normalizeApiErrorDetail(detail: unknown): string | null {
   }
 
   if (isRecord(detail)) {
-    return nestedMessage(detail);
+    return translateStringTooLong(detail) ?? nestedMessage(detail);
   }
 
   return String(detail);

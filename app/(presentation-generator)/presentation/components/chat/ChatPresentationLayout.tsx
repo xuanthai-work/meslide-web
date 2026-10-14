@@ -48,6 +48,9 @@ import {
 import { stripBackendContextFromUserMessage } from "./chat-activity";
 import { AssistantMarker } from "./chat-widgets";
 
+const MAX_CHAT_MESSAGE_LENGTH = 16000;
+const CHAT_MESSAGE_COUNTER_THRESHOLD = 14000;
+
 export type ChatPresentationLayoutProps = {
   messages: ChatMessage[];
   isSending: boolean;
@@ -577,6 +580,22 @@ export function ChatPresentationLayout({
           }
           aria-invalid={Boolean(errorMessage)}
         />
+        {input.length > CHAT_MESSAGE_COUNTER_THRESHOLD && (
+          <div
+            className={cn(
+              "mt-1 text-right text-[11px] font-medium",
+              input.length > MAX_CHAT_MESSAGE_LENGTH
+                ? "text-[#D92D20]"
+                : "text-[var(--gslide-muted)]"
+            )}
+            aria-live="polite"
+          >
+            {input.length.toLocaleString("vi-VN")} / 16.000
+            {input.length > MAX_CHAT_MESSAGE_LENGTH
+              ? " — Tin nhắn không được vượt quá 16.000 ký tự."
+              : ""}
+          </div>
+        )}
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-full border border-[var(--gslide-border)] bg-white px-3 py-1">
