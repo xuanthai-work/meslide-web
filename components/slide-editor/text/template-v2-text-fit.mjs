@@ -202,7 +202,15 @@ export function layoutFitTextRuns(runs, width, measure, options = {}) {
     const parts = String(run.text ?? "").match(/\n|[^\S\n]+|[^\s]+/g) ?? [""];
     for (const part of parts) {
       if (part === "\n") {
-        pushLine();
+        if (lines[lines.length - 1]?.length === 0) {
+          lines[lines.length - 1].push({
+            ...run,
+            text: "",
+            width: 0,
+          });
+        }
+        lines.push([]);
+        lineWidth = 0;
         continue;
       }
       if (isFitWhitespace(part)) {

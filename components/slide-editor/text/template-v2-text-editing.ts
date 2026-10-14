@@ -1,8 +1,5 @@
 import type { Marker, TextRun } from "@/components/slide-editor/types";
-import {
-  isLatexTextRun,
-  textRunsContent,
-} from "@/components/slide-editor/text/text-runs";
+import { isLatexTextRun } from "@/components/slide-editor/text/text-runs";
 import type { TextSelectionRange } from "@/components/slide-editor/text/text-runs";
 import {
   fontFromRecord,
@@ -88,18 +85,13 @@ export function measureWordWrappedTextRunsHeight(
       baseFont,
     ),
   }));
-  const text = textRunsContent(sourceRuns);
-  const emptyHardLines = text.includes("\n")
-    ? text.split("\n").filter((line) => line.length === 0).length
-    : 0;
   return Math.ceil(
     measureWrappedRenderTextHeight(
       renderRuns,
       Math.max(1, width),
       "word",
       baseFont.lineHeight,
-    ) +
-      emptyHardLines * baseFont.size * baseFont.lineHeight,
+    ),
   );
 }
 

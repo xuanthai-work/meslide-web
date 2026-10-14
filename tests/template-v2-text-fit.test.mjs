@@ -361,6 +361,20 @@ test("displayMode latex occupies its own line", () => {
   assert.equal(lines[1][0].type, "latex");
 });
 
+test("layoutFitTextRuns preserves empty lines between paragraphs", () => {
+  const lines = layoutFitTextRuns(
+    [{ text: "first\n\nsecond", font }],
+    800,
+    wideCharMeasure,
+  );
+  assert.equal(lines.length, 3);
+  assert.equal(lines[0][0].text, "first");
+  assert.equal(lines[1].length, 1);
+  assert.equal(lines[1][0].text, "");
+  assert.equal(lines[1][0].width, 0);
+  assert.equal(lines[2][0].text, "second");
+});
+
 test("12px-only run floors at 12px not 18px", () => {
   const small = { ...font, size: 12 };
   const result = fitTextToBox(
