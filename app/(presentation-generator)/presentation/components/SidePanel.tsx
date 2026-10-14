@@ -312,7 +312,7 @@ const SidePanel = ({
 
   return (
     <aside
-      className="relative h-full w-[164px] bg-white px-2 py-5"
+      className="relative h-full w-full bg-white px-2 py-5"
       aria-label={"Các slide của bài thuyết trình"}
     >
       <div
