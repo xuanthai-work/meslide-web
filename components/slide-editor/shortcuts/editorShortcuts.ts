@@ -31,6 +31,8 @@ export type EditorShortcut = {
     | "bring-to-front"
     | "send-backward"
     | "send-to-back"
+    | "nudge"
+    | "nudge-large"
     | "previous-slide"
     | "next-slide"
     | "shortcut-help";
@@ -138,6 +140,23 @@ export const EDITOR_SHORTCUT_SECTIONS: EditorShortcutSection[] = [
         label: "Send to back",
         description: "Move the selected object behind every other object.",
         chords: [["Shift", "Alt", "J"]],
+      },
+      {
+        id: "nudge",
+        label: "Nudge selection",
+        description: "Move the selected object by 1px with an arrow key.",
+        chords: [["ArrowLeft"], ["ArrowRight"], ["ArrowUp"], ["ArrowDown"]],
+      },
+      {
+        id: "nudge-large",
+        label: "Nudge selection far",
+        description: "Hold Shift with an arrow key to move the object by 10px.",
+        chords: [
+          ["Shift", "ArrowLeft"],
+          ["Shift", "ArrowRight"],
+          ["Shift", "ArrowUp"],
+          ["Shift", "ArrowDown"],
+        ],
       },
     ],
   },

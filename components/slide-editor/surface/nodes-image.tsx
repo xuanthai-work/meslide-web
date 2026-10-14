@@ -6,6 +6,7 @@ import {
   Group,
   Image as KonvaImage,
   Rect,
+  Text,
 } from "react-konva";
 import { loadKonvaImage } from "@/components/slide-editor/surface/exportAssets";
 import { buildSvgUpdateUrl } from "@/lib/svg-color";
@@ -44,15 +45,28 @@ export function RawImageElement({
   const loaded = useLoadedKonvaImage(renderSrc);
 
   if (!loaded) {
+    const fontSize = Math.max(9, Math.min(14, Math.min(width, height) / 9));
     return (
-      <Rect
-        width={width}
-        height={height}
-        fill="#EEF1F5"
-        stroke="#CBD2D9"
-        strokeWidth={1}
-        listening={interactive}
-      />
+      <Group listening={interactive}>
+        <Rect
+          width={width}
+          height={height}
+          fill="#EEF1F5"
+          stroke="#CBD2D9"
+          strokeWidth={1}
+        />
+        <Text
+          width={width}
+          height={height}
+          align="center"
+          verticalAlign="middle"
+          text={"Ảnh không khả dụng"}
+          fontSize={fontSize}
+          fontFamily="Arial, Helvetica, sans-serif"
+          fill="#98A2B3"
+          listening={false}
+        />
+      </Group>
     );
   }
 

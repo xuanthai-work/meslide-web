@@ -21,6 +21,8 @@ type UngroupEntry = {
   box: TemplateV2UngroupBox;
   rotation: number;
   sourceBox: TemplateV2UngroupBox;
+  /** True for the preserved card background generated while ungrouping. */
+  isBackground?: boolean;
 };
 
 type UngroupDeps = {
@@ -208,6 +210,7 @@ function ungroupedComponentsFromComponent(
 function enforceVerticalStackGap(entries: UngroupEntry[]): UngroupEntry[] {
   let previous: UngroupEntry | null = null;
   return entries.map((entry) => {
+    if (entry.isBackground) return entry;
     const box = entry.box;
     if (previous?.box && box) {
       const previousBox = previous.box;
@@ -288,7 +291,7 @@ function ungroupElementOneLevel(
   if (!childInfo) return [];
   const elementRotation = readNumber(element.rotation) ?? 0;
 
-  return deps
+  const childEntries = deps
     .layoutChildren(
       element,
       childInfo.items,
@@ -309,6 +312,70 @@ function ungroupElementOneLevel(
         box: rotatedChildComponentBox(unrotatedBox, box, elementRotation),
       };
     });
+
+  if (!hasBoxVisual(element)) return childEntries;
+
+  // The card container owns the background fill / border / stroke / shadow.
+  // Splitting it away would drop the visual, so keep a background component at
+  // the bottom of the layer stack and float the children above it.
+  const backgroundEntry: UngroupEntry = {
+    element: backgroundElementFromContainer(element, box),
+    sourceBox: { ...box },
+    rotation: elementRotation,
+    box: { ...box },
+    isBackground: true,
+  };
+  return [backgroundEntry, ...childEntries];
+}
+
+function hasBoxVisual(element: RawRecord): boolean {
+  const fill = asRecord(element.fill);
+  if (fill && isVisibleColor(fill.color)) return true;
+
+  const stroke = asRecord(element.stroke);
+  if (stroke && isVisibleColor(stroke.color) && (readNumber(stroke.width) ?? 0) > 0) {
+    return true;
+  }
+
+  return Boolean(asRecord(element.shadow));
+}
+
+function isVisibleColor(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const color = value.trim().toLowerCase();
+  if (!color || color === "transparent" || color === "none") return false;
+  // Fully transparent 8-digit hex (e.g. #FFFFFF00 / RRGGBBAA).
+  if (/^#[0-9a-f]{8}$/.test(color) && color.endsWith("00")) return false;
+  return true;
+}
+
+function backgroundElementFromContainer(
+  element: RawRecord,
+  box: TemplateV2UngroupBox,
+): RawRecord {
+  const background: RawRecord = {
+    type: "container",
+    position: { x: 0, y: 0 },
+    size: { width: box.width, height: box.height },
+  };
+  for (const key of [
+    "fill",
+    "stroke",
+    "border_radius",
+    "borderRadius",
+    "cornerRadius",
+    "corner_radii",
+    "shadow",
+    "opacity",
+    "clippath",
+    "clipPath",
+    "clip_path",
+  ]) {
+    if (element[key] != null) {
+      background[key] = cloneJson(element[key]);
+    }
+  }
+  return background;
 }
 
 function hasUngroupableLayout(element: RawRecord): boolean {
