@@ -135,6 +135,7 @@ import {
   pushStackedComponentsBelow,
   syncComponentHeightToElement,
   isBackgroundComponent,
+  isComponentLocked,
   isEditableTarget,
   isManualPositioned,
   isRecord,
@@ -148,12 +149,14 @@ import {
   rawChartToEditorChart,
   rawElementForEditorToolbar,
   readArray,
+  readPoint,
   readString,
   renderedLocalBoxForElementSelection,
   rootElementsComponent,
   selectionForComponentIndexes,
   selectionForInsertedComponent,
   selectionWithComponentToggle,
+  setComponentPositionsInUi,
   surfaceSelectionTarget,
   updateComponentInUi,
   updateElementInUi,
@@ -1192,6 +1195,56 @@ function TemplateV2KonvaSlideComponent({
     [commitUi],
   );
 
+  const nudgeSelection = useCallback(
+    (dx: number, dy: number, pushHistory = true) => {
+      if (!isEditMode || (dx === 0 && dy === 0)) return;
+      const currentSelection = selectionRef.current;
+      if (!currentSelection) return;
+
+      if (currentSelection.kind === "element") {
+        updateElement(
+          currentSelection,
+          (element) => {
+            const position = readPoint(element.position);
+            return {
+              ...element,
+              position: { x: position.x + dx, y: position.y + dy },
+              __gslide_manual_position: true,
+            };
+          },
+          pushHistory,
+        );
+        return;
+      }
+
+      const indexes = componentIndexesForSelection(currentSelection);
+      if (indexes.length === 0) return;
+      const ui = currentUiRef.current;
+      const positions = indexes
+        .map((componentIndex) => {
+          const component = asRecord(readArray(ui.components)[componentIndex]);
+          if (!component || isComponentLocked(component)) return null;
+          const position = readPoint(component.position);
+          return {
+            componentIndex,
+            position: { x: position.x + dx, y: position.y + dy },
+          };
+        })
+        .filter(
+          (entry): entry is { componentIndex: number; position: Point } =>
+            entry != null,
+        );
+      if (positions.length === 0) return;
+      commitUi(setComponentPositionsInUi(ui, positions), pushHistory);
+    },
+    [commitUi, isEditMode, updateElement],
+  );
+
+  const isInlineEditing = useCallback(
+    () => Boolean(inlineEdit),
+    [inlineEdit],
+  );
+
   const closeChartEditor = useCallback(() => {
     setChartEditorSelection(null);
   }, []);
@@ -1991,6 +2044,8 @@ function TemplateV2KonvaSlideComponent({
     deleteSelection,
     undo,
     redo,
+    onNudge: nudgeSelection,
+    isInlineEditing,
   });
 
   if (!uiDraft) {

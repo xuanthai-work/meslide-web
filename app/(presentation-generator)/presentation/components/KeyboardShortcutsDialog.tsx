@@ -193,14 +193,15 @@ const shortcutKeyById = {
   "multi-select": "multiSelect", group: "group", delete: "delete", undo: "undo",
   redo: "redo", copy: "copy", paste: "paste", "bring-forward": "bringForward",
   "bring-to-front": "bringToFront", "send-backward": "sendBackward",
-  "send-to-back": "sendToBack", "previous-slide": "previousSlide",
+  "send-to-back": "sendToBack", nudge: "nudge", "nudge-large": "nudgeLarge",
+  "previous-slide": "previousSlide",
   "next-slide": "nextSlide", "shortcut-help": "help",
 } as const;
 
 function shortcutLabel(id: keyof typeof shortcutKeyById) {
   const key = shortcutKeyById[id];
   const labels = {
-    multiSelect: "Thêm vào vùng chọn", group: "Nhóm đối tượng", delete: "Xóa vùng chọn", undo: "Hoàn tác", redo: "Làm lại", copy: "Sao chép vùng chọn", paste: "Dán", bringForward: "Đưa lên một lớp", bringToFront: "Đưa lên trên cùng", sendBackward: "Đưa xuống một lớp", sendToBack: "Đưa xuống dưới cùng", previousSlide: "Slide trước", nextSlide: "Slide sau", help: "Phím tắt",
+    multiSelect: "Thêm vào vùng chọn", group: "Nhóm đối tượng", delete: "Xóa vùng chọn", undo: "Hoàn tác", redo: "Làm lại", copy: "Sao chép vùng chọn", paste: "Dán", bringForward: "Đưa lên một lớp", bringToFront: "Đưa lên trên cùng", sendBackward: "Đưa xuống một lớp", sendToBack: "Đưa xuống dưới cùng", nudge: "Tinh chỉnh vị trí", nudgeLarge: "Dịch chuyển nhanh", previousSlide: "Slide trước", nextSlide: "Slide sau", help: "Phím tắt",
   };
   return labels[key];
 }
@@ -208,7 +209,7 @@ function shortcutLabel(id: keyof typeof shortcutKeyById) {
 function shortcutDescription(id: keyof typeof shortcutKeyById) {
   const key = shortcutKeyById[id];
   const descriptions = {
-    multiSelect: "Giữ Shift khi nhấp để thêm hoặc bỏ một đối tượng.", group: "Gộp hai hoặc nhiều đối tượng đã chọn thành một nhóm.", delete: "Xóa đối tượng đang chọn khỏi slide.", undo: "Hoàn tác thay đổi gần nhất trên slide đang mở.", redo: "Khôi phục thay đổi vừa được hoàn tác.", copy: "Sao chép các đối tượng đang chọn.", paste: "Dán các đối tượng đã sao chép với độ lệch nhỏ.", bringForward: "Đưa đối tượng đã chọn lên trước một lớp.", bringToFront: "Đưa đối tượng đã chọn lên trên tất cả đối tượng khác.", sendBackward: "Đưa đối tượng đã chọn xuống sau một lớp.", sendToBack: "Đưa đối tượng đã chọn xuống sau tất cả đối tượng khác.", previousSlide: "Mở slide đứng trước slide hiện tại.", nextSlide: "Mở slide đứng sau slide hiện tại.", help: "Mở hướng dẫn phím tắt này.",
+    multiSelect: "Giữ Shift khi nhấp để thêm hoặc bỏ một đối tượng.", group: "Gộp hai hoặc nhiều đối tượng đã chọn thành một nhóm.", delete: "Xóa đối tượng đang chọn khỏi slide.", undo: "Hoàn tác thay đổi gần nhất trên slide đang mở.", redo: "Khôi phục thay đổi vừa được hoàn tác.", copy: "Sao chép các đối tượng đang chọn.", paste: "Dán các đối tượng đã sao chép với độ lệch nhỏ.", bringForward: "Đưa đối tượng đã chọn lên trước một lớp.", bringToFront: "Đưa đối tượng đã chọn lên trên tất cả đối tượng khác.", sendBackward: "Đưa đối tượng đã chọn xuống sau một lớp.", sendToBack: "Đưa đối tượng đã chọn xuống sau tất cả đối tượng khác.", nudge: "Dùng phím mũi tên để dịch đối tượng đã chọn 1px.", nudgeLarge: "Giữ Shift và nhấn phím mũi tên để dịch đối tượng 10px.", previousSlide: "Mở slide đứng trước slide hiện tại.", nextSlide: "Mở slide đứng sau slide hiện tại.", help: "Mở hướng dẫn phím tắt này.",
   };
   return descriptions[key];
 }

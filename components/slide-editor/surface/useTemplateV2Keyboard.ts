@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { isTemplateV2GroupShortcut } from "@/components/slide-editor/model/template-v2-group";
 import {
   isEditableTarget,
@@ -21,6 +21,23 @@ export function componentIndexForLayerShortcut(selection: Selection) {
   return selection.componentIndex;
 }
 
+const ARROW_NUDGE_DELTAS: Record<string, { dx: number; dy: number }> = {
+  ArrowLeft: { dx: -1, dy: 0 },
+  ArrowRight: { dx: 1, dy: 0 },
+  ArrowUp: { dx: 0, dy: -1 },
+  ArrowDown: { dx: 0, dy: 1 },
+};
+
+export function arrowNudgeDelta(
+  key: string,
+  shiftKey: boolean,
+): { dx: number; dy: number } | null {
+  const delta = ARROW_NUDGE_DELTAS[key];
+  if (!delta) return null;
+  const step = shiftKey ? 10 : 1;
+  return { dx: delta.dx * step, dy: delta.dy * step };
+}
+
 export function useTemplateV2Keyboard({
   enabled,
   isSurfaceActive,
@@ -31,6 +48,8 @@ export function useTemplateV2Keyboard({
   deleteSelection,
   undo,
   redo,
+  onNudge,
+  isInlineEditing,
 }: {
   enabled: boolean;
   isSurfaceActive: () => boolean;
@@ -44,6 +63,8 @@ export function useTemplateV2Keyboard({
   deleteSelection: () => void;
   undo: () => void;
   redo: () => void;
+  onNudge?: (dx: number, dy: number, pushHistory: boolean) => void;
+  isInlineEditing?: () => boolean;
 }) {
   useEffect(() => {
     if (!enabled || typeof document === "undefined") {
@@ -175,4 +196,51 @@ export function useTemplateV2Keyboard({
     return () =>
       document.removeEventListener("keydown", handleUndoRedoShortcut, true);
   }, [enabled, isSurfaceActive, redo, undo]);
+
+  const isNudgingRef = useRef(false);
+
+  useEffect(() => {
+    if (!enabled || typeof document === "undefined" || !onNudge) {
+      return;
+    }
+
+    const handleArrowKeyDown = (event: KeyboardEvent) => {
+      const delta = arrowNudgeDelta(event.key, event.shiftKey);
+      if (!delta) return;
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isEditableTarget(event.target) ||
+        isInlineEditing?.() ||
+        !isSurfaceActive()
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      // The first press of a hold records history; auto-repeat presses only
+      // update the position so Ctrl+Z returns to the pre-nudge spot in one step.
+      const pushHistory = !isNudgingRef.current;
+      isNudgingRef.current = true;
+      onNudge(delta.dx, delta.dy, pushHistory);
+    };
+
+    const handleArrowKeyUp = (event: KeyboardEvent) => {
+      if (!ARROW_NUDGE_DELTAS[event.key]) return;
+      isNudgingRef.current = false;
+    };
+
+    document.addEventListener("keydown", handleArrowKeyDown, true);
+    document.addEventListener("keyup", handleArrowKeyUp, true);
+    return () => {
+      document.removeEventListener("keydown", handleArrowKeyDown, true);
+      document.removeEventListener("keyup", handleArrowKeyUp, true);
+      isNudgingRef.current = false;
+    };
+  }, [enabled, isInlineEditing, isSurfaceActive, onNudge]);
 }

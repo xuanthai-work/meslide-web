@@ -6,6 +6,7 @@ import {
   ArrowUp,
   ChevronRight,
   Grid2X2,
+  ImageOff,
   ImagePlus,
   Loader2,
   Minus,
@@ -595,19 +596,57 @@ function ImageResults({
   return (
     <div className={cn("grid grid-cols-2 gap-2.5", compact && "sm:grid-cols-3 lg:grid-cols-4")}>
       {images.map((image, index) => (
-        <div
+        <PickerImageTile
           key={`${image.id || image.url}-${index}`}
-          className={cn(
-            "group relative aspect-square overflow-hidden rounded-[10px] border border-[#EDEEEF] bg-[var(--gslide-accent-soft)] text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]",
-            image.url === currentSource && "ring-2 ring-[#191919]",
-          )}
-        >
-          <button
-            type="button"
-            aria-label={"Dùng ảnh này"}
-            onClick={() => onSelect(image)}
-            className="absolute inset-0 h-full w-full overflow-hidden rounded-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]"
-          >
+          compact={compact}
+          image={image}
+          isCurrent={image.url === currentSource}
+          onDelete={onDelete}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PickerImageTile({
+  compact,
+  image,
+  isCurrent,
+  onDelete,
+  onSelect,
+}: {
+  compact: boolean;
+  image: PickerImage;
+  isCurrent: boolean;
+  onDelete?: (image: PickerImage) => void;
+  onSelect: (image: PickerImage) => void;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <div
+      className={cn(
+        "group relative aspect-square overflow-hidden rounded-[10px] border border-[#EDEEEF] bg-[var(--gslide-accent-soft)] text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)]",
+        isCurrent && "ring-2 ring-[#191919]",
+      )}
+    >
+      <button
+        type="button"
+        aria-label={"Dùng ảnh này"}
+        disabled={failed}
+        onClick={() => onSelect(image)}
+        className="absolute inset-0 h-full w-full overflow-hidden rounded-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--gslide-accent)_15%,transparent)] disabled:cursor-not-allowed"
+      >
+        {failed ? (
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[#F2F4F7] px-2 text-center text-[#98A2B3]">
+            <ImageOff className="size-6" strokeWidth={1.6} aria-hidden="true" />
+            <span className="text-[11px] font-medium leading-4">
+              {"Ảnh không khả dụng"}
+            </span>
+          </span>
+        ) : (
+          <>
             <Image
               fill
               unoptimized
@@ -615,26 +654,27 @@ function ImageResults({
               alt={image.prompt || ""}
               sizes={compact ? "(min-width: 1024px) 160px, 25vw" : "(min-width: 640px) 330px, 50vw"}
               className="object-cover transition duration-300 group-hover:scale-[1.025]"
+              onError={() => setFailed(true)}
             />
             <span className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/45 via-transparent to-transparent p-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
               <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-medium text-[#191919]">{"Dùng ảnh này"}</span>
             </span>
-          </button>
-          {onDelete && image.deletable && image.id ? (
-            <button
-              type="button"
-              aria-label={"Xóa ảnh đã tải lên"}
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(image);
-              }}
-              className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white/95 text-red-600 opacity-0 shadow-sm transition hover:bg-white group-hover:opacity-100 group-focus-within:opacity-100"
-            >
-              <Trash2 className="size-3.5" strokeWidth={1.8} />
-            </button>
-          ) : null}
-        </div>
-      ))}
+          </>
+        )}
+      </button>
+      {onDelete && image.deletable && image.id ? (
+        <button
+          type="button"
+          aria-label={"Xóa ảnh đã tải lên"}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(image);
+          }}
+          className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white/95 text-red-600 opacity-0 shadow-sm transition hover:bg-white group-hover:opacity-100 group-focus-within:opacity-100"
+        >
+          <Trash2 className="size-3.5" strokeWidth={1.8} />
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -133,6 +133,85 @@ test("ungrouped card components keep distinct, non-overlapping positions", async
   }
 });
 
+test("ungrouping a card keeps its background fill and border radius", async () => {
+  const { ungroupTemplateV2ComponentInUi } = await import(UNGROUP);
+
+  const ui = {
+    components: [
+      {
+        id: "card",
+        position: { x: 50, y: 60 },
+        elements: [
+          {
+            type: "group",
+            position: { x: 0, y: 0 },
+            size: { width: 300, height: 180 },
+            fill: { color: "#F3F4F6" },
+            border_radius: { tl: 16, tr: 16, bl: 16, br: 16 },
+            children: [
+              { type: "text", text: "Title", position: { x: 20, y: 20 }, size: { width: 200, height: 40 } },
+              { type: "text", text: "Body", position: { x: 20, y: 80 }, size: { width: 240, height: 60 } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const result = ungroupTemplateV2ComponentInUi(ui, 0, ungroupDeps);
+  assert.ok(result, "the card component must ungroup");
+  const components = result.ui.components;
+  assert.equal(components.length, 3);
+
+  const background = components[0];
+  assert.equal(background.id, "card_part_1");
+  assert.deepEqual(background.position, { x: 50, y: 60 });
+  assert.equal(background.elements.length, 1);
+  assert.equal(background.elements[0].type, "container");
+  assert.deepEqual(background.elements[0].fill, { color: "#F3F4F6" });
+  assert.deepEqual(background.elements[0].border_radius, {
+    tl: 16,
+    tr: 16,
+    bl: 16,
+    br: 16,
+  });
+  assert.deepEqual(background.elements[0].size, { width: 300, height: 180 });
+  assert.equal(background.elements[0].children, undefined);
+
+  // The card children float above the preserved background.
+  assert.equal(components[1].elements[0].text, "Title");
+  assert.deepEqual(components[1].position, { x: 70, y: 80 });
+  assert.equal(components[2].elements[0].text, "Body");
+});
+
+test("ungrouping a transparent card does not add a background component", async () => {
+  const { ungroupTemplateV2ComponentInUi } = await import(UNGROUP);
+
+  const ui = {
+    components: [
+      {
+        id: "card",
+        position: { x: 0, y: 0 },
+        elements: [
+          {
+            type: "group",
+            position: { x: 0, y: 0 },
+            size: { width: 200, height: 100 },
+            children: [
+              { type: "text", text: "Title", position: { x: 10, y: 10 }, size: { width: 120, height: 30 } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const result = ungroupTemplateV2ComponentInUi(ui, 0, ungroupDeps);
+  assert.ok(result);
+  assert.equal(result.ui.components.length, 1);
+  assert.equal(result.ui.components[0].elements[0].text, "Title");
+});
+
 test("ctrl/cmd/shift are treated as additive component selection", async () => {
   const { isAdditiveSelectionEvent } = await import(
     "../components/slide-editor/selection/selectionKeys.ts"
