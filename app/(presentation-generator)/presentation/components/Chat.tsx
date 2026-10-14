@@ -73,6 +73,8 @@ import { translateBackendStatus } from "@/lib/backend-messages";
 
 export type { ChatApiAdapter } from "./chat/chat-types";
 
+export const MAX_CHAT_MESSAGE_LENGTH = 16000;
+
 const Chat = ({
   presentationId,
   presentationData,
@@ -854,6 +856,17 @@ const Chat = ({
       chatInputDisabled ||
       isUploadingPastedImage
     ) {
+      return;
+    }
+
+    if (
+      trimmedMessage.length > MAX_CHAT_MESSAGE_LENGTH ||
+      buildBackendMessage(outboundMessage).length > MAX_CHAT_MESSAGE_LENGTH
+    ) {
+      notify.error(
+        "Tin nhắn quá dài",
+        "Tin nhắn không được vượt quá 16.000 ký tự. Vui lòng rút ngắn nội dung."
+      );
       return;
     }
 
