@@ -418,6 +418,40 @@ test("inline text edits mark the element as manually sized", async () => {
   assert.equal(next.size.height, 80);
 });
 
+test("layoutRenderTextRuns keeps empty hard lines for the canvas height", async () => {
+  const { layoutRenderTextRuns } = await import(
+    "../components/slide-editor/text/template-v2-text.ts"
+  );
+  const renderFont = {
+    family: "Arial",
+    size: 20,
+    bold: false,
+    italic: false,
+    underline: false,
+    lineHeight: 1.2,
+    letterSpacing: 0,
+  };
+  const lines = layoutRenderTextRuns(
+    [{ text: "first\n\nsecond", font: renderFont }],
+    800,
+    "word",
+  );
+  assert.equal(lines.length, 3);
+  assert.equal(lines[1].length, 1);
+  assert.equal(lines[1][0].text, "");
+  assert.equal(lines[1][0].width, 0);
+});
+
+test("typed bullet and dash markers survive as plain text", async () => {
+  const { setRawTextContent } = await import(
+    "../components/slide-editor/text/template-v2-text.ts"
+  );
+  const element = { type: "text", text: "", runs: [] };
+  const next = setRawTextContent(element, "- item one\n• item two");
+  assert.ok(next.text.includes("- item one"), `text was ${next.text}`);
+  assert.ok(next.text.includes("• item two"), `text was ${next.text}`);
+});
+
 test("a multi-element component keeps its declared union bounds", async () => {
   const model = await import("../components/slide-editor/model/model.ts");
   const component = {

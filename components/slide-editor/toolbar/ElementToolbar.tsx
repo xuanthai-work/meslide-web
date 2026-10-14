@@ -4,6 +4,7 @@ import type { TemplateFontOption } from "@/components/slide-editor/text/google-f
 import type { TextSelectionRange } from "@/components/slide-editor/text/text-runs";
 import type { TableCellSelection } from "@/components/slide-editor/state/state";
 import type { ComponentActionsMenuActions } from "@/components/slide-editor/selection/ComponentActionsMenu";
+import { splitTextRunsOnNewlines } from "@/components/slide-editor/text/template-v2-text";
 import { BulletsToolbar } from "@/components/slide-editor/text/BulletsToolbar";
 import { ChartToolbar } from "@/components/slide-editor/charts/ChartToolbar";
 import { DesignVariablesToolbar } from "@/components/slide-editor/toolbar/DesignVariablesToolbar";
@@ -60,6 +61,23 @@ const TOOLBAR_RENDERERS: Partial<
         componentActions={componentActions}
         selectionRange={textSelectionRange}
         templateFonts={templateFonts}
+        listMarker="none"
+        onListMarkerChange={(marker) => {
+          if (marker === "none") return;
+          const items = splitTextRunsOnNewlines(element.runs).filter(
+            (line) => line.length > 0,
+          );
+          onChange(
+            index,
+            {
+              ...element,
+              type: "text-list",
+              marker,
+              items: items.length > 0 ? items : [[{ text: " " }]],
+            } as SlideElement,
+            path,
+          );
+        }}
         onChange={(index, element) => onChange(index, element, path)}
       />
     ) : null,

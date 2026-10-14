@@ -394,9 +394,9 @@ export function setRawTextContent(
   const styled = style ? applyTextStyle(element, style) : element;
   const sourceRuns = readArray(styled.runs);
   const firstRun = asRecord(sourceRuns[0]) ?? {};
-  const runs = stripPlainTextListMarkersFromRuns(
-    renderMarkdownTextRuns([{ text, font: fontToSource(rawFont(styled)) }]),
-  ).map((run) =>
+  const runs = renderMarkdownTextRuns([
+    { text, font: fontToSource(rawFont(styled)) },
+  ]).map((run) =>
     isLatexTextRun(run)
       ? run
       : {
@@ -419,7 +419,7 @@ export function setRawTextRunsContent(
   element: TemplateV2RawTextElement,
   runs: TextRun[],
 ): TemplateV2RawTextElement {
-  const storageRuns = stripPlainTextListMarkersFromRuns(runs);
+  const storageRuns = runs;
   const sourceRuns = readArray(element.runs);
   const nextRuns = (
     storageRuns.length > 0 ? storageRuns : [{ text: " " }]
@@ -1197,7 +1197,15 @@ export function layoutRenderTextRuns(
     const parts = run.text.match(/\n|[^\S\n]+|[^\s]+/g) ?? [run.text];
     for (const part of parts) {
       if (part === "\n") {
-        pushLine();
+        if (lines[lines.length - 1]?.length === 0) {
+          lines[lines.length - 1].push({
+            ...run,
+            text: "",
+            width: 0,
+          });
+        }
+        lines.push([]);
+        lineWidth = 0;
         continue;
       }
       const isWhitespace = isRenderWhitespaceText(part);
@@ -1584,7 +1592,7 @@ function rawTextListItemWithRuns(source: unknown, runs: TextRun[]): unknown {
   });
 }
 
-function splitTextRunsOnNewlines(runs: TextRun[]): TextRun[][] {
+export function splitTextRunsOnNewlines(runs: TextRun[]): TextRun[][] {
   const lines: TextRun[][] = [[]];
 
   for (const run of runs) {
@@ -1607,7 +1615,7 @@ function splitTextRunsOnNewlines(runs: TextRun[]): TextRun[][] {
   return lines;
 }
 
-function stripPlainTextListMarkersFromRuns(runs: TextRun[]): TextRun[] {
+export function stripPlainTextListMarkersFromRuns(runs: TextRun[]): TextRun[] {
   const lines = splitTextRunsOnNewlines(runs);
   const stripped: TextRun[] = [];
 

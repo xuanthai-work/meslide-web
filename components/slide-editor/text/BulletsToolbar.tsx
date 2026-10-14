@@ -41,6 +41,16 @@ export function BulletsToolbar({
   };
 
   const updateMarker = (nextMarker: Marker) => {
+    if (nextMarker === "none") {
+      onChange(index, {
+        ...element,
+        type: "text",
+        runs: rawTextListRunsForEditor(element),
+        marker: undefined,
+        items: undefined,
+      } as unknown as BulletsSlideElement);
+      return;
+    }
     onChange(index, {
       ...element,
       marker: nextMarker,
