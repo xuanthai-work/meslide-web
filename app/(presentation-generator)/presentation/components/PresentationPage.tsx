@@ -964,8 +964,8 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
               "h-screen w-[calc(100vw-16px)] max-w-[375px] shrink-0 flex-col bg-white shadow-[-12px_0_32px_rgba(16,24,40,0.18)] transition-[width] duration-200 min-[1200px]:relative min-[1200px]:z-auto min-[1200px]:h-full min-[1200px]:max-w-none min-[1200px]:self-start min-[1200px]:border-l min-[1200px]:border-[#EDEEEF] min-[1200px]:shadow-none",
               isRightPanelOpen
                 ? isRightPanelMaximized
-                  ? "min-[1200px]:w-[470px] 2xl:w-[533px]"
-                  : "min-[1200px]:w-[320px] 2xl:w-[383px]"
+                  ? "min-[1200px]:w-[533px]"
+                  : "min-[1200px]:w-[383px]"
                 : "min-[1200px]:w-[78px]",
               isMobileAssistantOpen
                 ? "fixed inset-y-0 right-0 z-[70] flex"
