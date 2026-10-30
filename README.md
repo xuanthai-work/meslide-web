@@ -1,12 +1,12 @@
-# gslide-web
+# meslide-web
 
-Ứng dụng Next.js của GSlide: giao diện tạo và chỉnh sửa bài thuyết trình, trang xuất file, và lớp BFF.
+Ứng dụng Next.js của MeSlide: giao diện tạo và chỉnh sửa bài thuyết trình, trang xuất file, và lớp BFF.
 
-Repo này không chứa FastAPI, Chromium, hay reverse proxy. Backend chạy ở [`gslide-api`](../gslide-api).
+Repo này không chứa FastAPI, Chromium, hay reverse proxy. Backend chạy ở [`meslide-api`](../meslide-api).
 
 ## Chạy local
 
-Cần Docker. Khởi động `gslide-api` trước trên Docker network `gslide`, rồi:
+Cần Docker. Khởi động `meslide-api` trước trên Docker network `meslide`, rồi:
 
 ```powershell
 copy .env.example .env
