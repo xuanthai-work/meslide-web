@@ -1,16 +1,12 @@
-import { Tooltip } from '@radix-ui/react-tooltip'
-import { TooltipProvider } from '@radix-ui/react-tooltip'
 import React from 'react'
-import { TooltipContent, TooltipTrigger, } from './ui/tooltip'
+import { TooltipContent, Tooltip, TooltipTrigger, TooltipProvider } from './ui/tooltip'
 
 const ToolTip = ({ children, content, className }: { children: React.ReactNode, content: string, className?: string }) => {
     return (
         <div className={className}>
-            <TooltipProvider delayDuration={100}>
+            <TooltipProvider delay={100}>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        {children}
-                    </TooltipTrigger>
+                    <TooltipTrigger render={children as React.ReactElement} />
                     <TooltipContent>
                         <p>{content}</p>
                     </TooltipContent>
@@ -21,5 +17,3 @@ const ToolTip = ({ children, content, className }: { children: React.ReactNode, 
 }
 
 export default ToolTip
-
-// test

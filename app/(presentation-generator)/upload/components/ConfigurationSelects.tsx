@@ -115,77 +115,79 @@ const SlideCountSelect: React.FC<{
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        <button
-          role="combobox"
-          name="slides"
-          data-testid="slides-select"
-          aria-expanded={open}
-          aria-controls="slides-options"
-          className={cn(
-            "flex h-[34px] items-center justify-between gap-2 overflow-hidden rounded-full bg-white px-3.5 font-medium text-[var(--gslide-ink)]",
-            compact
-              ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
-              : "shadow-sm ring-1 ring-inset ring-slate-200 focus-visible:ring-[var(--gslide-accent)]/30 min-[1800px]:h-10 min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:px-5",
-          )}
-        >
-          {compact ? (
-            <Monitor
-              aria-hidden="true"
-              strokeWidth={1.75}
-              className="h-3.5 w-3.5 shrink-0"
-            />
-          ) : (
-            <svg
-              className="h-3.5 w-3.5 min-[1800px]:h-4 min-[1800px]:w-4 min-[2200px]:h-5 min-[2200px]:w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-            >
-              <path
-                d="M4.0835 12.25H9.91683"
-                stroke="black"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M11.6665 1.75H2.33317C1.68884 1.75 1.1665 2.27233 1.1665 2.91667V8.75C1.1665 9.39433 1.68884 9.91667 2.33317 9.91667H11.6665C12.3108 9.91667 12.8332 9.39433 12.8332 8.75V2.91667C12.8332 2.27233 12.3108 1.75 11.6665 1.75Z"
-                stroke="black"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-          <span
+      <PopoverTrigger
+        render={
+          <button
+            role="combobox"
+            name="slides"
+            data-testid="slides-select"
+            aria-expanded={open}
+            aria-controls="slides-options"
             className={cn(
-              "flex flex-1 items-center",
-              compact ? "gap-1.5" : "gap-2.5",
+              "flex h-[34px] items-center justify-between gap-2 overflow-hidden rounded-full bg-white px-3.5 font-medium text-[var(--gslide-ink)]",
+              compact
+                ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
+                : "shadow-sm ring-1 ring-inset ring-slate-200 focus-visible:ring-[var(--gslide-accent)]/30 min-[1800px]:h-10 min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:px-5",
             )}
           >
-            <span
-              className={cn(
-                compact
-                  ? "text-xs font-semibold tracking-[-0.12px]"
-                  : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
-              )}
-            >
-              {compact && value ? `${value} slide` : displayLabel}
-            </span>
-            {compact && (
-              <ChevronUp
+            {compact ? (
+              <Monitor
                 aria-hidden="true"
                 strokeWidth={1.75}
-                className="h-3.5 w-3.5 shrink-0 rotate-90"
+                className="h-3.5 w-3.5 shrink-0"
               />
+            ) : (
+              <svg
+                className="h-3.5 w-3.5 min-[1800px]:h-4 min-[1800px]:w-4 min-[2200px]:h-5 min-[2200px]:w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+              >
+                <path
+                  d="M4.0835 12.25H9.91683"
+                  stroke="black"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M11.6665 1.75H2.33317C1.68884 1.75 1.1665 2.27233 1.1665 2.91667V8.75C1.1665 9.39433 1.68884 9.91667 2.33317 9.91667H11.6665C12.3108 9.91667 12.8332 9.39433 12.8332 8.75V2.91667C12.8332 2.27233 12.3108 1.75 11.6665 1.75Z"
+                  stroke="black"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
-          </span>
-          {!compact && (
-            <ChevronUp className="ml-2 h-4 w-4 shrink-0 min-[1800px]:h-5 min-[1800px]:w-5" />
-          )}
-        </button>
-      </PopoverTrigger>
+            <span
+              className={cn(
+                "flex flex-1 items-center",
+                compact ? "gap-1.5" : "gap-2.5",
+              )}
+            >
+              <span
+                className={cn(
+                  compact
+                    ? "text-xs font-semibold tracking-[-0.12px]"
+                    : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
+                )}
+              >
+                {compact && value ? `${value} slide` : displayLabel}
+              </span>
+              {compact && (
+                <ChevronUp
+                  aria-hidden="true"
+                  strokeWidth={1.75}
+                  className="h-3.5 w-3.5 shrink-0 rotate-90"
+                />
+              )}
+            </span>
+            {!compact && (
+              <ChevronUp className="ml-2 h-4 w-4 shrink-0 min-[1800px]:h-5 min-[1800px]:w-5" />
+            )}
+          </button>
+        }
+      />
       <PopoverContent
         id="slides-options"
         className="w-[140px] p-0 min-[1800px]:w-[160px] min-[2200px]:w-[180px]"
@@ -280,59 +282,61 @@ const LanguageSelect: React.FC<{
 }> = ({ value, onValueChange, open, onOpenChange, compact = false }) => {
   return (
   <Popover open={open} onOpenChange={onOpenChange}>
-    <PopoverTrigger asChild>
-      <button
-        role="combobox"
-        name="language"
-        data-testid="language-select"
-        aria-expanded={open}
-        aria-controls="language-options"
-        className={cn(
-          "flex h-[34px] max-w-[160px] items-center gap-2 overflow-hidden rounded-full bg-white px-3.5 font-semibold text-[var(--gslide-ink)]",
-          compact
-            ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
-            : "shadow-sm ring-1 ring-inset ring-slate-200 min-[1800px]:h-10 min-[1800px]:max-w-[190px] min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:max-w-[220px] min-[2200px]:px-5",
-        )}
-      >
-        <Languages
-          aria-hidden="true"
-          strokeWidth={compact ? 1.75 : 2}
+    <PopoverTrigger
+      render={
+        <button
+          role="combobox"
+          name="language"
+          data-testid="language-select"
+          aria-expanded={open}
+          aria-controls="language-options"
           className={cn(
-            "shrink-0",
+            "flex h-[34px] max-w-[160px] items-center gap-2 overflow-hidden rounded-full bg-white px-3.5 font-semibold text-[var(--gslide-ink)]",
             compact
-              ? "h-3.5 w-3.5"
-              : "h-3.5 w-3.5 min-[1800px]:h-4 min-[1800px]:w-4 min-[2200px]:h-5 min-[2200px]:w-5",
-          )}
-        />
-        <span
-          className={cn(
-            "flex min-w-0 flex-1 items-center",
-            compact ? "gap-0.5" : "truncate",
+              ? "border border-[var(--gslide-border)] shadow-none focus-visible:ring-2 focus-visible:ring-[var(--gslide-accent)]/25"
+              : "shadow-sm ring-1 ring-inset ring-slate-200 min-[1800px]:h-10 min-[1800px]:max-w-[190px] min-[1800px]:px-4 min-[2200px]:h-11 min-[2200px]:max-w-[220px] min-[2200px]:px-5",
           )}
         >
+          <Languages
+            aria-hidden="true"
+            strokeWidth={compact ? 1.75 : 2}
+            className={cn(
+              "shrink-0",
+              compact
+                ? "h-3.5 w-3.5"
+                : "h-3.5 w-3.5 min-[1800px]:h-4 min-[1800px]:w-4 min-[2200px]:h-5 min-[2200px]:w-5",
+            )}
+          />
           <span
             className={cn(
-              "truncate",
-              compact
-                ? "text-xs font-semibold tracking-[-0.12px]"
-                : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
+              "flex min-w-0 flex-1 items-center",
+              compact ? "gap-0.5" : "truncate",
             )}
           >
-            {value ? LANGUAGE_LABEL[value] : "Chọn ngôn ngữ"}
+            <span
+              className={cn(
+                "truncate",
+                compact
+                  ? "text-xs font-semibold tracking-[-0.12px]"
+                  : "text-xs font-medium min-[1800px]:text-sm min-[2200px]:text-base",
+              )}
+            >
+              {value ? LANGUAGE_LABEL[value] : "Chọn ngôn ngữ"}
+            </span>
+            {compact && (
+              <ChevronUp
+                aria-hidden="true"
+                strokeWidth={1.75}
+                className="h-3.5 w-3.5 shrink-0 rotate-90"
+              />
+            )}
           </span>
-          {compact && (
-            <ChevronUp
-              aria-hidden="true"
-              strokeWidth={1.75}
-              className="h-3.5 w-3.5 shrink-0 rotate-90"
-            />
+          {!compact && (
+            <ChevronUp className="ml-2 h-4 w-4 flex-shrink-0 min-[1800px]:h-5 min-[1800px]:w-5" />
           )}
-        </span>
-        {!compact && (
-          <ChevronUp className="ml-2 h-4 w-4 flex-shrink-0 min-[1800px]:h-5 min-[1800px]:w-5" />
-        )}
-      </button>
-    </PopoverTrigger>
+        </button>
+      }
+    />
     <PopoverContent
       id="language-options"
       className="w-[calc(100vw-2rem)] max-w-[300px] p-0 min-[1800px]:max-w-[340px] min-[2200px]:max-w-[380px]"

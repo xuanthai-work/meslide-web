@@ -273,22 +273,24 @@ export const PresentationCard = ({
             <DialogTitle className="text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#191919]">
               {"Xóa bài thuyết trình?"}
             </DialogTitle>
-            <DialogDescription asChild>
-              <div className="w-full pt-2 text-sm leading-6 text-[#667085]">
-                <p>{"Thao tác này sẽ xóa vĩnh viễn bài thuyết trình bên dưới."}</p>
-                <div
-                  className="mt-4 rounded-[12px] border border-[#EAECF0] bg-[#F9FAFB] px-4 py-3 text-left"
-                  title={title || "Bài thuyết trình không tiêu đề"}
-                >
-                  <p className="line-clamp-2 break-words text-sm font-medium leading-5 text-[#344054]">
-                    {title || "Bài thuyết trình không tiêu đề"}
+            <DialogDescription
+              render={
+                <div className="w-full pt-2 text-sm leading-6 text-[#667085]">
+                  <p>{"Thao tác này sẽ xóa vĩnh viễn bài thuyết trình bên dưới."}</p>
+                  <div
+                    className="mt-4 rounded-[12px] border border-[#EAECF0] bg-[#F9FAFB] px-4 py-3 text-left"
+                    title={title || "Bài thuyết trình không tiêu đề"}
+                  >
+                    <p className="line-clamp-2 break-words text-sm font-medium leading-5 text-[#344054]">
+                      {title || "Bài thuyết trình không tiêu đề"}
+                    </p>
+                  </div>
+                  <p className="mt-3 text-[13px] text-[#98A2B3]">
+                    {"Thao tác này không thể hoàn tác."}
                   </p>
                 </div>
-                <p className="mt-3 text-[13px] text-[#98A2B3]">
-                  {"Thao tác này không thể hoàn tác."}
-                </p>
-              </div>
-            </DialogDescription>
+              }
+            />
           </DialogHeader>
 
           <DialogFooter className="grid grid-cols-2 gap-3 border-t border-[#EAECF0] bg-[#FCFCFD] p-4 sm:grid sm:space-x-0">

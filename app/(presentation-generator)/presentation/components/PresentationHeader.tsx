@@ -504,21 +504,23 @@ const PresentationHeader = ({
           </ToolTip>
 
           <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <motion.button
-                className="transform-gpu flex h-[38px] items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 text-sm font-semibold text-white shadow-sm transition-[background-color,box-shadow] duration-200 hover:bg-[var(--gslide-accent-hover)] hover:shadow-[0_4px_12px_rgba(29,111,232,0.24)] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
-                disabled={isExporting || isStreaming === true}
-                whileHover={isExporting || isStreaming ? undefined : { scale: 1.02 }}
-                whileTap={isExporting || isStreaming ? undefined : { scale: 0.98 }}
-              >
-                {isExporting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <span className="hidden sm:inline">{"Xuất"}</span>
-                )}{" "}
-                <ArrowRightFromLine className="w-3.5 h-3.5" />
-              </motion.button>
-            </PopoverTrigger>
+            <PopoverTrigger
+              render={
+                <motion.button
+                  className="transform-gpu flex h-[38px] items-center gap-2 rounded-full bg-[var(--gslide-accent)] px-4 text-sm font-semibold text-white shadow-sm transition-[background-color,box-shadow] duration-200 hover:bg-[var(--gslide-accent-hover)] hover:shadow-[0_4px_12px_rgba(29,111,232,0.24)] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
+                  disabled={isExporting || isStreaming === true}
+                  whileHover={isExporting || isStreaming ? undefined : { scale: 1.02 }}
+                  whileTap={isExporting || isStreaming ? undefined : { scale: 0.98 }}
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span className="hidden sm:inline">{"Xuất"}</span>
+                  )}{" "}
+                  <ArrowRightFromLine className="w-3.5 h-3.5" />
+                </motion.button>
+              }
+            />
             <PopoverContent
               align="end"
               className="w-[200px] rounded-[18px] space-y-2 p-0  "

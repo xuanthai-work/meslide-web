@@ -417,22 +417,24 @@ function FontFallbackPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-label={`Phông chữ thay thế cho ${fontName}`}
-          disabled={disabled}
-          className="h-11 w-full justify-between rounded-lg border-[#DADDE6] bg-white px-3 text-sm font-medium text-[#282A32] shadow-none hover:border-[#B8BCC8] hover:bg-white"
-        >
-          <span className="min-w-0 truncate">
-            {selectedOption?.family ?? "Chọn phông thay thế"}
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-[#61646F]" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            aria-label={`Phông chữ thay thế cho ${fontName}`}
+            disabled={disabled}
+            className="h-11 w-full justify-between rounded-lg border-[#DADDE6] bg-white px-3 text-sm font-medium text-[#282A32] shadow-none hover:border-[#B8BCC8] hover:bg-white"
+          >
+            <span className="min-w-0 truncate">
+              {selectedOption?.family ?? "Chọn phông thay thế"}
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-[#61646F]" />
+          </Button>
+        }
+      />
       <PopoverContent
         align="start"
         className="z-[100] w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-xl border-[#E4E6EE] bg-white p-0 shadow-[0_18px_45px_rgba(16,24,40,0.14)]"

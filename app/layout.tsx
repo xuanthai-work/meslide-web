@@ -6,6 +6,7 @@ import { Manrope, Unbounded } from "next/font/google";
 import { getServerFeatureFlags } from "@/lib/server-feature-flags";
 import "./globals.css";
 import "katex/dist/katex.min.css";
+import { cn } from "@/lib/utils";
 
 const ClientRoot = dynamic(() => import("./ClientRoot"));
 const inter = localFont({
@@ -92,7 +93,7 @@ export default async function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${inter.variable} ${manrope.variable} ${unbounded.variable}`}
+      className={cn(manrope.variable, unbounded.variable, "font-sans", inter.variable)}
     >
       <body className="antialiased">
         <ClientRoot featureFlags={featureFlags}>{children}</ClientRoot>

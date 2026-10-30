@@ -179,36 +179,38 @@ const SlideActionBar = ({
               if (!open) handleSaveSpeakerNote(noteDraft);
             }}
           >
-            <PopoverTrigger asChild>
-              <motion.button
-                type="button"
-                aria-label={
-                  speakerNote
-                    ? "Ghi chú thuyết trình"
-                    : "Thêm ghi chú thuyết trình"
-                }
-                title={
-                  speakerNote
-                    ? "Ghi chú thuyết trình"
-                    : "Thêm ghi chú thuyết trình"
-                }
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={cn(
-                  "relative transform-gpu flex h-8 w-10 shrink-0 items-center justify-center rounded-[6px] text-[#050505] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
-                  isSpeakerPopoverOpen && "bg-[#F7F6F9]"
-                )}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M5.86683 13.3331V10.5997L7.1335 10.7331C7.50225 10.7126 7.85123 10.5597 8.11627 10.3025C8.38131 10.0453 8.54462 9.70103 8.57616 9.33306V5.53306C8.58058 4.57262 8.20329 3.64976 7.52728 2.96751C6.85128 2.28525 5.93193 1.89948 4.9715 1.89506C4.01106 1.89064 3.0882 2.26793 2.40595 2.94394C1.72369 3.61994 1.33792 4.53929 1.3335 5.49972C1.3335 7.36639 1.77083 7.53572 2.00016 8.53306C2.15515 9.13537 2.16179 9.76628 2.0195 10.3717L1.3335 13.3331" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M13.2002 11.8668C14.1374 10.9294 14.6641 9.65834 14.6645 8.33284C14.6648 7.00735 14.1389 5.73594 13.2022 4.7981" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M11.3336 10C11.5517 9.78195 11.7244 9.52279 11.8417 9.23755C11.9591 8.95231 12.0187 8.64663 12.0171 8.33821C12.0156 8.02978 11.9529 7.72472 11.8327 7.44067C11.7125 7.15662 11.5372 6.89922 11.3169 6.68335" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {speakerNote ? (
-                  <span className="absolute right-1 top-1 size-1.5 rounded-full bg-[#5141e5]" />
-                ) : null}
-              </motion.button>
-            </PopoverTrigger>
+            <PopoverTrigger
+              render={
+                <motion.button
+                  type="button"
+                  aria-label={
+                    speakerNote
+                      ? "Ghi chú thuyết trình"
+                      : "Thêm ghi chú thuyết trình"
+                  }
+                  title={
+                    speakerNote
+                      ? "Ghi chú thuyết trình"
+                      : "Thêm ghi chú thuyết trình"
+                  }
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "relative transform-gpu flex h-8 w-10 shrink-0 items-center justify-center rounded-[6px] text-[#050505] transition-colors hover:bg-[#F7F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5]",
+                    isSpeakerPopoverOpen && "bg-[#F7F6F9]"
+                  )}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M5.86683 13.3331V10.5997L7.1335 10.7331C7.50225 10.7126 7.85123 10.5597 8.11627 10.3025C8.38131 10.0453 8.54462 9.70103 8.57616 9.33306V5.53306C8.58058 4.57262 8.20329 3.64976 7.52728 2.96751C6.85128 2.28525 5.93193 1.89948 4.9715 1.89506C4.01106 1.89064 3.0882 2.26793 2.40595 2.94394C1.72369 3.61994 1.33792 4.53929 1.3335 5.49972C1.3335 7.36639 1.77083 7.53572 2.00016 8.53306C2.15515 9.13537 2.16179 9.76628 2.0195 10.3717L1.3335 13.3331" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M13.2002 11.8668C14.1374 10.9294 14.6641 9.65834 14.6645 8.33284C14.6648 7.00735 14.1389 5.73594 13.2022 4.7981" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M11.3336 10C11.5517 9.78195 11.7244 9.52279 11.8417 9.23755C11.9591 8.95231 12.0187 8.64663 12.0171 8.33821C12.0156 8.02978 11.9529 7.72472 11.8327 7.44067C11.7125 7.15662 11.5372 6.89922 11.3169 6.68335" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {speakerNote ? (
+                    <span className="absolute right-1 top-1 size-1.5 rounded-full bg-[#5141e5]" />
+                  ) : null}
+                </motion.button>
+              }
+            />
             <PopoverContent
               side="top"
               align="center"

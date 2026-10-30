@@ -672,23 +672,25 @@ export function ChatEditorLayout({
                   open={isQuickPromptsOpen}
                   onOpenChange={setIsQuickPromptsOpen}
                 >
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      disabled={chatInputDisabled}
-                    className="inline-flex h-[28px] items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-2.5 text-xs font-medium text-[#344054] transition-colors hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1D6FE8] disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label={"Mở lời nhắc nhanh"}
-                    >
-                      <Image
-                        src="/ai-star.svg"
-                        alt=""
-                        width={13}
-                        height={14}
-                        className="h-[14px] w-[13px] shrink-0"
-                      />
-                      {"Lời nhắc"}
-                    </button>
-                  </PopoverTrigger>
+                  <PopoverTrigger
+                    render={
+                      <button
+                        type="button"
+                        disabled={chatInputDisabled}
+                        className="inline-flex h-[28px] items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-2.5 text-xs font-medium text-[#344054] transition-colors hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1D6FE8] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={"Mở lời nhắc nhanh"}
+                      >
+                        <Image
+                          src="/ai-star.svg"
+                          alt=""
+                          width={13}
+                          height={14}
+                          className="h-[14px] w-[13px] shrink-0"
+                        />
+                        {"Lời nhắc"}
+                      </button>
+                    }
+                  />
                   <PopoverContent
                     side="top"
                     align="end"

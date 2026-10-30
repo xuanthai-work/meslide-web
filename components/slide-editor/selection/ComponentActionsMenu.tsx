@@ -62,30 +62,31 @@ export function ComponentActionsMenu({
 
   return (
     <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          title={"Thêm"}
-          aria-label={"Thêm"}
-          className={cn(
-            "grid h-8 w-8 place-items-center rounded-[4px] border-0 bg-transparent font-manrope text-black hover:bg-[var(--gslide-accent-soft)]",
-            menuOpen && "bg-[var(--gslide-accent-soft)]",
-          )}
-        >
-          <MoreVertical
-            size={16}
-            className="text-black"
-            strokeWidth={1.33}
-            aria-hidden
-          />
-        </button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            title={"Thêm"}
+            aria-label={"Thêm"}
+            className={cn(
+              "grid h-8 w-8 place-items-center rounded-[4px] border-0 bg-transparent font-manrope text-black hover:bg-[var(--gslide-accent-soft)]",
+              menuOpen && "bg-[var(--gslide-accent-soft)]",
+            )}
+          >
+            <MoreVertical
+              size={16}
+              className="text-black"
+              strokeWidth={1.33}
+              aria-hidden
+            />
+          </button>
+        }
+      />
       <DropdownMenuContent
         data-template-v2-floating-toolbar="true"
         data-inline-edit-ignore="true"
         align="end"
         sideOffset={12}
-        collisionPadding={8}
         onMouseDown={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
         className="z-[10001] box-border w-[244px] rounded-[12px] border border-[#EDEEEF] bg-white py-2 font-syne text-[14px] font-normal leading-normal tracking-[0.14px] text-[#191919] shadow-[0_6px_18px_rgba(16,24,40,0.08)]"
